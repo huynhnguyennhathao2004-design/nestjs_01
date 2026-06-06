@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trang quản lý</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f4f7fb;
+      color: #111827;
+    }
+
+    .navbar {
+      background: #2563eb;
+      color: white;
+      padding: 18px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .navbar h2 {
+      margin: 0;
+    }
+
+    .navbar button {
+      background: white;
+      color: #2563eb;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .container {
+      padding: 40px;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      max-width: 800px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    }
+
+    .card h1 {
+      color: #2563eb;
+    }
+
+    .features {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .feature-box {
+      padding: 18px;
+      background: #f3f4f6;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <h2>AI Website Platform</h2>
+    <button onclick="logout()">Đăng xuất</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h1>Đăng nhập thành công</h1>
+      <p id="welcomeText">Xin chào!</p>
+      <p>Đây là trang dashboard tạm thời. Sau này bạn có thể đổi thành đề tài thật của mình.</p>
+
+      <div class="features">
+        <div class="feature-box">
+          <h3>Quản lý người dùng</h3>
+          <p>Phần này có thể làm sau.</p>
+        </div>
+
+        <div class="feature-box">
+          <h3>Tích hợp AI</h3>
+          <p>Thêm chatbot hoặc tạo nội dung bằng AI.</p>
+        </div>
+
+        <div class="feature-box">
+          <h3>Dữ liệu hệ thống</h3>
+          <p>Sau này kết nối database.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    if (!user) {
+      window.location.href = '/login.html';
+    } else {
+      document.getElementById('welcomeText').textContent =
+        `Xin chào ${user.name} - ${user.email}`;
+    }
+
+    function logout() {
+      localStorage.removeItem('user');
+      window.location.href = '/login.html';
+    }
+  </script>
+</body>
+</html>
