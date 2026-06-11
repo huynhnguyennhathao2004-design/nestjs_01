@@ -1,3 +1,972 @@
-<script>
-  window.location.href = '/login.html';
-</script>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Du lịch Việt Nam TTS</title>
+
+  <style>s
+    * {
+      box-sizing: border-box;
+      font-family: "Be Vietnam Pro","Segoe UI", Arial, sans-serif;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: #0f172a;
+      background: #f8fafc;
+    }
+
+    .hero {
+      min-height: 100vh;
+      background:
+        linear-gradient(120deg, rgba(2, 6, 23, 0.78), rgba(15, 23, 42, 0.55), rgba(30, 64, 175, 0.3)),
+        url("/assets/images/bg-vietnam-1.jpg");
+      background-size: cover;
+      background-position: center;
+      color: white;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 8%;
+      position: relative;
+      z-index: 10;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 850;
+      letter-spacing: 0.3px;
+      font-family: "Montserrat", "Be Vietnam Pro", sans-serif;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 15px;
+      opacity: 0.92;
+      transition: 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: #bfdbfe;
+      opacity: 1;
+    }
+
+    .login-btn {
+      padding: 11px 18px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.32);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-content {
+      max-width: 900px;
+      padding: 105px 8% 150px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 9px 16px;
+      border-radius: 999px;
+      background: rgba(59, 130, 246, 0.25);
+      border: 1px solid rgba(147, 197, 253, 0.45);
+      color: #dbeafe;
+      font-weight: 800;
+      margin-bottom: 24px;
+    }
+
+    .hero-content h1 {
+      font-size: 60px;
+      line-height: 1.08;
+      margin: 0 0 24px;
+      font-weight: 900;
+      letter-spacing: -1.5px;
+    }
+
+    .hero-content p {
+      max-width: 700px;
+      font-size: 18px;
+      line-height: 1.8;
+      color: #e5e7eb;
+      margin-bottom: 34px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .small-btn,
+    .ghost-btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 800;
+      transition: 0.25s ease;
+      border: none;
+      cursor: pointer;
+    }
+
+    .primary-btn {
+      padding: 15px 24px;
+      background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      color: white;
+      box-shadow: 0 16px 30px rgba(14, 165, 233, 0.28);
+    }
+
+    .secondary-btn {
+      padding: 15px 24px;
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+    }
+
+    .primary-btn:hover,
+    .secondary-btn:hover,
+    .small-btn:hover,
+    .ghost-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .section {
+      padding: 82px 8%;
+    }
+
+    .section-title {
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto 42px;
+    }
+
+    .section-title h2 {
+      font-size: 38px;
+      margin: 0 0 14px;
+      color: #0f172a;
+    }
+
+    .section-title p {
+      color: #64748b;
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .search-panel {
+      max-width: 1120px;
+      margin: -65px auto 0;
+      position: relative;
+      z-index: 20;
+      padding: 24px;
+      border-radius: 26px;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 28px 70px rgba(15, 23, 42, 0.18);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+    }
+
+    .search-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr auto;
+      gap: 14px;
+      align-items: end;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      color: #334155;
+      margin-bottom: 8px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 14px 15px;
+      border-radius: 14px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: #0f172a;
+      font-size: 15px;
+      outline: none;
+      transition: 0.2s;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .search-btn {
+      padding: 14px 22px;
+      border-radius: 14px;
+      border: none;
+      color: white;
+      background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      font-weight: 850;
+      cursor: pointer;
+      min-width: 120px;
+    }
+
+    .result-line {
+      margin: 18px 0 0;
+      color: #475569;
+      font-weight: 700;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: white;
+      padding: 28px;
+      border-radius: 22px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+      border: 1px solid #e5e7eb;
+    }
+
+    .feature-card h3 {
+      margin-top: 0;
+      color: #1d4ed8;
+      font-size: 21px;
+    }
+
+    .feature-card p {
+      color: #475569;
+      line-height: 1.7;
+    }
+
+    .destinations {
+      background: #eef6ff;
+    }
+
+    .destination-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+
+    .destination-card {
+      background: white;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 20px 55px rgba(15, 23, 42, 0.1);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      transition: 0.25s ease;
+    }
+
+    .destination-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 26px 70px rgba(15, 23, 42, 0.15);
+    }
+
+    .destination-img {
+      height: 180px;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+
+    .tag-row {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.72);
+      color: white;
+      font-size: 12px;
+      font-weight: 800;
+      backdrop-filter: blur(8px);
+    }
+
+    .destination-content {
+      padding: 22px;
+    }
+
+    .destination-content h3 {
+      margin: 0 0 10px;
+      color: #0f172a;
+      font-size: 23px;
+    }
+
+    .destination-content p {
+      color: #64748b;
+      line-height: 1.65;
+      margin: 0 0 18px;
+    }
+
+    .destination-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 700;
+      flex-wrap: wrap;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .small-btn {
+      padding: 11px 14px;
+      background: #2563eb;
+      color: white;
+      font-size: 14px;
+    }
+
+    .ghost-btn {
+      padding: 11px 14px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      font-size: 14px;
+    }
+
+    .empty-state {
+      display: none;
+      text-align: center;
+      background: white;
+      border-radius: 22px;
+      padding: 38px;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .pre-footer {
+      padding: 90px 8%;
+      background:
+        linear-gradient(
+          rgba(248, 250, 252, 0.92),
+          rgba(239, 246, 255, 0.96)
+        );
+    }
+
+    .pre-footer-card {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 56px;
+      border-radius: 34px;
+      text-align: center;
+      color: white;
+
+      background:
+        linear-gradient(
+          rgba(15, 23, 42, 0.76),
+          rgba(30, 64, 175, 0.62)
+        ),
+        url("/assets/images/bg-vietnam.jpg");
+
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+
+      box-shadow: 0 28px 80px rgba(15, 23, 42, 0.22);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pre-footer-card::before {
+      content: "";
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: rgba(14, 165, 233, 0.28);
+      filter: blur(70px);
+      top: -80px;
+      left: -60px;
+    }
+
+    .pre-footer-card::after {
+      content: "";
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: rgba(34, 197, 94, 0.22);
+      filter: blur(70px);
+      right: -70px;
+      bottom: -80px;
+    }
+
+    .pre-footer-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .pre-footer-badge {
+      display: inline-block;
+      padding: 10px 18px;
+      margin-bottom: 22px;
+      border-radius: 999px;
+
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      backdrop-filter: blur(12px);
+
+      color: #dbeafe;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .pre-footer-card h2 {
+      max-width: 780px;
+      margin: 0 auto 18px;
+      font-size: 42px;
+      line-height: 1.22;
+      font-weight: 850;
+      letter-spacing: -0.7px;
+    }
+
+    .pre-footer-card p {
+      max-width: 760px;
+      margin: 0 auto 34px;
+      color: #e5e7eb;
+      line-height: 1.8;
+      font-size: 16px;
+    }
+
+    .pre-footer-features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      max-width: 760px;
+      margin: 0 auto 34px;
+    }
+
+    .pre-footer-features div {
+      padding: 18px 16px;
+      border-radius: 20px;
+
+      background: rgba(255, 255, 255, 0.13);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      backdrop-filter: blur(12px);
+    }
+
+    .pre-footer-features strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #93c5fd;
+      font-size: 24px;
+    }
+
+    .pre-footer-features span {
+      color: #f8fafc;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .pre-footer-actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .pre-footer-primary,
+    .pre-footer-secondary {
+      display: inline-block;
+      padding: 15px 24px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 800;
+      transition: 0.25s ease;
+    }
+
+    .pre-footer-primary {
+      background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      color: white;
+      box-shadow: 0 16px 32px rgba(14, 165, 233, 0.35);
+    }
+
+    .pre-footer-secondary {
+      color: white;
+      background: rgba(255, 255, 255, 0.13);
+      border: 1px solid rgba(255, 255, 255, 0.34);
+      backdrop-filter: blur(10px);
+    }
+
+    .pre-footer-primary:hover,
+    .pre-footer-secondary:hover {
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+      .pre-footer {
+        padding: 60px 24px;
+      }
+
+      .pre-footer-card {
+        padding: 36px 24px;
+        border-radius: 26px;
+      }
+
+      .pre-footer-card h2 {
+        font-size: 30px;
+      }
+
+      .pre-footer-card p {
+        font-size: 15px;
+      }
+
+      .pre-footer-features {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* .cta {
+      text-align: center;
+      background: #0f172a;
+      color: white;
+    }
+
+    .cta h2 {
+      font-size: 34px;
+      margin-bottom: 16px;
+    }
+
+    .cta p {
+      max-width: 700px;
+      margin: 0 auto 28px;
+      color: #cbd5e1;
+      line-height: 1.7;
+    } */
+
+  .footer {
+    padding: 70px 8%;
+    text-align: center;
+    color: white;
+    font-size: 14px;
+
+    background:
+      linear-gradient(
+        rgba(2, 6, 23, 0.78),
+        rgba(2, 6, 23, 0.88)
+      ),
+      url("/assets/images/bg-vietnam-1.jpg");
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    }
+    
+    .footer-content {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .footer-content h2 {
+      margin: 0 0 14px;
+      font-size: 30px;
+      font-weight: 800;
+    }
+
+    .footer-content p {
+      margin: 0 auto 22px;
+      color: #e5e7eb;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .footer-content span {
+      color: #cbd5e1;
+    }
+
+    @media (max-width: 900px) {
+      .search-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .search-btn {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .navbar {
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .nav-links {
+        justify-content: center;
+      }
+
+      .hero-content {
+        padding-top: 70px;
+        text-align: center;
+      }
+
+      .hero-content h1 {
+        font-size: 40px;
+      }
+
+      .hero-content p {
+        font-size: 16px;
+      }
+
+      .hero-actions {
+        justify-content: center;
+      }
+
+      .section-title h2 {
+        font-size: 30px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="hero">
+    <div class="navbar">
+      <div class="logo">Vietnam Travel TTS</div>
+
+      <div class="nav-links">
+        <a href="/index.html">Trang chủ</a>
+        <a href="#features">Tính năng</a>
+        <a href="#destinations">Địa điểm</a>
+        <a href="/tss.html">Tạo giọng đọc</a>
+        <a href="/login.html" class="login-btn">Đăng nhập</a>
+      </div>
+    </div>
+
+    <div class="hero-content">
+      <div class="badge">AI Text-to-Speech cho du lịch Việt Nam</div>
+
+      <h1>Khám phá Việt Nam qua nội dung và giọng đọc AI</h1>
+
+      <p>
+        Website giới thiệu các địa điểm du lịch nổi bật tại Việt Nam, tích hợp
+        công nghệ AI Text-to-Speech giúp chuyển văn bản mô tả thành âm thanh
+        để người dùng có thể nghe, trải nghiệm và tải xuống dễ dàng.
+      </p>
+
+      <div class="hero-actions">
+        <a href="/tss.html" class="primary-btn">Trải nghiệm TTS</a>
+        <a href="#destinations" class="secondary-btn">Xem địa điểm</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="search-panel" id="search">
+    <div class="search-grid">
+      <div class="field">
+        <label for="searchInput">Tìm kiếm địa điểm</label>
+        <input id="searchInput" type="text" placeholder="Nhập tên địa điểm, ví dụ: Đà Lạt, Hội An, Sa Pa..." />
+      </div>
+
+      <div class="field">
+        <label for="regionFilter">Khu vực</label>
+        <select id="regionFilter">
+          <option value="all">Tất cả khu vực</option>
+          <option value="Miền Bắc">Miền Bắc</option>
+          <option value="Miền Trung">Miền Trung</option>
+          <option value="Miền Nam">Miền Nam</option>
+          <option value="Tây Nguyên">Tây Nguyên</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="typeFilter">Loại hình</label>
+        <select id="typeFilter">
+          <option value="all">Tất cả loại hình</option>
+          <option value="Biển đảo">Biển đảo</option>
+          <option value="Núi rừng">Núi rừng</option>
+          <option value="Di sản">Di sản</option>
+          <option value="Nghỉ dưỡng">Nghỉ dưỡng</option>
+          <option value="Văn hóa">Văn hóa</option>
+        </select>
+      </div>
+
+      <button class="search-btn" id="clearSearchBtn" type="button">Làm mới</button>
+    </div>
+
+    <p class="result-line" id="resultLine">Đang hiển thị các địa điểm nổi bật.</p>
+  </div>
+
+  <section class="section" id="features">
+    <div class="section-title">
+      <h2>Tính năng chính của website</h2>
+      <p>
+        Hệ thống hỗ trợ người dùng xem thông tin du lịch, tìm kiếm địa điểm,
+        xem chi tiết và chuyển nội dung giới thiệu thành giọng đọc AI.
+      </p>
+    </div>
+
+    <div class="features">
+      <div class="feature-card">
+        <h3>Tìm kiếm địa điểm</h3>
+        <p>
+          Người dùng có thể tìm địa điểm theo tên, khu vực hoặc loại hình du lịch
+          như biển đảo, núi rừng, di sản và nghỉ dưỡng.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <h3>Trang chi tiết</h3>
+        <p>
+          Mỗi địa điểm có trang thông tin riêng gồm mô tả, thời điểm nên đi,
+          điểm nổi bật và món ăn gợi ý.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <h3>AI Text-to-Speech</h3>
+        <p>
+          Nội dung mô tả du lịch có thể được chuyển thành file âm thanh MP3 để
+          nghe thử hoặc tải xuống.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section destinations" id="destinations">
+    <div class="section-title">
+      <h2>Địa điểm du lịch nổi bật</h2>
+      <p>
+        Danh sách này đang dùng dữ liệu tĩnh trên giao diện. Sau này có thể thay
+        bằng dữ liệu lấy từ database thông qua API NestJS.
+      </p>
+    </div>
+
+    <div class="destination-grid" id="destinationGrid"></div>
+
+    <div class="empty-state" id="emptyState">
+      <h3>Không tìm thấy địa điểm phù hợp</h3>
+      <p>Hãy thử nhập từ khóa khác hoặc đổi bộ lọc khu vực, loại hình.</p>
+    </div>
+  </section>
+
+  <section class="pre-footer">
+    <div class="pre-footer-card">
+      <span class="pre-footer-badge">Trải nghiệm AI Text-to-Speech</span>
+
+      <h2>Biến nội dung du lịch thành giọng đọc sống động</h2>
+
+      <p>
+        Nhập đoạn mô tả về các địa điểm du lịch tại Việt Nam, chọn giọng đọc phù hợp
+        và tạo file âm thanh MP3 để nghe thử hoặc tải xuống chỉ trong vài giây.
+      </p>
+
+      <div class="pre-footer-features">
+        <div>
+          <strong>01</strong>
+          <span>Nhập nội dung</span>
+          </div>
+
+        <div>
+          <strong>02</strong>
+          <span>Chọn giọng đọc</span>
+        </div>
+
+        <div>
+          <strong>03</strong>
+          <span>Tạo MP3</span>
+        </div>
+      </div>
+
+      <div class="pre-footer-actions">
+        <a href="/tss.html" class="pre-footer-primary">Tạo giọng đọc ngay</a>
+        <a href="#destinations" class="pre-footer-secondary">Xem địa điểm nổi bật</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <h2>Vietnam Travel TTS</h2>
+      <p>
+        Website giới thiệu địa điểm du lịch Việt Nam tích hợp AI Text-to-Speech,
+        giúp chuyển nội dung mô tả thành giọng đọc tự nhiên.
+      </p>
+      <span>© 2026 Vietnam Travel TTS. All rights reserved.</span>
+    </div>
+  </footer>
+
+  <script>
+    const destinations = [
+      {
+        id: 'da-lat',
+        name: 'Đà Lạt',
+        region: 'Tây Nguyên',
+        type: 'Nghỉ dưỡng',
+        time: 'Tháng 11 - Tháng 4',
+        image: '/assets/images/dalat-lamdong.jpg',
+        description: 'Thành phố mộng mơ với khí hậu mát mẻ, rừng thông xanh, hồ Xuân Hương và nhiều điểm tham quan nổi tiếng.'
+      },
+      {
+        id: 'ha-long',
+        name: 'Vịnh Hạ Long',
+        region: 'Miền Bắc',
+        type: 'Di sản',
+        time: 'Tháng 10 - Tháng 4',
+        image: '/assets/images/vinh-ha-long.jpg',
+        description: 'Kỳ quan thiên nhiên nổi bật với hàng nghìn đảo đá vôi, hang động và cảnh quan biển độc đáo.'
+      },
+      {
+        id: 'hoi-an',
+        name: 'Hội An',
+        region: 'Miền Trung',
+        type: 'Văn hóa',
+        time: 'Tháng 2 - Tháng 8',
+        image: '/assets/images/pho-co-hoi-an.jpg',
+        description: 'Phố cổ yên bình với kiến trúc truyền thống, đèn lồng rực rỡ, ẩm thực đặc sắc và không gian hoài cổ.'
+      },
+      {
+        id: 'phu-quoc',
+        name: 'Phú Quốc',
+        region: 'Miền Nam',
+        type: 'Biển đảo',
+        time: 'Tháng 11 - Tháng 4',
+        image: '/assets/images/bg-vietnam.jpg',
+        description: 'Đảo ngọc nổi tiếng với biển xanh, cát trắng, khu nghỉ dưỡng, chợ đêm và nhiều hoạt động khám phá biển.'
+      },
+      {
+        id: 'sa-pa',
+        name: 'Sa Pa',
+        region: 'Miền Bắc',
+        type: 'Núi rừng',
+        time: 'Tháng 9 - Tháng 11',
+        image: '/assets/images/bg-vietnam.jpg',
+        description: 'Điểm đến vùng cao nổi tiếng với ruộng bậc thang, khí hậu se lạnh, bản làng dân tộc và đỉnh Fansipan.'
+      },
+      {
+        id: 'hue',
+        name: 'Huế',
+        region: 'Miền Trung',
+        type: 'Di sản',
+        time: 'Tháng 1 - Tháng 4',
+        image: '/assets/images/bg-vietnam.jpg',
+        description: 'Cố đô yên bình bên dòng sông Hương, nổi bật với Đại Nội, lăng tẩm, chùa Thiên Mụ và ẩm thực cung đình.'
+      }
+    ];
+
+    const destinationGrid = document.getElementById('destinationGrid');
+    const searchInput = document.getElementById('searchInput');
+    const regionFilter = document.getElementById('regionFilter');
+    const typeFilter = document.getElementById('typeFilter');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    const resultLine = document.getElementById('resultLine');
+    const emptyState = document.getElementById('emptyState');
+
+    function renderDestinations(items) {
+      destinationGrid.innerHTML = '';
+
+      if (items.length === 0) {
+        emptyState.style.display = 'block';
+        resultLine.textContent = 'Không tìm thấy địa điểm phù hợp.';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      resultLine.textContent = `Đang hiển thị ${items.length} địa điểm phù hợp.`;
+
+      items.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = 'destination-card';
+
+        card.innerHTML = `
+          <div class="destination-img" style="background-image: linear-gradient(rgba(0,0,0,0.08), rgba(0,0,0,0.35)), url('${item.image}');">
+            <div class="tag-row">
+              <span class="tag">${item.region}</span>
+              <span class="tag">${item.type}</span>
+            </div>
+          </div>
+
+          <div class="destination-content">
+            <h3>${item.name}</h3>
+            <p>${item.description}</p>
+
+            <div class="destination-meta">
+              <span>Thời điểm gợi ý</span>
+              <span>${item.time}</span>
+            </div>
+
+            <div class="card-actions">
+              <a class="small-btn" href="/destination-detail.html?id=${item.id}">Xem chi tiết</a>
+              <a class="ghost-btn" href="/tss.html">Tạo giọng đọc</a>
+            </div>
+          </div>
+        `;
+
+        destinationGrid.appendChild(card);
+      });
+    }
+
+    function filterDestinations() {
+      const keyword = searchInput.value.trim().toLowerCase();
+      const selectedRegion = regionFilter.value;
+      const selectedType = typeFilter.value;
+
+      const filtered = destinations.filter((item) => {
+        const matchKeyword =
+          item.name.toLowerCase().includes(keyword) ||
+          item.description.toLowerCase().includes(keyword) ||
+          item.region.toLowerCase().includes(keyword) ||
+          item.type.toLowerCase().includes(keyword);
+
+        const matchRegion = selectedRegion === 'all' || item.region === selectedRegion;
+        const matchType = selectedType === 'all' || item.type === selectedType;
+
+        return matchKeyword && matchRegion && matchType;
+      });
+
+      renderDestinations(filtered);
+    }
+
+    searchInput.addEventListener('input', filterDestinations);
+    regionFilter.addEventListener('change', filterDestinations);
+    typeFilter.addEventListener('change', filterDestinations);
+
+    clearSearchBtn.addEventListener('click', function () {
+      searchInput.value = '';
+      regionFilter.value = 'all';
+      typeFilter.value = 'all';
+      renderDestinations(destinations);
+    });
+
+    renderDestinations(destinations);
+  </script>
+</body>
+</html>

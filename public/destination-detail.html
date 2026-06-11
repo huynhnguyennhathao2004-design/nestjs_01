@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chi tiết địa điểm - Vietnam Travel TTS</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f8fafc;
+      color: #0f172a;
+    }
+
+    .navbar {
+      background: rgba(15, 23, 42, 0.96);
+      color: white;
+      padding: 20px 8%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .logo {
+      font-size: 23px;
+      font-weight: 850;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 22px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      font-weight: 700;
+      opacity: 0.92;
+    }
+
+    .nav-links a:hover {
+      color: #bfdbfe;
+    }
+
+    .hero {
+      min-height: 430px;
+      display: flex;
+      align-items: end;
+      padding: 90px 8% 48px;
+      color: white;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(2, 6, 23, 0.82), rgba(15, 23, 42, 0.42));
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 8px 13px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      backdrop-filter: blur(10px);
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .hero h1 {
+      margin: 0 0 18px;
+      font-size: 56px;
+      line-height: 1.08;
+      letter-spacing: -1px;
+    }
+
+    .hero p {
+      max-width: 760px;
+      margin: 0;
+      color: #e5e7eb;
+      line-height: 1.75;
+      font-size: 18px;
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 52px 24px 80px;
+      display: grid;
+      grid-template-columns: 1.7fr 0.9fr;
+      gap: 28px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 0 20px 55px rgba(15, 23, 42, 0.08);
+      border: 1px solid #e2e8f0;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 28px;
+      color: #0f172a;
+    }
+
+    .card p {
+      color: #475569;
+      line-height: 1.75;
+      font-size: 16px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin: 24px 0;
+    }
+
+    .info-box {
+      padding: 16px;
+      border-radius: 16px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+    }
+
+    .info-box span {
+      display: block;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .info-box strong {
+      color: #1d4ed8;
+      font-size: 15px;
+    }
+
+    .list {
+      padding-left: 20px;
+      color: #475569;
+      line-height: 1.8;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .tts-box {
+      background: #0f172a;
+      color: white;
+    }
+
+    .tts-box h3,
+    .related-box h3 {
+      margin-top: 0;
+      font-size: 22px;
+    }
+
+    .tts-box p {
+      color: #cbd5e1;
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .copy-btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 850;
+      border: none;
+      cursor: pointer;
+      transition: 0.25s;
+      margin-top: 10px;
+      font-size: 15px;
+    }
+
+    .primary-btn {
+      background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      color: white;
+    }
+
+    .secondary-btn {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+    }
+
+    .primary-btn:hover,
+    .secondary-btn:hover,
+    .copy-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .message {
+      margin-top: 12px;
+      color: #93c5fd;
+      font-weight: 700;
+      min-height: 20px;
+    }
+
+    .related-item {
+      display: block;
+      padding: 14px;
+      border-radius: 16px;
+      background: #f8fafc;
+      color: #0f172a;
+      text-decoration: none;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 10px;
+      transition: 0.2s;
+    }
+
+    .related-item:hover {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+
+    .related-item strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .related-item span {
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .footer {
+      padding: 22px 8%;
+      text-align: center;
+      background: #020617;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+
+      .hero h1 {
+        font-size: 40px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="navbar">
+    <div class="logo">Vietnam Travel TTS</div>
+    <div class="nav-links">
+      <a href="/index.html">Trang chủ</a>
+      <a href="/index.html#destinations">Địa điểm</a>
+      <a href="/tss.html">Tạo giọng đọc</a>
+      <a href="/login.html">Đăng nhập</a>
+    </div>
+  </div>
+
+  <section class="hero" id="detailHero">
+    <div class="hero-content">
+      <div class="badge-row" id="badgeRow"></div>
+      <h1 id="placeName">Địa điểm</h1>
+      <p id="placeShortDescription"></p>
+    </div>
+  </section>
+
+  <main class="container">
+    <section class="card">
+      <h2>Tổng quan địa điểm</h2>
+      <p id="placeDescription"></p>
+
+      <div class="info-grid">
+        <div class="info-box">
+          <span>Khu vực</span>
+          <strong id="placeRegion"></strong>
+        </div>
+
+        <div class="info-box">
+          <span>Loại hình</span>
+          <strong id="placeType"></strong>
+        </div>
+
+        <div class="info-box">
+          <span>Thời điểm nên đi</span>
+          <strong id="placeTime"></strong>
+        </div>
+      </div>
+
+      <h2>Điểm nổi bật</h2>
+      <ul class="list" id="highlightList"></ul>
+
+      <h2>Ẩm thực gợi ý</h2>
+      <ul class="list" id="foodList"></ul>
+    </section>
+
+    <aside class="sidebar">
+      <section class="card tts-box">
+        <h3>Nghe giới thiệu bằng AI</h3>
+        <p>
+          Bạn có thể sao chép đoạn mô tả của địa điểm này, sau đó chuyển sang
+          trang Text-to-Speech để tạo giọng đọc MP3.
+        </p>
+
+        <button class="copy-btn" id="copyTextBtn" type="button">Sao chép nội dung mô tả</button>
+        <a href="/tss.html" class="primary-btn">Mở trang tạo giọng đọc</a>
+        <p class="message" id="copyMessage"></p>
+      </section>
+
+      <section class="card related-box">
+        <h3>Địa điểm khác</h3>
+        <div id="relatedList"></div>
+        <a href="/index.html#destinations" class="secondary-btn">Xem tất cả địa điểm</a>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="footer">
+    © 2026 Vietnam Travel TTS - Website giới thiệu du lịch Việt Nam tích hợp AI Text-to-Speech
+  </footer>
+
+  <script>
+    const destinations = [
+      {
+        id: 'da-lat',
+        name: 'Đà Lạt',
+        region: 'Tây Nguyên',
+        type: 'Nghỉ dưỡng',
+        time: 'Tháng 11 - Tháng 4',
+        image: '/assets/images/dalat-lamdong.jpg',
+        shortDescription: 'Thành phố mộng mơ với khí hậu mát mẻ, rừng thông xanh và nhiều điểm tham quan nổi tiếng.',
+        description: 'Đà Lạt là một trong những địa điểm du lịch nổi tiếng của Việt Nam. Thành phố nằm trên cao nguyên Lâm Viên, có khí hậu mát mẻ quanh năm, cảnh quan thiên nhiên thơ mộng và không gian yên bình. Du khách đến Đà Lạt có thể tham quan hồ Xuân Hương, quảng trường Lâm Viên, thung lũng Tình Yêu, các vườn hoa và nhiều quán cà phê có phong cách độc đáo.',
+        highlights: ['Hồ Xuân Hương', 'Quảng trường Lâm Viên', 'Thung lũng Tình Yêu', 'Vườn hoa thành phố', 'Rừng thông và các điểm săn mây'],
+        foods: ['Bánh căn', 'Lẩu gà lá é', 'Sữa đậu nành nóng', 'Bánh tráng nướng']
+      },
+      {
+        id: 'ha-long',
+        name: 'Vịnh Hạ Long',
+        region: 'Miền Bắc',
+        type: 'Di sản',
+        time: 'Tháng 10 - Tháng 4',
+        image: '/assets/images/vinh-ha-long.jpg',
+        shortDescription: 'Kỳ quan thiên nhiên nổi bật với hàng nghìn đảo đá vôi và cảnh quan biển độc đáo.',
+        description: 'Vịnh Hạ Long là điểm đến nổi tiếng của Quảng Ninh, được biết đến với cảnh quan biển hùng vĩ, hàng nghìn đảo đá vôi và hệ thống hang động độc đáo. Du khách có thể đi du thuyền, tham quan hang Sửng Sốt, chèo kayak, ngắm hoàng hôn trên vịnh và thưởng thức hải sản địa phương.',
+        highlights: ['Du thuyền trên vịnh', 'Hang Sửng Sốt', 'Đảo Titop', 'Chèo kayak', 'Ngắm hoàng hôn trên biển'],
+        foods: ['Chả mực Hạ Long', 'Sam biển', 'Hải sản tươi sống', 'Bún bề bề']
+      },
+      {
+        id: 'hoi-an',
+        name: 'Hội An',
+        region: 'Miền Trung',
+        type: 'Văn hóa',
+        time: 'Tháng 2 - Tháng 8',
+        image: '/assets/images/pho-co-hoi-an.jpg',
+        shortDescription: 'Phố cổ yên bình với kiến trúc truyền thống, đèn lồng và văn hóa đặc sắc.',
+        description: 'Hội An là đô thị cổ nổi tiếng với những ngôi nhà mái ngói rêu phong, đèn lồng rực rỡ và không gian văn hóa truyền thống. Đây là điểm đến phù hợp cho du khách yêu thích lịch sử, kiến trúc, ẩm thực và các trải nghiệm nhẹ nhàng như đi bộ phố cổ, thả đèn hoa đăng và khám phá làng nghề.',
+        highlights: ['Phố cổ Hội An', 'Chùa Cầu', 'Sông Hoài', 'Đèn lồng Hội An', 'Làng rau Trà Quế'],
+        foods: ['Cao lầu', 'Mì Quảng', 'Bánh mì Hội An', 'Cơm gà Hội An']
+      },
+      {
+        id: 'phu-quoc',
+        name: 'Phú Quốc',
+        region: 'Miền Nam',
+        type: 'Biển đảo',
+        time: 'Tháng 11 - Tháng 4',
+        image: '/assets/images/bg-vietnam.jpg',
+        shortDescription: 'Đảo ngọc nổi tiếng với biển xanh, cát trắng, khu nghỉ dưỡng và hoạt động khám phá biển.',
+        description: 'Phú Quốc là hòn đảo du lịch nổi tiếng của Việt Nam, được yêu thích nhờ những bãi biển đẹp, nước biển trong xanh, hải sản phong phú và nhiều khu nghỉ dưỡng hiện đại. Du khách có thể tắm biển, lặn ngắm san hô, tham quan chợ đêm, khám phá làng chài và thưởng thức đặc sản địa phương.',
+        highlights: ['Bãi Sao', 'Chợ đêm Phú Quốc', 'Lặn ngắm san hô', 'Làng chài Hàm Ninh', 'Cáp treo Hòn Thơm'],
+        foods: ['Gỏi cá trích', 'Nhum biển', 'Bún quậy', 'Hải sản nướng']
+      },
+      {
+        id: 'sa-pa',
+        name: 'Sa Pa',
+        region: 'Miền Bắc',
+        type: 'Núi rừng',
+        time: 'Tháng 9 - Tháng 11',
+        image: '/assets/images/bg-vietnam.jpg',
+        shortDescription: 'Điểm đến vùng cao với ruộng bậc thang, khí hậu se lạnh, bản làng và đỉnh Fansipan.',
+        description: 'Sa Pa là điểm đến nổi bật của vùng núi Tây Bắc, hấp dẫn du khách bởi khí hậu mát lạnh, ruộng bậc thang, bản làng dân tộc và cảnh quan núi rừng hùng vĩ. Đây là nơi phù hợp để trekking, chụp ảnh, khám phá văn hóa địa phương và chinh phục đỉnh Fansipan.',
+        highlights: ['Đỉnh Fansipan', 'Bản Cát Cát', 'Ruộng bậc thang', 'Nhà thờ đá Sa Pa', 'Thung lũng Mường Hoa'],
+        foods: ['Thắng cố', 'Cá hồi Sa Pa', 'Lợn cắp nách', 'Đồ nướng Sa Pa']
+      },
+      {
+        id: 'hue',
+        name: 'Huế',
+        region: 'Miền Trung',
+        type: 'Di sản',
+        time: 'Tháng 1 - Tháng 4',
+        image: '/assets/images/bg-vietnam.jpg',
+        shortDescription: 'Cố đô yên bình bên dòng sông Hương, nổi bật với Đại Nội, lăng tẩm và ẩm thực cung đình.',
+        description: 'Huế là vùng đất cố đô mang vẻ đẹp trầm mặc, cổ kính và giàu giá trị văn hóa. Du khách đến Huế có thể tham quan Đại Nội, các lăng vua Nguyễn, chùa Thiên Mụ, nghe ca Huế trên sông Hương và thưởng thức các món ăn đặc trưng của miền Trung.',
+        highlights: ['Đại Nội Huế', 'Chùa Thiên Mụ', 'Sông Hương', 'Lăng Khải Định', 'Lăng Minh Mạng'],
+        foods: ['Bún bò Huế', 'Cơm hến', 'Bánh bèo', 'Bánh bột lọc']
+      }
+    ];
+
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id') || 'da-lat';
+    const place = destinations.find((item) => item.id === id) || destinations[0];
+
+    document.title = `${place.name} - Vietnam Travel TTS`;
+    document.getElementById('detailHero').style.backgroundImage = `url('${place.image}')`;
+    document.getElementById('placeName').textContent = place.name;
+    document.getElementById('placeShortDescription').textContent = place.shortDescription;
+    document.getElementById('placeDescription').textContent = place.description;
+    document.getElementById('placeRegion').textContent = place.region;
+    document.getElementById('placeType').textContent = place.type;
+    document.getElementById('placeTime').textContent = place.time;
+
+    document.getElementById('badgeRow').innerHTML = `
+      <span class="badge">${place.region}</span>
+      <span class="badge">${place.type}</span>
+      <span class="badge">${place.time}</span>
+    `;
+
+    document.getElementById('highlightList').innerHTML = place.highlights
+      .map((item) => `<li>${item}</li>`)
+      .join('');
+
+    document.getElementById('foodList').innerHTML = place.foods
+      .map((item) => `<li>${item}</li>`)
+      .join('');
+
+    const related = destinations.filter((item) => item.id !== place.id).slice(0, 4);
+    document.getElementById('relatedList').innerHTML = related
+      .map((item) => `
+        <a class="related-item" href="/destination-detail.html?id=${item.id}">
+          <strong>${item.name}</strong>
+          <span>${item.region} • ${item.type}</span>
+        </a>
+      `)
+      .join('');
+
+    document.getElementById('copyTextBtn').addEventListener('click', async function () {
+      const textForTTS = `${place.name}. ${place.description}`;
+      const message = document.getElementById('copyMessage');
+
+      try {
+        await navigator.clipboard.writeText(textForTTS);
+        message.textContent = 'Đã sao chép nội dung. Bạn có thể dán vào trang tạo giọng đọc.';
+      } catch (error) {
+        message.textContent = 'Không sao chép tự động được. Hãy bôi đen đoạn mô tả và copy thủ công.';
+      }
+    });
+  </script>
+</body>
+</html>
