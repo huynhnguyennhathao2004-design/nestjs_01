@@ -359,81 +359,248 @@
   </footer>
 
   <script>
-    const destinations = [
-      {
-        id: 'da-lat',
-        name: 'Đà Lạt',
-        region: 'Tây Nguyên',
-        type: 'Nghỉ dưỡng',
-        time: 'Tháng 11 - Tháng 4',
-        image: '/assets/images/dalat-lamdong.jpg',
-        shortDescription: 'Thành phố mộng mơ với khí hậu mát mẻ, rừng thông xanh và nhiều điểm tham quan nổi tiếng.',
-        description: 'Đà Lạt là một trong những địa điểm du lịch nổi tiếng của Việt Nam. Thành phố nằm trên cao nguyên Lâm Viên, có khí hậu mát mẻ quanh năm, cảnh quan thiên nhiên thơ mộng và không gian yên bình. Du khách đến Đà Lạt có thể tham quan hồ Xuân Hương, quảng trường Lâm Viên, thung lũng Tình Yêu, các vườn hoa và nhiều quán cà phê có phong cách độc đáo.',
-        highlights: ['Hồ Xuân Hương', 'Quảng trường Lâm Viên', 'Thung lũng Tình Yêu', 'Vườn hoa thành phố', 'Rừng thông và các điểm săn mây'],
-        foods: ['Bánh căn', 'Lẩu gà lá é', 'Sữa đậu nành nóng', 'Bánh tráng nướng']
-      },
-      {
-        id: 'ha-long',
-        name: 'Vịnh Hạ Long',
-        region: 'Miền Bắc',
-        type: 'Di sản',
-        time: 'Tháng 10 - Tháng 4',
-        image: '/assets/images/vinh-ha-long.jpg',
-        shortDescription: 'Kỳ quan thiên nhiên nổi bật với hàng nghìn đảo đá vôi và cảnh quan biển độc đáo.',
-        description: 'Vịnh Hạ Long là điểm đến nổi tiếng của Quảng Ninh, được biết đến với cảnh quan biển hùng vĩ, hàng nghìn đảo đá vôi và hệ thống hang động độc đáo. Du khách có thể đi du thuyền, tham quan hang Sửng Sốt, chèo kayak, ngắm hoàng hôn trên vịnh và thưởng thức hải sản địa phương.',
-        highlights: ['Du thuyền trên vịnh', 'Hang Sửng Sốt', 'Đảo Titop', 'Chèo kayak', 'Ngắm hoàng hôn trên biển'],
-        foods: ['Chả mực Hạ Long', 'Sam biển', 'Hải sản tươi sống', 'Bún bề bề']
-      },
-      {
-        id: 'hoi-an',
-        name: 'Hội An',
-        region: 'Miền Trung',
-        type: 'Văn hóa',
-        time: 'Tháng 2 - Tháng 8',
-        image: '/assets/images/pho-co-hoi-an.jpg',
-        shortDescription: 'Phố cổ yên bình với kiến trúc truyền thống, đèn lồng và văn hóa đặc sắc.',
-        description: 'Hội An là đô thị cổ nổi tiếng với những ngôi nhà mái ngói rêu phong, đèn lồng rực rỡ và không gian văn hóa truyền thống. Đây là điểm đến phù hợp cho du khách yêu thích lịch sử, kiến trúc, ẩm thực và các trải nghiệm nhẹ nhàng như đi bộ phố cổ, thả đèn hoa đăng và khám phá làng nghề.',
-        highlights: ['Phố cổ Hội An', 'Chùa Cầu', 'Sông Hoài', 'Đèn lồng Hội An', 'Làng rau Trà Quế'],
-        foods: ['Cao lầu', 'Mì Quảng', 'Bánh mì Hội An', 'Cơm gà Hội An']
-      },
-      {
-        id: 'phu-quoc',
-        name: 'Phú Quốc',
-        region: 'Miền Nam',
-        type: 'Biển đảo',
-        time: 'Tháng 11 - Tháng 4',
-        image: '/assets/images/bg-vietnam.jpg',
-        shortDescription: 'Đảo ngọc nổi tiếng với biển xanh, cát trắng, khu nghỉ dưỡng và hoạt động khám phá biển.',
-        description: 'Phú Quốc là hòn đảo du lịch nổi tiếng của Việt Nam, được yêu thích nhờ những bãi biển đẹp, nước biển trong xanh, hải sản phong phú và nhiều khu nghỉ dưỡng hiện đại. Du khách có thể tắm biển, lặn ngắm san hô, tham quan chợ đêm, khám phá làng chài và thưởng thức đặc sản địa phương.',
-        highlights: ['Bãi Sao', 'Chợ đêm Phú Quốc', 'Lặn ngắm san hô', 'Làng chài Hàm Ninh', 'Cáp treo Hòn Thơm'],
-        foods: ['Gỏi cá trích', 'Nhum biển', 'Bún quậy', 'Hải sản nướng']
-      },
-      {
-        id: 'sa-pa',
-        name: 'Sa Pa',
-        region: 'Miền Bắc',
-        type: 'Núi rừng',
-        time: 'Tháng 9 - Tháng 11',
-        image: '/assets/images/bg-vietnam.jpg',
-        shortDescription: 'Điểm đến vùng cao với ruộng bậc thang, khí hậu se lạnh, bản làng và đỉnh Fansipan.',
-        description: 'Sa Pa là điểm đến nổi bật của vùng núi Tây Bắc, hấp dẫn du khách bởi khí hậu mát lạnh, ruộng bậc thang, bản làng dân tộc và cảnh quan núi rừng hùng vĩ. Đây là nơi phù hợp để trekking, chụp ảnh, khám phá văn hóa địa phương và chinh phục đỉnh Fansipan.',
-        highlights: ['Đỉnh Fansipan', 'Bản Cát Cát', 'Ruộng bậc thang', 'Nhà thờ đá Sa Pa', 'Thung lũng Mường Hoa'],
-        foods: ['Thắng cố', 'Cá hồi Sa Pa', 'Lợn cắp nách', 'Đồ nướng Sa Pa']
-      },
-      {
-        id: 'hue',
-        name: 'Huế',
-        region: 'Miền Trung',
-        type: 'Di sản',
-        time: 'Tháng 1 - Tháng 4',
-        image: '/assets/images/bg-vietnam.jpg',
-        shortDescription: 'Cố đô yên bình bên dòng sông Hương, nổi bật với Đại Nội, lăng tẩm và ẩm thực cung đình.',
-        description: 'Huế là vùng đất cố đô mang vẻ đẹp trầm mặc, cổ kính và giàu giá trị văn hóa. Du khách đến Huế có thể tham quan Đại Nội, các lăng vua Nguyễn, chùa Thiên Mụ, nghe ca Huế trên sông Hương và thưởng thức các món ăn đặc trưng của miền Trung.',
-        highlights: ['Đại Nội Huế', 'Chùa Thiên Mụ', 'Sông Hương', 'Lăng Khải Định', 'Lăng Minh Mạng'],
-        foods: ['Bún bò Huế', 'Cơm hến', 'Bánh bèo', 'Bánh bột lọc']
-      }
-    ];
-
+const destinations = [
+  {
+    id: 'da-lat',
+    name: 'Đà Lạt',
+    region: 'Tây Nguyên',
+    type: 'Nghỉ dưỡng',
+    time: 'Tháng 11 - Tháng 4',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Thành phố mộng mơ với khí hậu mát mẻ, rừng thông xanh và nhiều điểm tham quan nổi tiếng.',
+    description: 'Đà Lạt là một trong những địa điểm du lịch nổi tiếng của Việt Nam. Thành phố nằm trên cao nguyên Lâm Viên, có khí hậu mát mẻ quanh năm, cảnh quan thiên nhiên thơ mộng và không gian yên bình. Du khách đến Đà Lạt có thể tham quan hồ Xuân Hương, quảng trường Lâm Viên, thung lũng Tình Yêu, các vườn hoa và nhiều quán cà phê có phong cách độc đáo.',
+    highlights: ['Hồ Xuân Hương', 'Quảng trường Lâm Viên', 'Thung lũng Tình Yêu', 'Vườn hoa thành phố', 'Các điểm săn mây'],
+    foods: ['Bánh căn', 'Lẩu gà lá é', 'Sữa đậu nành nóng', 'Bánh tráng nướng']
+  },
+  {
+    id: 'ha-long',
+    name: 'Vịnh Hạ Long',
+    region: 'Miền Bắc',
+    type: 'Di sản',
+    time: 'Tháng 10 - Tháng 4',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Kỳ quan thiên nhiên nổi bật với hàng nghìn đảo đá vôi và cảnh quan biển độc đáo.',
+    description: 'Vịnh Hạ Long là điểm đến nổi tiếng của Quảng Ninh, được biết đến với cảnh quan biển hùng vĩ, hàng nghìn đảo đá vôi và hệ thống hang động độc đáo. Du khách có thể đi du thuyền, tham quan hang động, chèo kayak, ngắm hoàng hôn trên vịnh và thưởng thức hải sản địa phương.',
+    highlights: ['Du thuyền trên vịnh', 'Hang Sửng Sốt', 'Đảo Titop', 'Chèo kayak', 'Ngắm hoàng hôn trên biển'],
+    foods: ['Chả mực Hạ Long', 'Sam biển', 'Hải sản tươi sống', 'Bún bề bề']
+  },
+  {
+    id: 'hoi-an',
+    name: 'Hội An',
+    region: 'Miền Trung',
+    type: 'Văn hóa',
+    time: 'Tháng 2 - Tháng 8',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Phố cổ yên bình với kiến trúc truyền thống, đèn lồng và văn hóa đặc sắc.',
+    description: 'Hội An là đô thị cổ nổi tiếng với những ngôi nhà mái ngói rêu phong, đèn lồng rực rỡ và không gian văn hóa truyền thống. Đây là điểm đến phù hợp cho du khách yêu thích lịch sử, kiến trúc, ẩm thực và các trải nghiệm nhẹ nhàng như đi bộ phố cổ, thả đèn hoa đăng và khám phá làng nghề.',
+    highlights: ['Phố cổ Hội An', 'Chùa Cầu', 'Sông Hoài', 'Đèn lồng Hội An', 'Làng rau Trà Quế'],
+    foods: ['Cao lầu', 'Mì Quảng', 'Bánh mì Hội An', 'Cơm gà Hội An']
+  },
+  {
+    id: 'phu-quoc',
+    name: 'Phú Quốc',
+    region: 'Miền Nam',
+    type: 'Biển đảo',
+    time: 'Tháng 11 - Tháng 4',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Đảo ngọc nổi tiếng với biển xanh, cát trắng, khu nghỉ dưỡng và hoạt động khám phá biển.',
+    description: 'Phú Quốc là hòn đảo du lịch nổi tiếng của Việt Nam, được yêu thích nhờ những bãi biển đẹp, nước biển trong xanh, hải sản phong phú và nhiều khu nghỉ dưỡng hiện đại. Du khách có thể tắm biển, lặn ngắm san hô, tham quan chợ đêm, khám phá làng chài và thưởng thức đặc sản địa phương.',
+    highlights: ['Bãi Sao', 'Chợ đêm Phú Quốc', 'Lặn ngắm san hô', 'Làng chài Hàm Ninh', 'Cáp treo Hòn Thơm'],
+    foods: ['Gỏi cá trích', 'Nhum biển', 'Bún quậy', 'Hải sản nướng']
+  },
+  {
+    id: 'sa-pa',
+    name: 'Sa Pa',
+    region: 'Miền Bắc',
+    type: 'Núi rừng',
+    time: 'Tháng 9 - Tháng 11',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Điểm đến vùng cao với ruộng bậc thang, khí hậu se lạnh, bản làng và đỉnh Fansipan.',
+    description: 'Sa Pa là điểm đến nổi bật của vùng núi Tây Bắc, hấp dẫn du khách bởi khí hậu mát lạnh, ruộng bậc thang, bản làng dân tộc và cảnh quan núi rừng hùng vĩ. Đây là nơi phù hợp để trekking, chụp ảnh, khám phá văn hóa địa phương và chinh phục đỉnh Fansipan.',
+    highlights: ['Đỉnh Fansipan', 'Bản Cát Cát', 'Ruộng bậc thang', 'Nhà thờ đá Sa Pa', 'Thung lũng Mường Hoa'],
+    foods: ['Thắng cố', 'Cá hồi Sa Pa', 'Lợn cắp nách', 'Đồ nướng Sa Pa']
+  },
+  {
+    id: 'hue',
+    name: 'Huế',
+    region: 'Miền Trung',
+    type: 'Di sản',
+    time: 'Tháng 1 - Tháng 4',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Cố đô yên bình bên dòng sông Hương, nổi bật với Đại Nội, lăng tẩm và ẩm thực cung đình.',
+    description: 'Huế là vùng đất cố đô mang vẻ đẹp trầm mặc, cổ kính và giàu giá trị văn hóa. Du khách đến Huế có thể tham quan Đại Nội, các lăng vua Nguyễn, chùa Thiên Mụ, nghe ca Huế trên sông Hương và thưởng thức các món ăn đặc trưng của miền Trung.',
+    highlights: ['Đại Nội Huế', 'Chùa Thiên Mụ', 'Sông Hương', 'Lăng Khải Định', 'Lăng Minh Mạng'],
+    foods: ['Bún bò Huế', 'Cơm hến', 'Bánh bèo', 'Bánh bột lọc']
+  },
+  {
+    id: 'ha-noi',
+    name: 'Hà Nội',
+    region: 'Miền Bắc',
+    type: 'Văn hóa',
+    time: 'Tháng 10 - Tháng 4',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Thủ đô nghìn năm văn hiến với phố cổ, hồ Hoàn Kiếm và nhiều di tích lịch sử.',
+    description: 'Hà Nội là thủ đô của Việt Nam, mang vẻ đẹp kết hợp giữa truyền thống và hiện đại. Thành phố nổi bật với khu phố cổ, hồ Hoàn Kiếm, Văn Miếu - Quốc Tử Giám, Lăng Chủ tịch Hồ Chí Minh và nền ẩm thực đường phố phong phú. Đây là điểm đến phù hợp cho du khách muốn tìm hiểu lịch sử, văn hóa và nhịp sống đô thị Việt Nam.',
+    highlights: ['Hồ Hoàn Kiếm', 'Phố cổ Hà Nội', 'Văn Miếu', 'Lăng Chủ tịch Hồ Chí Minh', 'Hồ Tây'],
+    foods: ['Phở Hà Nội', 'Bún chả', 'Chả cá Lã Vọng', 'Cốm làng Vòng']
+  },
+  {
+    id: 'da-nang',
+    name: 'Đà Nẵng',
+    region: 'Miền Trung',
+    type: 'Biển đảo',
+    time: 'Tháng 3 - Tháng 8',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Thành phố biển hiện đại với bãi biển Mỹ Khê, cầu Rồng và bán đảo Sơn Trà.',
+    description: 'Đà Nẵng là thành phố biển năng động của miền Trung, nổi bật với bãi biển Mỹ Khê, cầu Rồng, bán đảo Sơn Trà và nhiều khu vui chơi, nghỉ dưỡng. Thành phố có vị trí thuận lợi để kết hợp tham quan Hội An, Huế và Bà Nà Hills.',
+    highlights: ['Biển Mỹ Khê', 'Cầu Rồng', 'Bán đảo Sơn Trà', 'Ngũ Hành Sơn', 'Bà Nà Hills'],
+    foods: ['Mì Quảng', 'Bánh tráng cuốn thịt heo', 'Bún chả cá', 'Hải sản Đà Nẵng']
+  },
+  {
+    id: 'nha-trang',
+    name: 'Nha Trang',
+    region: 'Miền Trung',
+    type: 'Biển đảo',
+    time: 'Tháng 1 - Tháng 8',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Thành phố biển nổi tiếng với nước biển trong xanh, đảo đẹp và nhiều hoạt động nghỉ dưỡng.',
+    description: 'Nha Trang là điểm đến biển nổi tiếng của Khánh Hòa với bãi biển dài, nước biển trong xanh, nhiều đảo đẹp và dịch vụ du lịch phát triển. Du khách có thể tham quan đảo, tắm biển, lặn ngắm san hô, thưởng thức hải sản và khám phá các công trình văn hóa như tháp Bà Ponagar.',
+    highlights: ['Biển Nha Trang', 'Hòn Mun', 'Hòn Tằm', 'Tháp Bà Ponagar', 'Viện Hải dương học'],
+    foods: ['Bún cá Nha Trang', 'Nem nướng', 'Bánh căn', 'Hải sản tươi sống']
+  },
+  {
+    id: 'ninh-binh',
+    name: 'Ninh Bình',
+    region: 'Miền Bắc',
+    type: 'Di sản',
+    time: 'Tháng 1 - Tháng 4',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Vùng đất non nước hữu tình với Tràng An, Tam Cốc, Hang Múa và chùa Bái Đính.',
+    description: 'Ninh Bình được biết đến với cảnh quan núi đá vôi, sông nước và các di tích văn hóa lịch sử. Du khách có thể đi thuyền ở Tràng An hoặc Tam Cốc, leo Hang Múa để ngắm toàn cảnh, tham quan chùa Bái Đính và cố đô Hoa Lư.',
+    highlights: ['Tràng An', 'Tam Cốc', 'Hang Múa', 'Chùa Bái Đính', 'Cố đô Hoa Lư'],
+    foods: ['Cơm cháy', 'Thịt dê núi', 'Ốc núi', 'Miến lươn']
+  },
+  {
+    id: 'ha-giang',
+    name: 'Hà Giang',
+    region: 'Miền Bắc',
+    type: 'Núi rừng',
+    time: 'Tháng 9 - Tháng 11',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Vùng cao nguyên đá hùng vĩ với đèo Mã Pì Lèng, sông Nho Quế và hoa tam giác mạch.',
+    description: 'Hà Giang là điểm đến nổi bật ở vùng núi phía Bắc, nổi tiếng với cao nguyên đá Đồng Văn, đèo Mã Pì Lèng, sông Nho Quế và những cung đường đèo ngoạn mục. Đây là lựa chọn phù hợp cho du khách yêu thích khám phá, chụp ảnh và trải nghiệm văn hóa vùng cao.',
+    highlights: ['Đèo Mã Pì Lèng', 'Sông Nho Quế', 'Cột cờ Lũng Cú', 'Phố cổ Đồng Văn', 'Hoa tam giác mạch'],
+    foods: ['Cháo ấu tẩu', 'Thắng dền', 'Bánh tam giác mạch', 'Thịt trâu gác bếp']
+  },
+  {
+    id: 'phong-nha',
+    name: 'Phong Nha - Kẻ Bàng',
+    region: 'Miền Trung',
+    type: 'Di sản',
+    time: 'Tháng 3 - Tháng 8',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Điểm đến nổi tiếng tại Quảng Bình với hệ thống hang động kỳ vĩ và rừng nguyên sinh.',
+    description: 'Phong Nha - Kẻ Bàng là điểm đến nổi bật của Quảng Bình, hấp dẫn du khách bởi hệ thống hang động kỳ vĩ, sông ngầm, núi đá vôi và rừng nguyên sinh. Đây là nơi phù hợp cho những chuyến du lịch khám phá thiên nhiên, mạo hiểm nhẹ và trải nghiệm cảnh quan độc đáo.',
+    highlights: ['Động Phong Nha', 'Động Thiên Đường', 'Sông Chày - Hang Tối', 'Suối Moọc', 'Rừng nguyên sinh'],
+    foods: ['Cháo canh Quảng Bình', 'Khoai deo', 'Bánh bột lọc', 'Hải sản Quảng Bình']
+  },
+  {
+    id: 'can-tho',
+    name: 'Cần Thơ',
+    region: 'Miền Nam',
+    type: 'Văn hóa',
+    time: 'Tháng 12 - Tháng 4',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Trung tâm miền Tây sông nước với chợ nổi Cái Răng, vườn trái cây và bến Ninh Kiều.',
+    description: 'Cần Thơ là thành phố trung tâm của miền Tây Nam Bộ, nổi bật với văn hóa sông nước, chợ nổi Cái Răng, bến Ninh Kiều và các vườn trái cây. Du khách đến đây có thể trải nghiệm đi thuyền buổi sáng, thưởng thức món ăn miền Tây và tìm hiểu đời sống miệt vườn.',
+    highlights: ['Chợ nổi Cái Răng', 'Bến Ninh Kiều', 'Nhà cổ Bình Thủy', 'Vườn trái cây', 'Cầu Cần Thơ'],
+    foods: ['Lẩu mắm', 'Bánh xèo miền Tây', 'Bún mắm', 'Cá lóc nướng trui']
+  },
+  {
+    id: 'mui-ne',
+    name: 'Mũi Né',
+    region: 'Miền Trung',
+    type: 'Biển đảo',
+    time: 'Tháng 11 - Tháng 4',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Điểm nghỉ dưỡng biển nổi tiếng với đồi cát bay, làng chài và các hoạt động thể thao biển.',
+    description: 'Mũi Né thuộc Bình Thuận, là điểm đến biển nổi tiếng với bờ biển dài, đồi cát bay, làng chài và nhiều khu nghỉ dưỡng. Đây là nơi phù hợp cho du lịch biển, chụp ảnh, ngắm bình minh và trải nghiệm các hoạt động thể thao như lướt ván diều.',
+    highlights: ['Đồi cát bay', 'Suối Tiên', 'Làng chài Mũi Né', 'Bàu Trắng', 'Biển Mũi Né'],
+    foods: ['Bánh căn Phan Thiết', 'Lẩu thả', 'Răng mực nướng', 'Hải sản tươi']
+  },
+  {
+    id: 'con-dao',
+    name: 'Côn Đảo',
+    region: 'Miền Nam',
+    type: 'Biển đảo',
+    time: 'Tháng 3 - Tháng 9',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Quần đảo yên bình với biển trong xanh, rạn san hô, rừng nguyên sinh và nhiều di tích lịch sử.',
+    description: 'Côn Đảo là quần đảo thuộc Bà Rịa - Vũng Tàu, nổi bật với vẻ đẹp hoang sơ, biển xanh, rạn san hô và hệ sinh thái rừng biển phong phú. Ngoài nghỉ dưỡng, Côn Đảo còn là nơi có nhiều di tích lịch sử quan trọng, phù hợp cho du lịch kết hợp tìm hiểu văn hóa - lịch sử.',
+    highlights: ['Bãi Đầm Trầu', 'Hòn Bảy Cạnh', 'Nghĩa trang Hàng Dương', 'Nhà tù Côn Đảo', 'Lặn ngắm san hô'],
+    foods: ['Ốc vú nàng', 'Mứt hạt bàng', 'Hải sản Côn Đảo', 'Cá thu một nắng']
+  },
+  {
+    id: 'quy-nhon',
+    name: 'Quy Nhơn',
+    region: 'Miền Trung',
+    type: 'Biển đảo',
+    time: 'Tháng 3 - Tháng 9',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Thành phố biển thanh bình với Kỳ Co, Eo Gió, tháp Chăm và hải sản tươi ngon.',
+    description: 'Quy Nhơn là thành phố biển của Bình Định, hấp dẫn du khách bởi vẻ đẹp yên bình, biển xanh, các điểm check-in như Kỳ Co, Eo Gió và hệ thống tháp Chăm cổ. Đây là điểm đến phù hợp cho người thích du lịch biển nhưng không quá đông đúc.',
+    highlights: ['Kỳ Co', 'Eo Gió', 'Tháp Đôi', 'Ghềnh Ráng', 'Hòn Khô'],
+    foods: ['Bún chả cá Quy Nhơn', 'Bánh xèo tôm nhảy', 'Nem chợ Huyện', 'Hải sản']
+  },
+  {
+    id: 'cao-bang',
+    name: 'Cao Bằng',
+    region: 'Miền Bắc',
+    type: 'Núi rừng',
+    time: 'Tháng 9 - Tháng 11',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Vùng núi Đông Bắc nổi bật với thác Bản Giốc, động Ngườm Ngao và cảnh quan thiên nhiên hùng vĩ.',
+    description: 'Cao Bằng là điểm đến miền núi phía Bắc, nổi bật với thác Bản Giốc, động Ngườm Ngao, hồ Thang Hen và cảnh quan núi non hùng vĩ. Đây là nơi thích hợp cho du khách yêu thiên nhiên, thích khám phá vùng biên giới và trải nghiệm văn hóa bản địa.',
+    highlights: ['Thác Bản Giốc', 'Động Ngườm Ngao', 'Hồ Thang Hen', 'Suối Lê Nin', 'Khu di tích Pác Bó'],
+    foods: ['Bánh cuốn Cao Bằng', 'Vịt quay 7 vị', 'Phở chua', 'Hạt dẻ Trùng Khánh']
+  },
+  {
+    id: 'mai-chau',
+    name: 'Mai Châu',
+    region: 'Miền Bắc',
+    type: 'Núi rừng',
+    time: 'Tháng 10 - Tháng 4',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Thung lũng yên bình của Hòa Bình với bản làng dân tộc, ruộng lúa và nhà sàn truyền thống.',
+    description: 'Mai Châu là điểm đến yên bình tại Hòa Bình, nổi bật với thung lũng xanh, bản làng dân tộc Thái, nhà sàn truyền thống và không khí trong lành. Đây là lựa chọn phù hợp cho du lịch nghỉ dưỡng ngắn ngày, đạp xe, đi bộ bản làng và trải nghiệm văn hóa địa phương.',
+    highlights: ['Bản Lác', 'Bản Pom Coọng', 'Đèo Thung Khe', 'Hang Chiều', 'Ruộng lúa Mai Châu'],
+    foods: ['Cơm lam', 'Gà đồi', 'Xôi nếp nương', 'Thịt lợn bản']
+  },
+  {
+    id: 'buon-ma-thuot',
+    name: 'Buôn Ma Thuột',
+    region: 'Tây Nguyên',
+    type: 'Văn hóa',
+    time: 'Tháng 11 - Tháng 4',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Thủ phủ cà phê của Việt Nam với văn hóa Tây Nguyên, thác nước và không gian thiên nhiên rộng lớn.',
+    description: 'Buôn Ma Thuột là thành phố trung tâm của Đắk Lắk, được biết đến là thủ phủ cà phê của Việt Nam. Nơi đây hấp dẫn du khách bởi văn hóa Tây Nguyên, các thác nước, buôn làng, bảo tàng cà phê và không gian thiên nhiên rộng lớn.',
+    highlights: ['Bảo tàng Thế giới Cà phê', 'Buôn Đôn', 'Thác Dray Nur', 'Hồ Lắk', 'Làng cà phê Trung Nguyên'],
+    foods: ['Gà nướng Bản Đôn', 'Cơm lam', 'Bún đỏ', 'Cà phê Buôn Ma Thuột']
+  },
+  {
+    id: 'mang-den',
+    name: 'Măng Đen',
+    region: 'Tây Nguyên',
+    type: 'Nghỉ dưỡng',
+    time: 'Tháng 10 - Tháng 4',
+    image: '/assets/images/bg-vietnam.jpg',
+    shortDescription: 'Điểm nghỉ dưỡng xanh mát tại Kon Tum với rừng thông, hồ nước và khí hậu trong lành.',
+    description: 'Măng Đen là điểm du lịch nghỉ dưỡng của Kon Tum, được yêu thích nhờ khí hậu mát mẻ, rừng thông, hồ nước và thác Pa Sỹ. Không gian nơi đây yên bình, phù hợp với du khách muốn nghỉ ngơi, săn mây, chụp ảnh và tận hưởng thiên nhiên.',
+    highlights: ['Thác Pa Sỹ', 'Hồ Đăk Ke', 'Rừng thông Măng Đen', 'Tượng Đức Mẹ Măng Đen', 'Các điểm săn mây'],
+    foods: ['Gà nướng cơm lam', 'Lẩu xuyên tiêu', 'Rau rừng', 'Cá suối']
+  }
+];
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id') || 'da-lat';
     const place = destinations.find((item) => item.id === id) || destinations[0];
