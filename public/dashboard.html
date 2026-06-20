@@ -3,118 +3,91 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trang quản lý</title>
+  <title>Chi tiết địa điểm - Vietnam Travel TTS</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
-    }
-
-    body {
-      margin: 0;
-      background: #f4f7fb;
-      color: #111827;
-    }
-
-    .navbar {
-      background: #2563eb;
-      color: white;
-      padding: 18px 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .navbar h2 {
-      margin: 0;
-    }
-
-    .navbar button {
-      background: white;
-      color: #2563eb;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    .container {
-      padding: 40px;
-    }
-
-    .card {
-      background: white;
-      padding: 30px;
-      border-radius: 16px;
-      max-width: 800px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-    }
-
-    .card h1 {
-      color: #2563eb;
-    }
-
-    .features {
-      margin-top: 20px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px;
-    }
-
-    .feature-box {
-      padding: 18px;
-      background: #f3f4f6;
-      border-radius: 12px;
-    }
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/css/destination-detail.css" />
 </head>
+
 <body>
   <div class="navbar">
-    <h2>AI Website Platform</h2>
-    <button onclick="logout()">Đăng xuất</button>
-  </div>
-
-  <div class="container">
-    <div class="card">
-      <h1>Đăng nhập thành công</h1>
-      <p id="welcomeText">Xin chào!</p>
-      <p>Đây là trang dashboard tạm thời. Sau này bạn có thể đổi thành đề tài thật của mình.</p>
-
-      <div class="features">
-        <div class="feature-box">
-          <h3>Quản lý người dùng</h3>
-          <p>Phần này có thể làm sau.</p>
-        </div>
-
-        <div class="feature-box">
-          <h3>Tích hợp AI</h3>
-          <p>Thêm chatbot hoặc tạo nội dung bằng AI.</p>
-        </div>
-
-        <div class="feature-box">
-          <h3>Dữ liệu hệ thống</h3>
-          <p>Sau này kết nối database.</p>
-        </div>
-      </div>
+    <div class="logo">Vietnam Travel TTS</div>
+    <div class="nav-links">
+      <a href="/index.html">Trang chủ</a>
+      <a href="/index.html#destinations">Địa điểm</a>
+      <a href="/tss.html">Tạo giọng đọc</a>
+      <a href="/login.html">Đăng nhập</a>
     </div>
   </div>
 
-  <script>
-    const user = JSON.parse(localStorage.getItem('user'));
+  <section class="hero" id="detailHero">
+    <div class="hero-content">
+      <div class="badge-row" id="badgeRow"></div>
+      <h1 id="placeName">Địa điểm</h1>
+      <p id="placeShortDescription"></p>
+    </div>
+  </section>
 
-    if (!user) {
-      window.location.href = '/login.html';
-    } else {
-      document.getElementById('welcomeText').textContent =
-        `Xin chào ${user.name} - ${user.email}`;
-    }
+  <main class="container">
+    <section class="card">
+      <h2>Tổng quan địa điểm</h2>
+      <p id="placeDescription"></p>
 
-    function logout() {
-      localStorage.removeItem('user');
-      window.location.href = '/login.html';
-    }
-  </script>
+      <div class="info-grid">
+        <div class="info-box">
+          <span>Khu vực</span>
+          <strong id="placeRegion"></strong>
+        </div>
+
+        <div class="info-box">
+          <span>Loại hình</span>
+          <strong id="placeType"></strong>
+        </div>
+
+        <div class="info-box">
+          <span>Thời điểm nên đi</span>
+          <strong id="placeTime"></strong>
+        </div>
+      </div>
+
+      <h2>Điểm nổi bật</h2>
+      <ul class="list" id="highlightList"></ul>
+
+      <h2>Ẩm thực gợi ý</h2>
+      <ul class="list" id="foodList"></ul>
+    </section>
+
+    <aside class="sidebar">
+      <section class="card tts-box">
+        <h3>Nghe giới thiệu bằng AI</h3>
+        <p>
+          Bạn có thể sao chép đoạn mô tả của địa điểm này, sau đó chuyển sang
+          trang Text-to-Speech để tạo giọng đọc MP3.
+        </p>
+
+        <button class="copy-btn" id="copyTextBtn" type="button">Sao chép nội dung mô tả</button>
+        <a href="/tss.html" class="primary-btn">Mở trang tạo giọng đọc</a>
+        <p class="message" id="copyMessage"></p>
+      </section>
+
+      <section class="card related-box">
+        <h3>Địa điểm khác</h3>
+        <div id="relatedList"></div>
+        <a href="/index.html#destinations" class="secondary-btn">Xem tất cả địa điểm</a>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="footer">
+    © 2026 Vietnam Travel TTS - Website giới thiệu du lịch Việt Nam tích hợp AI Text-to-Speech
+  </footer>
+
+  <script src="/js/destinations-data.js"></script>
+  <script src="/js/destination-detail.js"></script>
 </body>
 </html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chi tiết địa điểm - Vietnam Travel TTS</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/destination-detail.css" />
+</head>
+
+<body>
+
+  <header class="navbar">
+    <a class="logo" href="/index.html">Vietnam Travel TTS</a>
+
+    <nav class="nav-links">
+      <a href="/index.html">Trang chủ</a>
+      <a href="/index.html#features">Tính năng</a>
+      <a href="/index.html#destinations">Địa điểm</a>
+      <a href="/tss.html">Tạo giọng đọc</a>
+      <a href="/login.html" class="login-link">Đăng nhập</a>
+    </nav>
+  </header>
+
+  <main class="place-page">
+    <section class="place-hero" id="placeHero">
+      <div class="place-hero-overlay"></div>
+
+      <div class="place-hero-content">
+        <div class="breadcrumb">
+          <a href="/index.html">Trang chủ</a>
+          <span>/</span>
+          <a href="/index.html#destinations">Địa điểm</a>
+          <span>/</span>
+          <strong id="breadcrumbName">Chi tiết</strong>
+        </div>
+
+        <div class="badge-row" id="badgeRow"></div>
+
+        <h1 id="placeName">Tên địa điểm</h1>
+        <p id="placeShortDescription"></p>
+      </div>
+    </section>
+
+    <section class="place-content">
+      <div class="place-main-card">
+        <div class="section-heading">
+          <span>Thông tin địa điểm</span>
+          <h2 id="infoTitle">Tổng quan</h2>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-box">
+            <span>Khu vực</span>
+            <strong id="placeRegion"></strong>
+          </div>
+          <div class="info-box">
+            <span>Loại hình</span>
+            <strong id="placeType"></strong>
+          </div>
+          <div class="info-box">
+            <span>Thời điểm nên đi</span>
+            <strong id="placeTime"></strong>
+          </div>
+        </div>
+
+        <p class="place-description" id="placeDescription"></p>
+
+        <div class="image-section">
+          <div class="section-heading small">
+            <span>Hình ảnh</span>
+            <h2>Hình ảnh về địa điểm</h2>
+          </div>
+
+          <div class="gallery-layout">
+            <div class="gallery-main" id="galleryMain"></div>
+            <div class="gallery-thumbs" id="galleryThumbs"></div>
+          </div>
+        </div>
+
+        <div class="detail-columns">
+          <div class="detail-box">
+            <h3>Đặc điểm nổi bật</h3>
+            <div class="feature-list" id="featureList"></div>
+          </div>
+
+          <div class="detail-box">
+            <h3>Điểm nên khám phá</h3>
+            <ul class="nice-list" id="highlightList"></ul>
+          </div>
+
+          <div class="detail-box">
+            <h3>Ẩm thực gợi ý</h3>
+            <ul class="nice-list" id="foodList"></ul>
+          </div>
+        </div>
+
+        <div class="tts-panel">
+          <div>
+            <span>AI Text-to-Speech</span>
+            <h3>Chuyển nội dung địa điểm này thành giọng đọc</h3>
+            <p id="ttsPreview"></p>
+          </div>
+
+          <div class="tts-actions">
+            <button type="button" class="copy-btn" id="copyTextBtn">Sao chép nội dung</button>
+            <a href="/tss.html" class="primary-btn">Mở trang tạo giọng đọc</a>
+          </div>
+        </div>
+
+        <p class="copy-message" id="copyMessage"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <h2>Vietnam Travel TTS</h2>
+      <p>
+        Website giới thiệu địa điểm du lịch Việt Nam tích hợp AI Text-to-Speech,
+        giúp chuyển nội dung mô tả thành giọng đọc tự nhiên.
+      </p>
+      <span>© 2026 Vietnam Travel TTS. All rights reserved.</span>
+      <a href="#" class="back-to-top">↑ Trở lại đầu trang</a>
+    </div>
+  </footer>
+
+  <script src="/js/destinations-data.js"></script>
+  <script src="/js/destinations-detail.js"></script>
+  <script src="/js/navbar-scroll.js"></script>  
+</body>
+</html>
