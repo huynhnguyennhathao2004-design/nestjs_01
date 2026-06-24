@@ -21,3 +21,16 @@ window.addEventListener('scroll', function () {
 
   lastScrollY = currentScrollY;
 });
+
+const footers = document.querySelectorAll('.footer');
+
+footers.forEach(function (footer) {
+  footer.addEventListener('click', function (event) {
+    event.preventDefault();
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  });
+});

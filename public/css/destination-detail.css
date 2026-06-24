@@ -17,7 +17,9 @@ a {
   color: inherit;
 }
 
-/* Taskbar*/
+/* =========================
+   Thanh TASKBAR / NAVBAR
+========================= */
 .navbar {
   position: fixed;
   top: 0;
@@ -32,12 +34,12 @@ a {
 
   padding: 18px 8%;
 
-  background: rgba(2, 6, 23, 0.88);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(18px);
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
 
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 12px 34px rgba(2, 6, 23, 0.22);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 12px 34px rgba(2, 6, 23, 0.18);
 
   transition:
     transform 0.35s ease,
@@ -46,16 +48,27 @@ a {
     box-shadow 0.25s ease;
 }
 
+.navbar.nav-hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.navbar.nav-scrolled {
+  background: rgba(15, 23, 42, 0.58);
+  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.26);
+}
+
 .logo {
-  text-decoration: none;
+  color: #ffffff !important;
+  opacity: 1 !important;
   font-size: 24px;
   font-weight: 900;
   font-family: "Montserrat", "Be Vietnam Pro", sans-serif;
-
-  color: #ffffff !important;
-  opacity: 1 !important;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
   letter-spacing: 0.3px;
+  text-decoration: none;
+  text-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.65),
+    0 0 18px rgba(14, 165, 233, 0.28);
 }
 
 .logo span {
@@ -65,31 +78,61 @@ a {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 22px;
+  justify-content: center;
+  gap: 34px;
   flex-wrap: wrap;
 }
 
 .nav-links a {
-  color: white;
+  position: relative;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  padding: 8px 2px;
   text-decoration: none;
-  font-weight: 700;
   font-size: 15px;
-  opacity: 0.92;
-  transition: 0.2s;
+  font-weight: 750;
+  white-space: nowrap;
+  text-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.7),
+    0 0 14px rgba(15, 23, 42, 0.35);
+  transition: 0.25s ease;
 }
 
 .nav-links a:hover {
-  color: #bfdbfe;
-  opacity: 1;
+  color: #bfdbfe !important;
 }
 
-.login-link {
-  padding: 10px 16px;
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -7px;
+  width: 0;
+  height: 2px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.13);
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: #38bdf8;
+  transition: 0.25s ease;
 }
 
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+.login-btn,
+.login-link {
+  padding: 10px 18px;
+  border-radius: 999px;
+  color: #ffffff !important;
+  background: rgba(37, 99, 235, 0.38);
+  border: 1px solid rgba(147, 197, 253, 0.55);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25);
+  text-shadow: none;
+  white-space: nowrap;
+}
+
+/* =========================
+   PLACE HERO
+========================= */
 .place-page {
   background:
     radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 34%),
@@ -114,7 +157,12 @@ a {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(120deg, rgba(2, 6, 23, 0.88), rgba(15, 23, 42, 0.52), rgba(37, 99, 235, 0.22));
+    linear-gradient(
+      120deg,
+      rgba(2, 6, 23, 0.88),
+      rgba(15, 23, 42, 0.52),
+      rgba(37, 99, 235, 0.22)
+    );
 }
 
 .place-hero::after {
@@ -187,6 +235,9 @@ a {
   font-size: 18px;
 }
 
+/* =========================
+   CONTENT
+========================= */
 .place-content {
   max-width: 1180px;
   margin: -54px auto 0;
@@ -196,10 +247,10 @@ a {
 }
 
 .place-main-card {
+  padding: 36px;
+  border-radius: 34px;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(226, 232, 240, 0.9);
-  border-radius: 34px;
-  padding: 36px;
   box-shadow: 0 28px 80px rgba(15, 23, 42, 0.14);
 }
 
@@ -219,8 +270,8 @@ a {
 
 .section-heading h2 {
   margin: 0;
-  font-size: 32px;
   color: #0f172a;
+  font-size: 32px;
   font-family: "Montserrat", "Be Vietnam Pro", sans-serif;
 }
 
@@ -244,10 +295,10 @@ a {
 
 .info-box span {
   display: block;
+  margin-bottom: 7px;
   color: #64748b;
   font-size: 13px;
   font-weight: 850;
-  margin-bottom: 7px;
 }
 
 .info-box strong {
@@ -256,12 +307,15 @@ a {
 }
 
 .place-description {
+  margin: 0;
   color: #475569;
   line-height: 1.86;
   font-size: 17px;
-  margin: 0;
 }
 
+/* =========================
+   GALLERY
+========================= */
 .image-section {
   margin-top: 38px;
 }
@@ -320,6 +374,9 @@ a {
   border-color: #2563eb;
 }
 
+/* =========================
+   DETAIL BOXES
+========================= */
 .detail-columns {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -390,17 +447,20 @@ a {
   font-weight: 900;
 }
 
+/* =========================
+   TTS PANEL
+========================= */
 .tts-panel {
-  margin-top: 34px;
-  padding: 28px;
-  border-radius: 28px;
-  background:
-    linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 64, 175, 0.82));
-  color: white;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 22px;
+  margin-top: 34px;
+  padding: 28px;
+  border-radius: 28px;
+  color: white;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 64, 175, 0.82));
   overflow: hidden;
   position: relative;
 }
@@ -457,8 +517,8 @@ a {
   align-items: center;
   justify-content: center;
   padding: 14px 18px;
-  border-radius: 14px;
   border: none;
+  border-radius: 14px;
   text-decoration: none;
   font-size: 15px;
   font-weight: 850;
@@ -467,14 +527,14 @@ a {
 }
 
 .primary-btn {
-  background: linear-gradient(135deg, #2563eb, #0ea5e9);
   color: white;
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
   box-shadow: 0 16px 32px rgba(14, 165, 233, 0.26);
 }
 
 .copy-btn {
-  background: rgba(255, 255, 255, 0.13);
   color: white;
+  background: rgba(255, 255, 255, 0.13);
   border: 1px solid rgba(255, 255, 255, 0.28);
 }
 
@@ -490,7 +550,9 @@ a {
   font-weight: 850;
 }
 
-/* Footer giữ phong cách như trang hiện tại */
+/* =========================
+   FOOTER
+========================= */
 .footer {
   padding: 68px 8%;
   text-align: center;
@@ -529,55 +591,35 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
   margin-top: 24px;
   padding: 12px 20px;
   border-radius: 999px;
-
   color: white;
   text-decoration: none;
   font-weight: 800;
-
-  background: rgba(255, 255, 255, 0.14);
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
   border: 1px solid rgba(255, 255, 255, 0.28);
-  backdrop-filter: blur(10px);
-
-  transition: 0.25s ease;
-}
-
-.back-to-top {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  margin-top: 24px;
-  padding: 12px 20px;
-  border-radius: 999px;
-
-  color: white;
-  text-decoration: none;
-  font-weight: 800;
-
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  backdrop-filter: blur(10px);
-
+  box-shadow: 0 12px 28px rgba(14, 165, 233, 0.28);
   transition: 0.25s ease;
 }
 
 .back-to-top:hover {
   transform: translateY(-3px);
-  background: rgba(255, 255, 255, 0.22);
-}
-.navbar.nav-hidden {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-.navbar.nav-scrolled {
-  background: rgba(2, 6, 23, 0.96);
-  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.32);
+  box-shadow: 0 18px 38px rgba(14, 165, 233, 0.38);
 }
 
+.footer {
+  cursor: pointer;
+  transition: filter 0.25s ease;
+}
+
+.footer:hover {
+  filter: brightness(1.08);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
 @media (max-width: 980px) {
   .gallery-layout,
   .detail-columns,
@@ -601,7 +643,12 @@ a {
   }
 
   .nav-links {
+    gap: 18px;
     justify-content: center;
+  }
+
+  .nav-links a {
+    font-size: 14px;
   }
 
   .place-hero {
@@ -634,74 +681,4 @@ a {
   .section-heading h2 {
     font-size: 26px;
   }
-}
-  
-.navbar.nav-hidden {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-
-.navbar.nav-scrolled {
-  background: rgba(2, 6, 23, 0.96);
-  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.32);
-}
-
-.logo,
-.nav-links a {
-  color: #ffffff !important;
-  opacity: 1 !important;
-}
-
-.nav-links a {
-  position: relative;
-  text-shadow: none;
-}
-
-.nav-links a::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -7px;
-  width: 0;
-  height: 2px;
-  border-radius: 999px;
-  background: #38bdf8;
-  transition: 0.25s ease;
-}
-
-.nav-links a:hover::after {
-  width: 100%;
-}
-
-.login-btn,
-.login-link {
-  color: white !important;
-  background: rgba(59, 130, 246, 0.32);
-  border: 1px solid rgba(147, 197, 253, 0.55);
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.22);
-}
-
-.back-to-top {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  margin-top: 24px;
-  padding: 12px 20px;
-  border-radius: 999px;
-
-  color: white;
-  text-decoration: none;
-  font-weight: 800;
-
-  background: linear-gradient(135deg, #2563eb, #0ea5e9);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  box-shadow: 0 12px 28px rgba(14, 165, 233, 0.28);
-
-  transition: 0.25s ease;
-}
-
-.back-to-top:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 18px 38px rgba(14, 165, 233, 0.38);
 }
