@@ -1,23 +1,17 @@
 const destinationGrid =
-  document.getElementById('destinationGrid');
-
-const searchInput =
-  document.getElementById('searchInput');
-
-const regionFilter =
-  document.getElementById('regionFilter');
-
-const typeFilter =
-  document.getElementById('typeFilter');
-
-const clearSearchBtn =
-  document.getElementById('clearSearchBtn');
+  document.getElementById(
+    'destinationGrid'
+  );
 
 const resultLine =
-  document.getElementById('resultLine');
+  document.getElementById(
+    'resultLine'
+  );
 
 const emptyState =
-  document.getElementById('emptyState');
+  document.getElementById(
+    'emptyState'
+  );
 
 
 function getMainImage(item) {
@@ -61,7 +55,8 @@ function renderDestinations(items) {
 
   if (!items || items.length === 0) {
     if (emptyState) {
-      emptyState.style.display = 'block';
+      emptyState.style.display =
+        'block';
     }
 
     if (resultLine) {
@@ -73,37 +68,44 @@ function renderDestinations(items) {
   }
 
   if (emptyState) {
-    emptyState.style.display = 'none';
-  }
-
-  if (resultLine) {
-    resultLine.textContent =
-      `Đang hiển thị ${items.length} địa điểm phù hợp.`;
+    emptyState.style.display =
+      'none';
   }
 
   items.forEach(function (item) {
-    const mainImage = getMainImage(item);
-    const categories = getCategories(item);
+    const mainImage =
+      getMainImage(item);
 
-    const categoryTags = categories
-      .slice(0, 2)
-      .map(function (category) {
-        return `
-          <span class="tag">
-            ${category}
-          </span>
-        `;
-      })
-      .join('');
+    const categories =
+      getCategories(item);
+
+    const categoryTags =
+      categories
+        .slice(0, 2)
+        .map(function (category) {
+          return `
+            <span class="tag">
+              ${category}
+            </span>
+          `;
+        })
+        .join('');
 
     const card =
-      document.createElement('article');
+      document.createElement(
+        'article'
+      );
 
-    card.className = 'destination-card';
+    card.className =
+      'destination-card';
+
     card.innerHTML = `
       <div
         class="destination-img"
-        style="background-image: url('${mainImage}');"
+        style="
+          background-image:
+          url('${mainImage}');
+        "
       >
         <div class="tag-row">
           <span class="tag">
@@ -129,11 +131,18 @@ function renderDestinations(items) {
 
         <div class="destination-meta">
           <span>
-            ${item.province || item.region || 'Đang cập nhật'}
+            ${
+              item.province ||
+              item.region ||
+              'Đang cập nhật'
+            }
           </span>
 
           <span>
-            ${item.time || 'Đang cập nhật'}
+            ${
+              item.time ||
+              'Đang cập nhật'
+            }
           </span>
         </div>
 
@@ -160,111 +169,80 @@ function renderDestinations(items) {
 }
 
 
-function filterDestinations() {
+function getFilterState() {
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+  return {
+    region:
+      params.get('region') || 'all',
+
+    category:
+      params.get('category') || 'all'
+  };
+}
+
+
+function filterDestinationsFromUrl() {
   const destinations =
     window.destinations || [];
 
-  const keyword = searchInput
-    ? searchInput.value.trim().toLowerCase()
-    : '';
+  const filters =
+    getFilterState();
 
-  const selectedRegion = regionFilter
-    ? regionFilter.value
-    : 'all';
+  const filtered =
+    destinations.filter(
+      function (item) {
+        const categories =
+          getCategories(item);
 
-  const selectedCategory = typeFilter
-    ? typeFilter.value
-    : 'all';
+        const matchRegion =
+          filters.region === 'all' ||
+          item.region === filters.region;
 
-  const filtered = destinations.filter(
-    function (item) {
-      const categories =
-        getCategories(item);
+        const matchCategory =
+          filters.category === 'all' ||
+          categories.includes(
+            filters.category
+          );
 
-      const searchableText = [
-        item.name,
-        item.province,
-        item.description,
-        item.shortDescription,
-        item.region,
-        item.type,
-        ...categories
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
+        return (
+          matchRegion &&
+          matchCategory
+        );
+      }
+    );
 
-      const matchKeyword =
-        searchableText.includes(keyword);
+  if (resultLine) {
+    const descriptions = [];
 
-      const matchRegion =
-        selectedRegion === 'all' ||
-        item.region === selectedRegion;
-
-      const matchCategory =
-        selectedCategory === 'all' ||
-        categories.includes(selectedCategory);
-
-      return (
-        matchKeyword &&
-        matchRegion &&
-        matchCategory
+    if (filters.region !== 'all') {
+      descriptions.push(
+        `khu vực ${filters.region}`
       );
     }
-  );
+
+    if (filters.category !== 'all') {
+      descriptions.push(
+        `danh mục ${filters.category}`
+      );
+    }
+
+    if (descriptions.length > 0) {
+      resultLine.textContent =
+        `Đang hiển thị ${filtered.length} địa điểm thuộc ` +
+        descriptions.join(' và ') +
+        '.';
+    } else {
+      resultLine.textContent =
+        `Đang hiển thị ${filtered.length} địa điểm nổi bật.`;
+    }
+  }
 
   renderDestinations(filtered);
 }
 
 
-if (searchInput) {
-  searchInput.addEventListener(
-    'input',
-    filterDestinations
-  );
-}
-
-
-if (regionFilter) {
-  regionFilter.addEventListener(
-    'change',
-    filterDestinations
-  );
-}
-
-
-if (typeFilter) {
-  typeFilter.addEventListener(
-    'change',
-    filterDestinations
-  );
-}
-
-
-if (clearSearchBtn) {
-  clearSearchBtn.addEventListener(
-    'click',
-    function () {
-      if (searchInput) {
-        searchInput.value = '';
-      }
-
-      if (regionFilter) {
-        regionFilter.value = 'all';
-      }
-
-      if (typeFilter) {
-        typeFilter.value = 'all';
-      }
-
-      renderDestinations(
-        window.destinations || []
-      );
-    }
-  );
-}
-
-
-renderDestinations(
-  window.destinations || []
-);
+filterDestinationsFromUrl();

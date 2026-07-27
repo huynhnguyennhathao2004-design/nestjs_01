@@ -25,203 +25,14 @@
   />
 
   <link rel="stylesheet" href="/css/index.css" />
+  <link rel="stylesheet" href="/css/navbar.css" />
 </head>
 
 <body>
   <!-- =====================================
        THANH TASKBAR
   ====================================== -->
-
-  <header class="navbar">
-    <a class="logo" href="/index.html">
-      Vietnam <span>Travel TTS</span>
-    </a>
-
-    <nav class="nav-links">
-      <a href="/index.html">
-        Trang chủ
-      </a>
-
-      <a href="#features">
-        Tính năng
-      </a>
-
-      <!-- Menu địa điểm -->
-      <div class="nav-dropdown">
-        <a
-          href="#destinations"
-          class="nav-dropdown-trigger"
-        >
-          Địa điểm
-
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M7 10L12 15L17 10"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </a>
-
-        <div class="nav-dropdown-panel">
-          <div class="dropdown-card">
-            <div class="dropdown-heading">
-              <strong>Lọc địa điểm</strong>
-
-              <span>
-                Chọn khu vực và danh mục du lịch
-              </span>
-            </div>
-
-            <div class="dropdown-field">
-              <label for="regionFilter">
-                Khu vực
-              </label>
-
-              <select id="regionFilter">
-                <option value="all">
-                  Tất cả khu vực
-                </option>
-
-                <option value="Miền Bắc">
-                  Miền Bắc
-                </option>
-
-                <option value="Miền Trung">
-                  Miền Trung
-                </option>
-
-                <option value="Tây Nguyên">
-                  Tây Nguyên
-                </option>
-
-                <option value="Miền Nam">
-                  Miền Nam
-                </option>
-              </select>
-            </div>
-
-            <div class="dropdown-field">
-              <label for="typeFilter">
-                Danh mục
-              </label>
-
-              <select id="typeFilter">
-                <option value="all">
-                  Tất cả danh mục
-                </option>
-
-                <option value="Thiên nhiên">
-                  Thiên nhiên
-                </option>
-
-                <option value="Biển đảo">
-                  Biển đảo
-                </option>
-
-                <option value="Di sản">
-                  Di sản
-                </option>
-
-                <option value="Văn hóa - Lịch sử">
-                  Văn hóa - Lịch sử
-                </option>
-
-                <option value="Ẩm thực">
-                  Ẩm thực
-                </option>
-
-                <option value="Nghỉ dưỡng">
-                  Nghỉ dưỡng
-                </option>
-
-                <option value="Khám phá">
-                  Khám phá
-                </option>
-
-                <option value="Tâm linh">
-                  Tâm linh
-                </option>
-
-                <option value="Đô thị">
-                  Đô thị
-                </option>
-              </select>
-            </div>
-
-            <button
-              type="button"
-              class="dropdown-reset-btn"
-              id="clearSearchBtn"
-            >
-              Xóa bộ lọc
-            </button>
-
-            <a
-              href="#destinations"
-              class="dropdown-view-btn"
-            >
-              Xem danh sách địa điểm
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <a href="#promotions">
-        Khuyến mãi
-      </a>
-
-      <a href="/tts.html">
-        Tạo giọng đọc
-      </a>
-    </nav>
-
-    <div class="nav-actions">
-      <!-- Tìm kiếm thu gọn thành kính lúp -->
-      <div class="nav-search">
-        <label
-          class="search-icon"
-          for="searchInput"
-          aria-label="Mở tìm kiếm"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle
-              cx="11"
-              cy="11"
-              r="7"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            />
-
-            <path
-              d="M20 20L16.2 16.2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
-          </svg>
-        </label>
-
-        <input
-          id="searchInput"
-          type="text"
-          aria-label="Tìm kiếm địa điểm"
-          placeholder="Tìm Đà Lạt, Hà Nội..."
-        />
-      </div>
-
-      <div class="auth-box" id="authBox">
-        <a href="/login.html" class="login-btn">
-          Đăng nhập
-        </a>
-      </div>
-    </div>
-  </header>
+  <div id="siteNavbar"></div>
 
   <main>
     <!-- =====================================
@@ -749,10 +560,11 @@
     </div>
   </footer>
 
-  <script src="/js/destinations-data.js"></script>
-  <script src="/js/destinations-ui.js"></script>
-  <script src="/js/slideshow.js"></script>
-  <script src="/js/navbar-scroll.js"></script>
-  <script src="/js/auth-ui.js"></script>
+<script src="/js/destinations-data.js"></script>
+<script src="/js/site-navbar.js"></script>
+<script src="/js/destinations-ui.js"></script>
+<script src="/js/slideshow.js"></script>
+<script src="/js/navbar-scroll.js"></script>
+<script src="/js/auth-ui.js"></script>
 </body>
 </html>

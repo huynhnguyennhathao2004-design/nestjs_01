@@ -544,25 +544,27 @@ function renderPlace() {
       .join('')
   );
 
-  setHtml(
-    'highlightList',
-    (place.highlights || [])
-      .map(function (item) {
-        return `<li>${item}</li>`;
-      })
-      .join('')
-  );
+  // setHtml(
+  //   'highlightList',
+  //   (place.highlights || [])
+  //     .map(function (item) {
+  //       return `<li>${item}</li>`;
+  //     })
+  //     .join('')
+  // );
 
-  setHtml(
-    'foodList',
-    (place.foods || [])
-      .map(function (item) {
-        return `<li>${item}</li>`;
-      })
-      .join('')
-  );
+  // setHtml(
+  //   'foodList',
+  //   (place.foods || [])
+  //     .map(function (item) {
+  //       return `<li>${item}</li>`;
+  //     })
+  //     .join('')
+  // );
 
   renderGallery(images);
+  renderHighlights(place.highlights);
+  renderFoods(place.foods);
   renderMap(place);
   renderRelatedPlaces(place);
 
@@ -577,6 +579,231 @@ if (copyBtn) {
       }
     );
   }
+}
+
+/* =====================================
+   Hàm render 
+===================================== */
+function normalizeHighlight(item) {
+  if (typeof item === 'string') {
+    return {
+      name: item,
+      image: fallbackImage,
+      description:
+        'Thông tin về địa điểm này đang được cập nhật.',
+      address: '',
+      mapQuery: item
+    };
+  }
+
+  return {
+    name:
+      item.name ||
+      item.title ||
+      'Điểm khám phá',
+
+    image:
+      item.image ||
+      fallbackImage,
+
+    description:
+      item.description ||
+      'Thông tin đang được cập nhật.',
+
+    address:
+      item.address ||
+      '',
+
+    mapQuery:
+      item.mapQuery ||
+      item.name ||
+      item.title ||
+      ''
+  };
+}
+
+function normalizeFood(item) {
+  if (typeof item === 'string') {
+    return {
+      name: item,
+      image: fallbackImage,
+      description:
+        'Thông tin về món ăn này đang được cập nhật.',
+      priceRange: '',
+      suggestedArea: ''
+    };
+  }
+
+  return {
+    name:
+      item.name ||
+      item.title ||
+      'Món ăn địa phương',
+
+    image:
+      item.image ||
+      fallbackImage,
+
+    description:
+      item.description ||
+      'Thông tin đang được cập nhật.',
+
+    priceRange:
+      item.priceRange ||
+      '',
+
+    suggestedArea:
+      item.suggestedArea ||
+      ''
+  };
+}
+
+function renderHighlights(items) {
+  const container =
+    document.getElementById('highlightGrid');
+
+  if (!container) {
+    return;
+  }
+
+  const highlights =
+    Array.isArray(items)
+      ? items.map(normalizeHighlight)
+      : [];
+
+  if (highlights.length === 0) {
+    container.innerHTML = `
+      <p class="detail-empty">
+        Chưa có dữ liệu điểm khám phá.
+      </p>
+    `;
+
+    return;
+  }
+
+  container.innerHTML = highlights
+    .map(function (item) {
+      const mapUrl =
+        'https://www.google.com/maps/search/?api=1&query=' +
+        encodeURIComponent(item.mapQuery);
+
+      return `
+        <article class="detail-media-card">
+          <div class="detail-media-image">
+            <img
+              src="${item.image}"
+              alt="${item.name}"
+              loading="lazy"
+              onerror="this.src='${fallbackImage}'"
+            />
+
+            <span class="detail-media-label">
+              Điểm khám phá
+            </span>
+          </div>
+
+          <div class="detail-media-content">
+            <h3>${item.name}</h3>
+
+            <p>${item.description}</p>
+
+            ${
+              item.address
+                ? `
+                  <div class="detail-media-meta">
+                    <strong>Địa chỉ:</strong>
+                    <span>${item.address}</span>
+                  </div>
+                `
+                : ''
+            }
+
+            <a
+              href="${mapUrl}"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="detail-media-link"
+            >
+              Xem trên bản đồ
+            </a>
+          </div>
+        </article>
+      `;
+    })
+    .join('');
+  }
+
+  function renderFoods(items) {
+  const container =
+    document.getElementById('foodGrid');
+
+  if (!container) {
+    return;
+  }
+
+  const foods =
+    Array.isArray(items)
+      ? items.map(normalizeFood)
+      : [];
+
+  if (foods.length === 0) {
+    container.innerHTML = `
+      <p class="detail-empty">
+        Chưa có dữ liệu ẩm thực.
+      </p>
+    `;
+
+    return;
+  }
+
+  container.innerHTML = foods
+    .map(function (item) {
+      return `
+        <article class="detail-media-card food-card">
+          <div class="detail-media-image">
+            <img
+              src="${item.image}"
+              alt="${item.name}"
+              loading="lazy"
+              onerror="this.src='${fallbackImage}'"
+            />
+
+            <span class="detail-media-label">
+              Ẩm thực
+            </span>
+          </div>
+
+          <div class="detail-media-content">
+            <h3>${item.name}</h3>
+
+            <p>${item.description}</p>
+
+            ${
+              item.priceRange
+                ? `
+                  <div class="detail-media-meta">
+                    <strong>Giá tham khảo:</strong>
+                    <span>${item.priceRange}</span>
+                  </div>
+                `
+                : ''
+            }
+
+            ${
+              item.suggestedArea
+                ? `
+                  <div class="detail-media-meta">
+                    <strong>Khu vực gợi ý:</strong>
+                    <span>${item.suggestedArea}</span>
+                  </div>
+                `
+                : ''
+            }
+          </div>
+        </article>
+      `;
+    })
+    .join('');
 }
 
 /* =====================================

@@ -9,11 +9,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/destination-detail.css" />
+  <link rel="stylesheet" href="/css/navbar.css" />
 </head>
 
 <body>
-
-  <header class="navbar">
+  <div id="siteNavbar"></div>
+  <!-- <header class="navbar">
     <a class="logo" href="/index.html">Vietnam Travel TTS</a>
 
     <nav class="nav-links">
@@ -23,7 +24,7 @@
       <a href="/tts.html">Tạo giọng đọc</a>
       <a href="/login.html" class="login-link">Đăng nhập</a>
     </nav>
-  </header>
+  </header> -->
 
   <main class="place-page">
     <section class="place-hero" id="placeHero">
@@ -113,22 +114,38 @@
           </div>
         </div>
 
-        <div class="detail-columns">
-          <div class="detail-box">
-            <h3>Đặc điểm nổi bật</h3>
-            <div class="feature-list" id="featureList"></div>
+        <section class="feature-section">
+          <div class="section-heading small">
+            <span>Thông tin nổi bật</span>
+            <h2>Đặc điểm của địa điểm</h2>
           </div>
 
-          <div class="detail-box">
-            <h3>Điểm nên khám phá</h3>
-            <ul class="nice-list" id="highlightList"></ul>
+          <div class="feature-list" id="featureList"></div>
+        </section>
+
+        <section class="explore-section">
+          <div class="section-heading small">
+            <span>Khám phá</span>
+            <h2>Điểm nên khám phá</h2>
           </div>
 
-          <div class="detail-box">
-            <h3>Ẩm thực gợi ý</h3>
-            <ul class="nice-list" id="foodList"></ul>
+          <div
+            class="detail-media-grid"
+            id="highlightGrid"
+          ></div>
+        </section>
+
+        <section class="food-section">
+          <div class="section-heading small">
+            <span>Ẩm thực</span>
+            <h2>Ẩm thực gợi ý</h2>
           </div>
-        </div>
+
+          <div
+            class="detail-media-grid"
+            id="foodGrid"
+          ></div>
+        </section>
 
         <section class="map-section" id="mapSection">
           <div class="section-heading small">
@@ -188,8 +205,10 @@
     </div>
   </footer>
 
-  <script src="/js/destinations-data.js"></script>
-  <script src="/js/destinations-detail.js"></script>
-  <script src="/js/navbar-scroll.js"></script>  
+<script src="/js/destinations-data.js"></script>
+<script src="/js/site-navbar.js"></script>
+<script src="/js/destinations-detail.js"></script>
+<script src="/js/navbar-scroll.js"></script>
+<script src="/js/auth-ui.js"></script>
 </body>
 </html>
