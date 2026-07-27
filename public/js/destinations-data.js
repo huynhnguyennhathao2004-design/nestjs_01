@@ -1,31 +1,58 @@
 window.destinations = [
   {
-    id: 'da-lat',
-    name: 'Đà Lạt',
-    region: 'Tây Nguyên',
-    type: 'Nghỉ dưỡng',
-    time: 'Tháng 11 - Tháng 4',
-    images: [
-      '/assets/images/da-lat-1.jpg',
-      '/assets/images/da-lat-2.jpg',
-      '/assets/images/dalat-lamdong.jpg'
-    ],
-    shortDescription: 'Thành phố mộng mơ với khí hậu mát mẻ, rừng thông xanh và nhiều điểm tham quan nổi tiếng.',
-    description: 'Đà Lạt là một trong những địa điểm du lịch nổi tiếng của Việt Nam. Thành phố nằm trên cao nguyên Lâm Viên, có khí hậu mát mẻ quanh năm, cảnh quan thiên nhiên thơ mộng và không gian yên bình.',
-    features: [
-      { title: 'Khí hậu mát mẻ', text: 'Không khí dễ chịu quanh năm, phù hợp cho du lịch nghỉ dưỡng và tham quan.' },
-      { title: 'Cảnh quan thơ mộng', text: 'Nổi bật với hồ nước, rừng thông, vườn hoa và các điểm săn mây.' },
-      { title: 'Không gian trải nghiệm', text: 'Có nhiều quán cà phê, điểm chụp ảnh và hoạt động khám phá nhẹ nhàng.' },
-      { title: 'Phù hợp TTS', text: 'Nội dung giới thiệu dễ chuyển thành giọng đọc hướng dẫn du lịch.' }
-    ],
-    highlights: ['Hồ Xuân Hương', 'Quảng trường Lâm Viên', 'Thung lũng Tình Yêu', 'Vườn hoa thành phố'],
-    foods: ['Bánh căn', 'Lẩu gà lá é', 'Sữa đậu nành nóng', 'Bánh tráng nướng']
-  },
+  id: 'da-lat',
+  name: 'Đà Lạt',
+  province: 'Lâm Đồng',
+  region: 'Tây Nguyên',
+  type: 'Nghỉ dưỡng',
+  categories: [
+    'Thiên nhiên',
+    'Nghỉ dưỡng',
+    'Khám phá'
+  ],
+  time: 'Tháng 11 - Tháng 4',
+  images: [
+    '/assets/images/da-lat-1.jpg',
+    '/assets/images/da-lat-2.jpg',
+    '/assets/images/dalat-lamdong.jpg'
+  ],
+  shortDescription:
+    'Thành phố mộng mơ với khí hậu mát mẻ, rừng thông xanh và nhiều điểm tham quan nổi tiếng.',
+  description:
+    'Đà Lạt là một trong những địa điểm du lịch nổi tiếng của Việt Nam...',
+  features: [
+    {
+      title: 'Khí hậu mát mẻ',
+      text: 'Không khí dễ chịu quanh năm, phù hợp cho du lịch nghỉ dưỡng và tham quan.'
+    }
+  ],
+  highlights: [
+    'Hồ Xuân Hương',
+    'Quảng trường Lâm Viên',
+    'Thung lũng Tình Yêu',
+    'Vườn hoa thành phố'
+  ],
+  foods: [
+    'Bánh căn',
+    'Lẩu gà lá é',
+    'Sữa đậu nành nóng',
+    'Bánh tráng nướng'
+  ]
+},
+
+
   {
     id: 'ha-long',
     name: 'Vịnh Hạ Long',
-    region: 'Miền Bắc',
+    region: 'Miền Bắc', 
+    province: 'Hạ Long', 
     type: 'Di sản',
+    categories: [
+      'Thiên nhiên',
+      'Biển đảo',
+      'Di sản',
+      'Khám phá'
+    ],
     time: 'Tháng 10 - Tháng 4',
     images: [
       '/assets/images/vinh-ha-long-1.jpg',
@@ -35,19 +62,39 @@ window.destinations = [
     shortDescription: 'Kỳ quan thiên nhiên nổi bật với hàng nghìn đảo đá vôi, hang động và cảnh quan biển độc đáo.',
     description: 'Vịnh Hạ Long là điểm đến nổi tiếng của Quảng Ninh, được biết đến với cảnh quan biển hùng vĩ, hàng nghìn đảo đá vôi và hệ thống hang động độc đáo.',
     features: [
-      { title: 'Khí hậu mát mẻ', text: 'Không khí dễ chịu quanh năm, phù hợp cho du lịch nghỉ dưỡng và tham quan.' },
-      { title: 'Cảnh quan thơ mộng', text: 'Nổi bật với hồ nước, rừng thông, vườn hoa và các điểm săn mây.' },
-      { title: 'Không gian trải nghiệm', text: 'Có nhiều quán cà phê, điểm chụp ảnh và hoạt động khám phá nhẹ nhàng.' },
-      { title: 'Phù hợp TTS', text: 'Nội dung giới thiệu dễ chuyển thành giọng đọc hướng dẫn du lịch.' }
+      {
+        title: 'Di sản thiên nhiên',
+        text: 'Nổi bật với hệ thống đảo đá vôi và cảnh quan biển đặc sắc.'
+      },
+      {
+        title: 'Hang động độc đáo',
+        text: 'Có nhiều hang động nổi tiếng với cấu trúc tự nhiên ấn tượng.'
+      },
+      {
+        title: 'Trải nghiệm trên vịnh',
+        text: 'Du khách có thể đi du thuyền, chèo kayak và tham quan các đảo.'
+      },
+      {
+        title: 'Phù hợp TTS',
+        text: 'Nội dung về di sản và cảnh quan biển phù hợp làm thuyết minh du lịch.'
+      }
     ],
     highlights: ['Du thuyền trên vịnh', 'Hang Sửng Sốt', 'Đảo Titop', 'Chèo kayak'],
     foods: ['Chả mực Hạ Long', 'Sam biển', 'Hải sản tươi sống', 'Bún bề bề']
   },
+
+
   {
     id: 'nha-trang',
     name: 'Nha Trang',
     region: 'Miền Trung',
+    province: 'Nha Trang',
     type: 'Biển đảo',
+    categories: [
+      'Biển đảo',
+      'Nghỉ dưỡng',
+      'Ẩm thực'
+    ],
     time: 'Tháng 1 - Tháng 8',
     images: [
       '/assets/images/nha-trang-1.jpg',
@@ -65,11 +112,18 @@ window.destinations = [
     highlights: ['Bãi biển Nha Trang', 'VinWonders Nha Trang', 'Hòn Mun', 'Tháp Bà Ponagar'],
     foods: ['Bún chả cá', 'Nem nướng Nha Trang', 'Hải sản', 'Bánh căn Nha Trang']
   },
+
   {
     id: 'buon-me-thuot',
     name: 'Buôn Mê Thuột',
     region: 'Tây Nguyên',
+    province: 'Buôn Mê Thuột',
     type: 'Văn hóa',
+    categories: [
+    'Văn hóa - Lịch sử',
+    'Thiên nhiên',
+    'Ẩm thực'
+    ],
     time: 'Tháng 12 - Tháng 4',
     images: [
       '/assets/images/buon-me-thuot-1.jpg',
@@ -91,7 +145,13 @@ window.destinations = [
     id: 'can-tho',
     name: 'Cần Thơ',
     region: 'Miền Nam',
+    province: 'Cần Thơ',
     type: 'Văn hóa',
+    categories: [
+      'Văn hóa - Lịch sử',
+      'Ẩm thực',
+      'Khám phá'
+    ],
     time: 'Tháng 12 - Tháng 4',
     images: [
       '/assets/images/can-tho-1.jpg',
@@ -113,7 +173,13 @@ window.destinations = [
     id: 'cao-bang',
     name: 'Cao Bằng',
     region: 'Miền Bắc',
+    province: 'Cao Bằng',
     type: 'Núi rừng',
+    categories: [
+      'Thiên nhiên',
+      'Khám phá',
+      'Văn hóa - Lịch sử'
+    ],
     time: 'Tháng 9 - Tháng 11',
     images: [
       '/assets/images/cao-bang-1.jpg',
@@ -135,7 +201,14 @@ window.destinations = [
     id: 'con-dao',
     name: 'Côn Đảo',
     region: 'Miền Nam',
+    province: 'Côn Đảo',
     type: 'Biển đảo',
+    categories: [
+      'Biển đảo',
+      'Văn hóa - Lịch sử',
+      'Tâm linh',
+      'Nghỉ dưỡng'
+    ],
     time: 'Tháng 3 - Tháng 9',
     images: [
       '/assets/images/con-dao-1.jpg',
@@ -153,11 +226,18 @@ window.destinations = [
     highlights: ['Bãi Đầm Trầu', 'Nhà tù Côn Đảo', 'Hòn Bảy Cạnh', 'Nghĩa trang Hàng Dương'],
     foods: ['Ốc vú nàng', 'Cá thu một nắng', 'Mứt hạt bàng', 'Hải sản Côn Đảo']
   },
-  {
+  {    
     id: 'da-nang',
     name: 'Đà Nẵng',
     region: 'Miền Trung',
+    province: 'Đà Nẵng',
     type: 'Biển đảo',
+    categories: [
+      'Biển đảo',
+      'Đô thị',
+      'Nghỉ dưỡng',
+      'Ẩm thực'
+    ],
     time: 'Tháng 3 - Tháng 8',
     images: [
       '/assets/images/da-nang-1.jpg',
@@ -175,33 +255,18 @@ window.destinations = [
     highlights: ['Bãi biển Mỹ Khê', 'Cầu Rồng', 'Bà Nà Hills', 'Bán đảo Sơn Trà'],
     foods: ['Mì Quảng', 'Bánh tráng cuốn thịt heo', 'Bún chả cá', 'Hải sản Đà Nẵng']
   },
-  {
-    id: 'da-lat-lam-dong',
-    name: 'Đà Lạt - Lâm Đồng',
-    region: 'Tây Nguyên',
-    type: 'Nghỉ dưỡng',
-    time: 'Tháng 11 - Tháng 4',
-    images: [
-      '/assets/images/dalat.jpg',
-      '/assets/images/da-lat-1.jpg',
-      '/assets/images/da-lat-2.jpg'
-    ],
-    shortDescription: 'Không gian cao nguyên thơ mộng với Đà Lạt, rừng thông, hồ nước, nông trại và nhiều điểm du lịch sinh thái.',
-    description: 'Đà Lạt - Lâm Đồng là điểm đến hấp dẫn ở khu vực Tây Nguyên, nổi bật với khí hậu mát mẻ, cảnh quan cao nguyên, rừng thông, hồ nước và các khu du lịch sinh thái. Ngoài trung tâm Đà Lạt, du khách còn có thể khám phá nhiều địa điểm khác của Lâm Đồng như đồi chè, thác nước và nông trại.',
-    features: [
-      { title: 'Khí hậu cao nguyên', text: 'Thời tiết mát mẻ, dễ chịu, phù hợp cho nghỉ dưỡng quanh năm.' },
-      { title: 'Cảnh quan đa dạng', text: 'Có hồ nước, đồi thông, thác nước, vườn hoa và nông trại.' },
-      { title: 'Du lịch sinh thái', text: 'Nhiều điểm đến phù hợp cho chụp ảnh, nghỉ dưỡng và trải nghiệm thiên nhiên.' },
-      { title: 'Phù hợp TTS', text: 'Nội dung về cao nguyên và du lịch sinh thái dễ tạo giọng đọc truyền cảm.' }
-    ],
-    highlights: ['Đồi chè Cầu Đất', 'Thác Datanla', 'Hồ Tuyền Lâm', 'Langbiang'],
-    foods: ['Lẩu gà lá é', 'Bánh tráng nướng', 'Dâu tây Đà Lạt', 'Atiso']
-  },
+  
   {
     id: 'ha-noi',
     name: 'Hà Nội',
     region: 'Miền Bắc',
+    province: 'Hà Nội',
     type: 'Văn hóa',
+    categories: [
+      'Văn hóa - Lịch sử',
+      'Đô thị',
+      'Ẩm thực'
+    ],
     time: 'Tháng 9 - Tháng 4',
     images: [
       '/assets/images/ha-noi-1.jpg',

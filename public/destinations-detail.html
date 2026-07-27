@@ -20,7 +20,7 @@
       <a href="/index.html">Trang chủ</a>
       <a href="/index.html#features">Tính năng</a>
       <a href="/index.html#destinations">Địa điểm</a>
-      <a href="/tss.html">Tạo giọng đọc</a>
+      <a href="/tts.html">Tạo giọng đọc</a>
       <a href="/login.html" class="login-link">Đăng nhập</a>
     </nav>
   </header>
@@ -54,17 +54,49 @@
 
         <div class="info-grid">
           <div class="info-box">
+            <span>Tỉnh / Thành phố</span>
+            <strong id="placeProvince"></strong>
+          </div>
+
+          <div class="info-box">
             <span>Khu vực</span>
             <strong id="placeRegion"></strong>
           </div>
+
           <div class="info-box">
-            <span>Loại hình</span>
+            <span>Danh mục</span>
             <strong id="placeType"></strong>
           </div>
+
           <div class="info-box">
             <span>Thời điểm nên đi</span>
             <strong id="placeTime"></strong>
           </div>
+        </div>
+
+        <div class="detail-action-bar">
+          <button
+            type="button"
+            class="detail-action-btn"
+            id="quickCopyBtn"
+          >
+            Sao chép nội dung
+          </button>
+
+          <a
+            href="/tts.html"
+            class="detail-action-btn primary"
+            id="openTtsBtn"
+          >
+            Tạo giọng đọc AI
+          </a>
+
+          <a
+            href="#mapSection"
+            class="detail-action-btn"
+          >
+            Xem bản đồ
+          </a>
         </div>
 
         <p class="place-description" id="placeDescription"></p>
@@ -98,6 +130,34 @@
           </div>
         </div>
 
+        <section class="map-section" id="mapSection">
+          <div class="section-heading small">
+            <span>Vị trí</span>
+            <h2>Bản đồ địa điểm</h2>
+          </div>
+
+          <div class="map-frame">
+            <iframe
+              id="placeMap"
+              title="Bản đồ địa điểm"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+            ></iframe>
+          </div>
+        </section>
+
+        <section class="related-section">
+          <div class="section-heading small">
+            <span>Gợi ý tiếp theo</span>
+            <h2>Địa điểm có thể bạn quan tâm</h2>
+          </div>
+
+          <div
+            class="related-grid"
+            id="relatedGrid"
+          ></div>
+        </section>
+
         <div class="tts-panel">
           <div>
             <span>AI Text-to-Speech</span>
@@ -107,7 +167,7 @@
 
           <div class="tts-actions">
             <button type="button" class="copy-btn" id="copyTextBtn">Sao chép nội dung</button>
-            <a href="/tss.html" class="primary-btn">Mở trang tạo giọng đọc</a>
+            <a href="/tts.html" class="primary-btn" id="openTtsPanelBtn">Mở trang tạo giọng đọc</a>
           </div>
         </div>
 
