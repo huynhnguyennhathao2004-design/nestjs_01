@@ -223,10 +223,6 @@
           </div>
         </div>
 
-        <a href="/index.html#promotions">
-          Khuyến mãi
-        </a>
-
         <a href="/tts.html">
           Tạo giọng đọc
         </a>

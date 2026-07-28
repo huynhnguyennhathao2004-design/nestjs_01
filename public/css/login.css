@@ -253,3 +253,26 @@ body {
     align-items: flex-start;
   }
 }
+s
+.register-link-box {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+
+  margin-top: 18px;
+
+  color: #64748b;
+
+  font-size: 14px;
+}
+
+.register-link-box a {
+  color: #1d4ed8;
+
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.register-link-box a:hover {
+  text-decoration: underline;
+}

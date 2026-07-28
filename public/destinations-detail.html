@@ -50,7 +50,8 @@
       <div class="place-main-card">
         <div class="section-heading">
           <span>Thông tin địa điểm</span>
-          <h2 id="infoTitle">Tổng quan</h2>
+          
+          <!-- <h2 id="infoTitle">Tổng quan</h2> -->
         </div>
 
         <div class="info-grid">
@@ -75,6 +76,12 @@
           </div>
         </div>
 
+
+        <p
+          class="place-description"
+          id="placeDescription"
+        ></p>
+
         <div class="detail-action-bar">
           <button
             type="button"
@@ -89,7 +96,7 @@
             class="detail-action-btn primary"
             id="openTtsBtn"
           >
-            Tạo giọng đọc AI
+            Mở trang tạo giọng đọc
           </a>
 
           <a
@@ -99,6 +106,11 @@
             Xem bản đồ
           </a>
         </div>
+
+        <p
+          class="copy-message"
+          id="copyMessage"
+        ></p>
 
         <p class="place-description" id="placeDescription"></p>
 
@@ -175,16 +187,33 @@
           ></div>
         </section>
 
-        <div class="tts-panel">
-          <div>
-            <span>AI Text-to-Speech</span>
-            <h3>Chuyển nội dung địa điểm này thành giọng đọc</h3>
+        <!-- <div class="tts-panel">
+          <div class="tts-panel-content">
+            <span>Nội dung giới thiệu địa điểm</span>
+
+            <h3 id="ttsPlaceTitle">
+              Tên địa điểm
+            </h3>
+
             <p id="ttsPreview"></p>
-          </div>
+          </div> -->
 
           <div class="tts-actions">
-            <button type="button" class="copy-btn" id="copyTextBtn">Sao chép nội dung</button>
-            <a href="/tts.html" class="primary-btn" id="openTtsPanelBtn">Mở trang tạo giọng đọc</a>
+            <button
+              type="button"
+              class="copy-btn"
+              id="copyTextBtn"
+            >
+              Sao chép nội dung
+            </button>
+
+            <a
+              href="/tts.html"
+              class="primary-btn"
+              id="openTtsPanelBtn"
+            >
+              Mở trang tạo giọng đọc
+            </a>
           </div>
         </div>
 

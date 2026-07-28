@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>Tạo tài khoản - Vietnam Travel TTS</title>
+
+  <link
+    rel="stylesheet"
+    href="/css/register.css"
+  />
+</head>
+
+<body>
+  <main class="register-page">
+    <div class="register-overlay"></div>
+
+    <section class="register-card">
+      <a
+        href="/index.html"
+        class="register-logo"
+      >
+        Vietnam <span>Travel TTS</span>
+      </a>
+
+      <div class="register-heading">
+        <span>Tài khoản mới</span>
+
+        <h1>Tạo tài khoản</h1>
+
+        <p>
+          Đăng ký tài khoản để sử dụng các chức năng
+          của Vietnam Travel TTS.
+        </p>
+      </div>
+
+      <form
+        id="registerForm"
+        class="register-form"
+        novalidate
+      >
+        <div class="form-group">
+          <label for="fullName">
+            Họ và tên
+          </label>
+
+          <input
+            type="text"
+            id="fullName"
+            placeholder="Nhập họ và tên"
+            autocomplete="name"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="registerEmail">
+            Email
+          </label>
+
+          <input
+            type="email"
+            id="registerEmail"
+            placeholder="Nhập địa chỉ email"
+            autocomplete="email"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="registerPassword">
+            Mật khẩu
+          </label>
+
+          <div class="password-box">
+            <input
+              type="password"
+              id="registerPassword"
+              placeholder="Tối thiểu 8 ký tự"
+              autocomplete="new-password"
+              required
+            />
+
+            <button
+              type="button"
+              class="eye-btn"
+              id="toggleRegisterPassword"
+              aria-label="Hiện hoặc ẩn mật khẩu"
+            >
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M12 5C7 5 3.1 8.1 1.5 12C3.1 15.9 7 19 12 19C17 19 20.9 15.9 22.5 12C20.9 8.1 17 5 12 5ZM12 16.5C9.5 16.5 7.5 14.5 7.5 12C7.5 9.5 9.5 7.5 12 7.5C14.5 7.5 16.5 9.5 16.5 12C16.5 14.5 14.5 16.5 12 16.5ZM12 9.2C10.5 9.2 9.2 10.5 9.2 12C9.2 13.5 10.5 14.8 12 14.8C13.5 14.8 14.8 13.5 14.8 12C14.8 10.5 13.5 9.2 12 9.2Z"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword">
+            Nhập lại mật khẩu
+          </label>
+
+          <div class="password-box">
+            <input
+              type="password"
+              id="confirmPassword"
+              placeholder="Nhập lại mật khẩu"
+              autocomplete="new-password"
+              required
+            />
+
+            <button
+              type="button"
+              class="eye-btn"
+              id="toggleConfirmPassword"
+              aria-label="Hiện hoặc ẩn mật khẩu xác nhận"
+            >
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M12 5C7 5 3.1 8.1 1.5 12C3.1 15.9 7 19 12 19C17 19 20.9 15.9 22.5 12C20.9 8.1 17 5 12 5ZM12 16.5C9.5 16.5 7.5 14.5 7.5 12C7.5 9.5 9.5 7.5 12 7.5C14.5 7.5 16.5 9.5 16.5 12C16.5 14.5 14.5 16.5 12 16.5ZM12 9.2C10.5 9.2 9.2 10.5 9.2 12C9.2 13.5 10.5 14.8 12 14.8C13.5 14.8 14.8 13.5 14.8 12C14.8 10.5 13.5 9.2 12 9.2Z"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <label class="policy-box">
+          <input
+            type="checkbox"
+            id="acceptPolicy"
+          />
+
+          <span>
+            Tôi đồng ý với điều khoản sử dụng
+            của Vietnam Travel TTS.
+          </span>
+        </label>
+
+        <p
+          class="register-message"
+          id="registerMessage"
+        ></p>
+
+        <button
+          type="submit"
+          class="register-submit"
+        >
+          Tạo tài khoản
+        </button>
+      </form>
+
+      <div class="login-link-box">
+        <span>Đã có tài khoản?</span>
+
+        <a href="/login.html">
+          Đăng nhập
+        </a>
+      </div>
+
+      <a
+        href="/index.html"
+        class="back-home"
+      >
+        ← Quay về trang chủ
+      </a>
+    </section>
+  </main>
+
+  <script src="/js/register.js"></script>
+</body>
+</html>

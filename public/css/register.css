@@ -1,0 +1,362 @@
+* {
+  box-sizing: border-box;
+
+  font-family:
+    "Segoe UI",
+    Arial,
+    sans-serif;
+}
+
+body {
+  margin: 0;
+
+  color: #0f172a;
+  background: #020617;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.register-page {
+  min-height: 100vh;
+
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 42px 20px;
+
+  background:
+    url("/assets/images/bg-vietnam-1.jpg")
+    center / cover
+    no-repeat;
+}
+
+.register-overlay {
+  position: absolute;
+  inset: 0;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(2, 6, 23, 0.83),
+      rgba(30, 64, 175, 0.48)
+    );
+}
+
+.register-card {
+  width: min(100%, 500px);
+
+  position: relative;
+  z-index: 1;
+
+  padding: 38px;
+
+  border-radius: 28px;
+
+  background:
+    rgba(255, 255, 255, 0.94);
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.55);
+
+  box-shadow:
+    0 30px 90px
+    rgba(2, 6, 23, 0.42);
+
+  backdrop-filter: blur(18px);
+}
+
+.register-logo {
+  display: block;
+
+  margin-bottom: 28px;
+
+  color: #0f172a;
+
+  text-align: center;
+  text-decoration: none;
+
+  font-size: 23px;
+  font-weight: 900;
+}
+
+.register-logo span {
+  color: #2563eb;
+}
+
+.register-heading {
+  margin-bottom: 27px;
+
+  text-align: center;
+}
+
+.register-heading > span {
+  display: inline-block;
+
+  margin-bottom: 10px;
+  padding: 7px 13px;
+
+  color: #1d4ed8;
+  background: #eff6ff;
+
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.register-heading h1 {
+  margin: 0 0 10px;
+
+  color: #0f172a;
+
+  font-size: 32px;
+}
+
+.register-heading p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+}
+
+.form-group label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #334155;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.form-group > input,
+.password-box {
+  width: 100%;
+  min-height: 50px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+
+  background: #ffffff;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.form-group > input {
+  padding: 0 15px;
+
+  color: #0f172a;
+  outline: none;
+}
+
+.form-group > input:focus,
+.password-box:focus-within {
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 4px
+    rgba(37, 99, 235, 0.12);
+}
+
+.password-box {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.password-box input {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+
+  padding: 0 15px;
+
+  color: #0f172a;
+  background: transparent;
+
+  border: none;
+  outline: none;
+}
+
+.eye-btn {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  color: #64748b;
+  background: transparent;
+
+  border: none;
+
+  cursor: pointer;
+}
+
+.eye-btn svg {
+  width: 21px;
+  height: 21px;
+
+  fill: currentColor;
+}
+
+.policy-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  color: #475569;
+
+  font-size: 13px;
+  line-height: 1.5;
+
+  cursor: pointer;
+}
+
+.policy-box input {
+  width: 17px;
+  height: 17px;
+
+  margin-top: 2px;
+
+  accent-color: #2563eb;
+}
+
+.register-message {
+  display: none;
+
+  margin: 0;
+  padding: 11px 13px;
+
+  border-radius: 11px;
+
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.register-message.error {
+  display: block;
+
+  color: #991b1b;
+  background: #fff1f2;
+
+  border: 1px solid #fecdd3;
+}
+
+.register-message.success {
+  display: block;
+
+  color: #166534;
+  background: #f0fdf4;
+
+  border: 1px solid #bbf7d0;
+}
+
+.register-submit {
+  min-height: 52px;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #2563eb,
+      #0ea5e9
+    );
+
+  border: none;
+  border-radius: 14px;
+
+  font-weight: 850;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 14px 30px
+    rgba(37, 99, 235, 0.24);
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.register-submit:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 19px 37px
+    rgba(37, 99, 235, 0.32);
+}
+
+.login-link-box {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+
+  margin-top: 23px;
+
+  color: #64748b;
+
+  font-size: 14px;
+}
+
+.login-link-box a {
+  color: #1d4ed8;
+
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.back-home {
+  display: block;
+
+  margin-top: 20px;
+
+  color: #475569;
+
+  text-align: center;
+  text-decoration: none;
+
+  font-size: 13px;
+  font-weight: 750;
+}
+
+@media (max-width: 560px) {
+  .register-page {
+    padding: 22px 14px;
+  }
+
+  .register-card {
+    padding: 28px 21px;
+
+    border-radius: 22px;
+  }
+
+  .register-heading h1 {
+    font-size: 27px;
+  }
+}

@@ -246,3 +246,6 @@ function filterDestinationsFromUrl() {
 
 
 filterDestinationsFromUrl();
+
+
+

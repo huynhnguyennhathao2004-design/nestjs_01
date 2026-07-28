@@ -1,0 +1,980 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+
+  color: #0f172a;
+  background: #f1f5f9;
+
+  font-family:
+    "Be Vietnam Pro",
+    "Segoe UI",
+    Arial,
+    sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.admin-page {
+  min-height: 100vh;
+
+  padding:
+    120px
+    6%
+    80px;
+
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(37, 99, 235, 0.12),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba(14, 165, 233, 0.1),
+      transparent 28%
+    ),
+    #f1f5f9;
+}
+
+.admin-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* =====================================
+   TIÊU ĐỀ
+===================================== */
+
+.admin-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+
+  margin-bottom: 34px;
+}
+
+.admin-badge {
+  display: inline-flex;
+
+  margin-bottom: 13px;
+  padding: 8px 14px;
+
+  color: #1d4ed8;
+  background: #dbeafe;
+
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.admin-heading h1 {
+  margin: 0 0 10px;
+
+  color: #0f172a;
+
+  font-family:
+    "Montserrat",
+    "Be Vietnam Pro",
+    sans-serif;
+
+  font-size:
+    clamp(
+      34px,
+      5vw,
+      52px
+    );
+
+  line-height: 1.15;
+}
+
+.admin-heading p {
+  max-width: 720px;
+
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.back-home-btn {
+  min-height: 46px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  padding: 0 18px;
+
+  color: #1d4ed8;
+  background: #ffffff;
+
+  border: 1px solid #bfdbfe;
+  border-radius: 13px;
+
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 850;
+
+  box-shadow:
+    0 10px 28px
+    rgba(15, 23, 42, 0.08);
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.back-home-btn:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 16px 35px
+    rgba(15, 23, 42, 0.13);
+}
+
+/* =====================================
+   THÔNG BÁO
+===================================== */
+
+.admin-message {
+  display: none;
+
+  margin-bottom: 22px;
+  padding: 13px 16px;
+
+  border-radius: 13px;
+
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.admin-message.show {
+  display: block;
+}
+
+.admin-message.success {
+  color: #166534;
+  background: #f0fdf4;
+
+  border: 1px solid #bbf7d0;
+}
+
+.admin-message.error {
+  color: #991b1b;
+  background: #fff1f2;
+
+  border: 1px solid #fecdd3;
+}
+
+/* =====================================
+   THỐNG KÊ
+===================================== */
+
+.account-statistics {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+
+  gap: 18px;
+
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  min-height: 118px;
+
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  padding: 22px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+
+  box-shadow:
+    0 14px 38px
+    rgba(15, 23, 42, 0.07);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  color: #1d4ed8;
+  background: #eff6ff;
+
+  border-radius: 15px;
+
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.stat-card strong {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #0f172a;
+
+  font-family:
+    "Montserrat",
+    sans-serif;
+
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.stat-card div > span {
+  color: #64748b;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* =====================================
+   BỘ LỌC
+===================================== */
+
+.filter-panel {
+  display: grid;
+
+  grid-template-columns:
+    minmax(250px, 1.5fr)
+    repeat(3, minmax(150px, 0.65fr))
+    auto;
+
+  gap: 14px;
+  align-items: end;
+
+  margin-bottom: 24px;
+  padding: 20px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+
+  box-shadow:
+    0 14px 38px
+    rgba(15, 23, 42, 0.07);
+}
+
+.filter-search label,
+.filter-field label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #334155;
+
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.filter-search-box {
+  min-height: 47px;
+
+  display: flex;
+  align-items: center;
+
+  overflow: hidden;
+
+  background: #ffffff;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 13px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.filter-search-box:focus-within {
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 4px
+    rgba(37, 99, 235, 0.1);
+}
+
+.filter-search-box svg {
+  width: 20px;
+  height: 20px;
+
+  margin-left: 14px;
+
+  color: #64748b;
+
+  flex-shrink: 0;
+}
+
+.filter-search-box input {
+  width: 100%;
+  min-width: 0;
+  min-height: 45px;
+
+  padding: 0 14px 0 10px;
+
+  color: #0f172a;
+  background: transparent;
+
+  border: none;
+  outline: none;
+}
+
+.filter-field select {
+  width: 100%;
+  min-height: 47px;
+
+  padding: 0 12px;
+
+  color: #0f172a;
+  background: #ffffff;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 13px;
+
+  outline: none;
+  cursor: pointer;
+}
+
+.filter-field select:focus {
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 4px
+    rgba(37, 99, 235, 0.1);
+}
+
+.reset-filter-btn {
+  min-height: 47px;
+
+  padding: 0 17px;
+
+  color: #1d4ed8;
+  background: #eff6ff;
+
+  border: 1px solid #bfdbfe;
+  border-radius: 13px;
+
+  font-size: 12px;
+  font-weight: 850;
+
+  cursor: pointer;
+  white-space: nowrap;
+
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease;
+}
+
+.reset-filter-btn:hover {
+  transform: translateY(-2px);
+  background: #dbeafe;
+}
+
+/* =====================================
+   BẢNG TÀI KHOẢN
+===================================== */
+
+.accounts-panel {
+  overflow: hidden;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
+
+  box-shadow:
+    0 18px 50px
+    rgba(15, 23, 42, 0.08);
+}
+
+.accounts-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  padding: 22px 24px;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.accounts-panel-heading h2 {
+  margin: 0 0 5px;
+
+  color: #0f172a;
+
+  font-size: 21px;
+}
+
+.accounts-panel-heading p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 12px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.accounts-table {
+  width: 100%;
+  min-width: 980px;
+
+  border-collapse: collapse;
+}
+
+.accounts-table th {
+  padding: 14px 18px;
+
+  color: #475569;
+  background: #f8fafc;
+
+  border-bottom: 1px solid #e2e8f0;
+
+  text-align: left;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
+}
+
+.accounts-table td {
+  padding: 17px 18px;
+
+  color: #334155;
+
+  border-bottom: 1px solid #edf2f7;
+
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+.accounts-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.accounts-table tbody tr:hover {
+  background: #f8fbff;
+}
+
+.accounts-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Tài khoản */
+
+.account-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  min-width: 230px;
+}
+
+.table-avatar {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  overflow: hidden;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #2563eb,
+      #0ea5e9
+    );
+
+  border-radius: 50%;
+
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.table-avatar img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.account-cell strong {
+  display: block;
+
+  max-width: 190px;
+
+  overflow: hidden;
+
+  margin-bottom: 4px;
+
+  color: #0f172a;
+
+  font-size: 13px;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.account-cell span {
+  display: block;
+
+  max-width: 210px;
+
+  overflow: hidden;
+
+  color: #64748b;
+
+  font-size: 11px;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Nhãn */
+
+.account-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 28px;
+  padding: 0 10px;
+
+  border-radius: 999px;
+
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.role-admin {
+  color: #6d28d9;
+  background: #f3e8ff;
+
+  border: 1px solid #e9d5ff;
+}
+
+.role-user {
+  color: #1d4ed8;
+  background: #eff6ff;
+
+  border: 1px solid #bfdbfe;
+}
+
+.status-active {
+  color: #166534;
+  background: #f0fdf4;
+
+  border: 1px solid #bbf7d0;
+}
+
+.status-locked {
+  color: #991b1b;
+  background: #fff1f2;
+
+  border: 1px solid #fecdd3;
+}
+
+.provider-local {
+  color: #334155;
+  background: #f1f5f9;
+
+  border: 1px solid #cbd5e1;
+}
+
+.provider-google {
+  color: #b45309;
+  background: #fffbeb;
+
+  border: 1px solid #fde68a;
+}
+
+/* Nút thao tác */
+
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+
+  min-width: 260px;
+}
+
+.table-action-btn {
+  min-height: 34px;
+
+  padding: 0 10px;
+
+  border-radius: 9px;
+
+  font-size: 10px;
+  font-weight: 850;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.table-action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.view-action {
+  color: #1d4ed8;
+  background: #eff6ff;
+
+  border: 1px solid #bfdbfe;
+}
+
+.role-action {
+  color: #6d28d9;
+  background: #faf5ff;
+
+  border: 1px solid #e9d5ff;
+}
+
+.lock-action {
+  color: #b45309;
+  background: #fffbeb;
+
+  border: 1px solid #fde68a;
+}
+
+.unlock-action {
+  color: #166534;
+  background: #f0fdf4;
+
+  border: 1px solid #bbf7d0;
+}
+
+.delete-action {
+  color: #b91c1c;
+  background: #fff1f2;
+
+  border: 1px solid #fecdd3;
+}
+
+.table-action-btn:disabled {
+  opacity: 0.45;
+
+  cursor: not-allowed;
+  transform: none;
+}
+
+.current-account-label {
+  display: inline-block;
+
+  margin-top: 5px;
+
+  color: #1d4ed8;
+
+  font-size: 10px;
+  font-weight: 850;
+}
+
+/* Không có dữ liệu */
+
+.empty-accounts {
+  display: none;
+
+  padding: 60px 20px;
+
+  text-align: center;
+}
+
+.empty-accounts.show {
+  display: block;
+}
+
+.empty-accounts > span {
+  display: block;
+
+  margin-bottom: 12px;
+
+  color: #94a3b8;
+
+  font-size: 46px;
+}
+
+.empty-accounts h3 {
+  margin: 0 0 8px;
+
+  color: #334155;
+}
+
+.empty-accounts p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 13px;
+}
+
+/* =====================================
+   MODAL
+===================================== */
+
+.account-modal {
+  position: fixed;
+  inset: 0;
+
+  z-index: 12000;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+}
+
+.account-modal.show {
+  display: flex;
+}
+
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+
+  background:
+    rgba(2, 6, 23, 0.7);
+
+  backdrop-filter: blur(5px);
+}
+
+.modal-card {
+  width: min(100%, 470px);
+
+  position: relative;
+  z-index: 1;
+
+  padding: 34px;
+
+  text-align: center;
+
+  background: #ffffff;
+
+  border-radius: 25px;
+
+  box-shadow:
+    0 30px 90px
+    rgba(2, 6, 23, 0.42);
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 13px;
+  right: 15px;
+
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #475569;
+  background: #f1f5f9;
+
+  border: none;
+  border-radius: 50%;
+
+  font-size: 24px;
+
+  cursor: pointer;
+}
+
+.modal-avatar {
+  width: 72px;
+  height: 72px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin: 0 auto 16px;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #2563eb,
+      #0ea5e9
+    );
+
+  border-radius: 50%;
+
+  font-size: 27px;
+  font-weight: 900;
+}
+
+.modal-card h2 {
+  margin: 0 0 7px;
+
+  color: #0f172a;
+}
+
+.modal-card > p {
+  margin: 0 0 24px;
+
+  color: #64748b;
+
+  font-size: 13px;
+}
+
+.modal-detail-list {
+  display: grid;
+  gap: 10px;
+
+  text-align: left;
+}
+
+.modal-detail-list > div {
+  display: grid;
+
+  grid-template-columns:
+    130px
+    minmax(0, 1fr);
+
+  gap: 12px;
+
+  padding: 12px 14px;
+
+  background: #f8fafc;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.modal-detail-list span {
+  color: #64748b;
+
+  font-size: 12px;
+}
+
+.modal-detail-list strong {
+  overflow-wrap: anywhere;
+
+  color: #0f172a;
+
+  font-size: 12px;
+}
+
+/* =====================================
+   RESPONSIVE
+===================================== */
+
+@media (max-width: 1150px) {
+  .account-statistics {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-panel {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-search {
+    grid-column:
+      1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-page {
+    padding:
+      55px
+      18px
+      55px;
+  }
+
+  .admin-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .account-statistics,
+  .filter-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-search {
+    grid-column: auto;
+  }
+
+  .back-home-btn,
+  .reset-filter-btn {
+    width: 100%;
+  }
+
+  .stat-card {
+    min-height: 100px;
+  }
+
+  .modal-card {
+    padding:
+      34px
+      20px
+      24px;
+  }
+
+  .modal-detail-list > div {
+    grid-template-columns: 1fr;
+
+    gap: 5px;
+  }
+}

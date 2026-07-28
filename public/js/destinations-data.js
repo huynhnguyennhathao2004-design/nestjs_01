@@ -19,7 +19,7 @@ window.destinations = [
   shortDescription:
     'Thành phố mộng mơ với khí hậu mát mẻ, rừng thông xanh và nhiều điểm tham quan nổi tiếng.',
   description:
-    'Đà Lạt là một trong những địa điểm du lịch nổi tiếng của Việt Nam...',
+    'Đà Lạt là một địa điểm du lịch đáng chú ý tại Việt Nam. Đà Lạt là một trong những địa điểm du lịch nổi tiếng của Việt Nam... Địa điểm này thuộc các danh mục Thiên nhiên, Nghỉ dưỡng, Khám phá, phù hợp cho du khách muốn tìm hiểu cảnh quan, văn hóa, ẩm thực và những trải nghiệm địa phương. Thời điểm gợi ý để ghé thăm Đà Lạt là Tháng 11 - Tháng 4.',
   features: [
     {
       title: 'Khí hậu mát mẻ',

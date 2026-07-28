@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>
+    Thông tin tài khoản - Vietnam Travel TTS
+  </title>
+
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  />
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Montserrat:wght@600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/css/account.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/css/navbar.css"
+  />
+</head>
+
+<body>
+  <!-- Taskbar dùng chung -->
+  <!-- <div id="siteNavbar"></div> -->
+
+  <main class="account-page">
+    <div class="account-container">
+      <section class="account-heading">
+        <div>
+          <span class="account-page-badge">
+            Tài khoản cá nhân
+          </span>
+
+          <h1>Thông tin tài khoản</h1>
+
+        </div>
+
+        <a
+          href="/index.html"
+          class="account-back-btn"
+        >
+          ← Về trang chủ
+        </a>
+      </section>
+
+      <div
+        class="account-page-message"
+        id="accountMessage"
+        role="status"
+      ></div>
+
+      <section class="account-layout">
+        <!-- Thẻ thông tin bên trái -->
+        <aside class="profile-card">
+          <div class="profile-cover"></div>
+
+          <div class="profile-avatar-wrapper">
+            <div
+              class="profile-avatar"
+              id="profileAvatar"
+            >
+              U
+            </div>
+          </div>
+
+          <div class="profile-summary">
+            <h2 id="profileName">
+              Người dùng
+            </h2>
+
+            <p id="profileEmail">
+              email@example.com
+            </p>
+
+            <div class="profile-badges">
+              <span
+                class="profile-badge role-user"
+                id="profileRole"
+              >
+                Người dùng
+              </span>
+
+              <span
+                class="profile-badge provider-local"
+                id="profileProvider"
+              >
+                Tài khoản thường
+              </span>
+            </div>
+
+            <div class="profile-details">
+              <div>
+                <span>Trạng thái</span>
+
+                <strong id="profileStatus">
+                  Đang hoạt động
+                </strong>
+              </div>
+
+              <div>
+                <span>Ngày tạo</span>
+
+                <strong id="profileCreatedAt">
+                  —
+                </strong>
+              </div>
+
+              <div>
+                <span>Mã tài khoản</span>
+
+                <strong id="profileId">
+                  —
+                </strong>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="profile-logout-btn"
+              id="accountLogoutBtn"
+            >
+              Đăng xuất
+            </button>
+          </div>
+        </aside>
+
+        <!-- Nội dung bên phải -->
+        <div class="account-content">
+          <!-- Cập nhật thông tin -->
+          <section class="account-panel">
+            <div class="panel-heading">
+              <div class="panel-icon">
+                👤
+              </div>
+
+              <div>
+                <h2>Thông tin cá nhân</h2>
+
+                <p>
+                  Cập nhật họ tên và ảnh đại diện
+                  của tài khoản.
+                </p>
+              </div>
+            </div>
+
+            <form
+              id="profileForm"
+              class="account-form"
+              novalidate
+            >
+              <div class="form-group">
+                <label for="accountName">
+                  Họ và tên
+                </label>
+
+                <input
+                  type="text"
+                  id="accountName"
+                  placeholder="Nhập họ và tên"
+                  autocomplete="name"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="accountEmail">
+                  Email
+                </label>
+
+                <input
+                  type="email"
+                  id="accountEmail"
+                  disabled
+                />
+
+                <small>
+                  Email dùng để đăng nhập nên không thể
+                  thay đổi trong phiên bản hiện tại.
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="accountAvatar">
+                  Đường dẫn ảnh đại diện
+                </label>
+
+                <input
+                  type="url"
+                  id="accountAvatar"
+                  placeholder="https://example.com/avatar.jpg"
+                />
+
+                <small>
+                  Để trống để sử dụng chữ cái đầu
+                  của tên làm ảnh đại diện.
+                </small>
+              </div>
+
+              <div class="avatar-preview-box">
+                <div
+                  class="avatar-preview"
+                  id="avatarPreview"
+                >
+                  U
+                </div>
+
+                <div>
+                  <strong>Xem trước ảnh đại diện</strong>
+
+                  <p>
+                    Ảnh mới sẽ xuất hiện trên taskbar
+                    sau khi lưu.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                class="account-submit-btn"
+              >
+                Lưu thay đổi
+              </button>
+            </form>
+          </section>
+
+          <!-- Đổi mật khẩu -->
+          <section
+            class="account-panel"
+            id="passwordPanel"
+          >
+            <div class="panel-heading">
+              <div class="panel-icon">
+                🔐
+              </div>
+
+              <div>
+                <h2>Đổi mật khẩu</h2>
+
+                <p>
+                  Thay đổi mật khẩu đăng nhập
+                  của tài khoản.
+                </p>
+              </div>
+            </div>
+
+            <form
+              id="passwordForm"
+              class="account-form"
+              novalidate
+            >
+              <div class="form-group">
+                <label for="currentPassword">
+                  Mật khẩu hiện tại
+                </label>
+
+                <div class="password-field">
+                  <input
+                    type="password"
+                    id="currentPassword"
+                    placeholder="Nhập mật khẩu hiện tại"
+                    autocomplete="current-password"
+                  />
+
+                  <button
+                    type="button"
+                    class="password-toggle-btn"
+                    data-password-target="currentPassword"
+                    aria-label="Hiện hoặc ẩn mật khẩu"
+                  >
+                    👁
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="newPassword">
+                    Mật khẩu mới
+                  </label>
+
+                  <div class="password-field">
+                    <input
+                      type="password"
+                      id="newPassword"
+                      placeholder="Tối thiểu 8 ký tự"
+                      autocomplete="new-password"
+                    />
+
+                    <button
+                      type="button"
+                      class="password-toggle-btn"
+                      data-password-target="newPassword"
+                      aria-label="Hiện hoặc ẩn mật khẩu"
+                    >
+                      👁
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="confirmNewPassword">
+                    Nhập lại mật khẩu mới
+                  </label>
+
+                  <div class="password-field">
+                    <input
+                      type="password"
+                      id="confirmNewPassword"
+                      placeholder="Nhập lại mật khẩu"
+                      autocomplete="new-password"
+                    />
+
+                    <button
+                      type="button"
+                      class="password-toggle-btn"
+                      data-password-target="confirmNewPassword"
+                      aria-label="Hiện hoặc ẩn mật khẩu"
+                    >
+                      👁
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                class="account-submit-btn password-submit"
+              >
+                Cập nhật mật khẩu
+              </button>
+            </form>
+          </section>
+
+          <!-- Thông báo cho tài khoản Google -->
+          <section
+            class="google-password-notice"
+            id="googlePasswordNotice"
+          >
+            <div class="google-notice-icon">
+              G
+            </div>
+
+            <div>
+              <h3>Tài khoản Google</h3>
+
+              <p>
+                Tài khoản này đăng nhập bằng Google nên
+                không sử dụng mật khẩu của website.
+              </p>
+            </div>
+          </section>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/js/destinations-data.js"></script>
+  <script src="/js/site-navbar.js"></script>
+  <script src="/js/navbar-scroll.js"></script>
+  <script src="/js/auth-ui.js"></script>
+  <script src="/js/account.js"></script>
+</body>
+</html>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>Quản lý tài khoản - Vietnam Travel TTS</title>
+
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  />
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Montserrat:wght@600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/css/admin-users.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/css/navbar.css"
+  />
+</head>
+
+<body>
+  <!-- Taskbar dùng chung -->
+  <!-- <div id="siteNavbar"></div> -->
+
+  <main class="admin-page">
+    <div class="admin-container">
+      <!-- Tiêu đề -->
+      <section class="admin-heading">
+        <div>
+          <span class="admin-badge">
+            Khu vực quản trị
+          </span>
+
+          <h1>Quản lý tài khoản</h1>
+
+          <p>
+            Theo dõi, tìm kiếm và quản lý các tài khoản
+            đang sử dụng Vietnam Travel TTS.
+          </p>
+        </div>
+
+        <a
+          href="/index.html"
+          class="back-home-btn"
+        >
+          ← Về trang chủ
+        </a>
+      </section>
+
+      <!-- Thông báo -->
+      <div
+        class="admin-message"
+        id="adminMessage"
+        role="status"
+      ></div>
+
+      <!-- Thống kê -->
+      <section class="account-statistics">
+        <article class="stat-card">
+          <span class="stat-icon">👥</span>
+
+          <div>
+            <strong id="totalAccounts">
+              0
+            </strong>
+
+            <span>Tổng tài khoản</span>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <span class="stat-icon">✓</span>
+
+          <div>
+            <strong id="activeAccounts">
+              0
+            </strong>
+
+            <span>Đang hoạt động</span>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <span class="stat-icon">🔒</span>
+
+          <div>
+            <strong id="lockedAccounts">
+              0
+            </strong>
+
+            <span>Đã bị khóa</span>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <span class="stat-icon">🛡</span>
+
+          <div>
+            <strong id="adminAccounts">
+              0
+            </strong>
+
+            <span>Quản trị viên</span>
+          </div>
+        </article>
+      </section>
+
+      <!-- Tìm kiếm và lọc -->
+      <section class="filter-panel">
+        <div class="filter-search">
+          <label for="adminSearchInput">
+            Tìm kiếm tài khoản
+          </label>
+
+          <div class="filter-search-box">
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle
+                cx="11"
+                cy="11"
+                r="7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              ></circle>
+
+              <path
+                d="M20 20L16.2 16.2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              ></path>
+            </svg>
+
+            <input
+              type="search"
+              id="adminSearchInput"
+              placeholder="Nhập họ tên hoặc email..."
+            />
+          </div>
+        </div>
+
+        <div class="filter-field">
+          <label for="roleFilter">
+            Vai trò
+          </label>
+
+          <select id="roleFilter">
+            <option value="ALL">
+              Tất cả vai trò
+            </option>
+
+            <option value="USER">
+              Người dùng
+            </option>
+
+            <option value="ADMIN">
+              Quản trị viên
+            </option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label for="statusFilter">
+            Trạng thái
+          </label>
+
+          <select id="statusFilter">
+            <option value="ALL">
+              Tất cả trạng thái
+            </option>
+
+            <option value="ACTIVE">
+              Đang hoạt động
+            </option>
+
+            <option value="LOCKED">
+              Đã bị khóa
+            </option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label for="providerFilter">
+            Đăng nhập
+          </label>
+
+          <select id="providerFilter">
+            <option value="ALL">
+              Tất cả phương thức
+            </option>
+
+            <option value="LOCAL">
+              Tài khoản thường
+            </option>
+
+            <option value="GOOGLE">
+              Google
+            </option>
+          </select>
+        </div>
+
+        <button
+          type="button"
+          class="reset-filter-btn"
+          id="resetFilterBtn"
+        >
+          Xóa bộ lọc
+        </button>
+      </section>
+
+      <!-- Bảng tài khoản -->
+      <section class="accounts-panel">
+        <div class="accounts-panel-heading">
+          <div>
+            <h2>Danh sách tài khoản</h2>
+
+            <p id="accountResultLine">
+              Đang hiển thị 0 tài khoản.
+            </p>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="accounts-table">
+            <thead>
+              <tr>
+                <th>Tài khoản</th>
+                <th>Phương thức</th>
+                <th>Vai trò</th>
+                <th>Trạng thái</th>
+                <th>Ngày tạo</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+
+            <tbody id="accountTableBody"></tbody>
+          </table>
+        </div>
+
+        <div
+          class="empty-accounts"
+          id="emptyAccounts"
+        >
+          <span>⌕</span>
+
+          <h3>Không tìm thấy tài khoản</h3>
+
+          <p>
+            Hãy thử thay đổi từ khóa hoặc bộ lọc.
+          </p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Modal xem chi tiết -->
+  <div
+    class="account-modal"
+    id="accountModal"
+    aria-hidden="true"
+  >
+    <div
+      class="modal-overlay"
+      id="modalOverlay"
+    ></div>
+
+    <section
+      class="modal-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modalAccountName"
+    >
+      <button
+        type="button"
+        class="modal-close-btn"
+        id="modalCloseBtn"
+        aria-label="Đóng"
+      >
+        ×
+      </button>
+
+      <div class="modal-avatar" id="modalAvatar">
+        U
+      </div>
+
+      <h2 id="modalAccountName">
+        Tên tài khoản
+      </h2>
+
+      <p id="modalAccountEmail">
+        email@example.com
+      </p>
+
+      <div class="modal-detail-list">
+        <div>
+          <span>Mã tài khoản</span>
+          <strong id="modalAccountId">—</strong>
+        </div>
+
+        <div>
+          <span>Vai trò</span>
+          <strong id="modalAccountRole">—</strong>
+        </div>
+
+        <div>
+          <span>Trạng thái</span>
+          <strong id="modalAccountStatus">—</strong>
+        </div>
+
+        <div>
+          <span>Phương thức</span>
+          <strong id="modalAccountProvider">—</strong>
+        </div>
+
+        <div>
+          <span>Ngày tạo</span>
+          <strong id="modalAccountCreatedAt">—</strong>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/js/destinations-data.js"></script>
+  <script src="/js/site-navbar.js"></script>
+  <script src="/js/navbar-scroll.js"></script>
+  <script src="/js/auth-ui.js"></script>
+  <script src="/js/admin-users.js"></script>
+</body>
+</html>
