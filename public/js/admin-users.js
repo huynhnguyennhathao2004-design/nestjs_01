@@ -78,58 +78,18 @@ const DEFAULT_ADMIN = {
 ===================================== */
 
 function getCurrentUser() {
-  const savedUser =
-    sessionStorage.getItem('user');
-
-  if (!savedUser) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(savedUser);
-  } catch (error) {
-    sessionStorage.removeItem('user');
-
-    return null;
-  }
+  return AuthStore.getCurrentUser();
 }
 
 
 function getAccounts() {
-  const savedAccounts =
-    localStorage.getItem(
-      'travelTtsAccounts'
-    );
-
-  if (savedAccounts) {
-    try {
-      const accounts =
-        JSON.parse(savedAccounts);
-
-      if (Array.isArray(accounts)) {
-        return accounts;
-      }
-    } catch (error) {
-      localStorage.removeItem(
-        'travelTtsAccounts'
-      );
-    }
-  }
-
-  const accounts = [
-    DEFAULT_ADMIN
-  ];
-
-  saveAccounts(accounts);
-
-  return accounts;
+  return AuthStore.getAccounts();
 }
 
 
 function saveAccounts(accounts) {
-  localStorage.setItem(
-    'travelTtsAccounts',
-    JSON.stringify(accounts)
+  return AuthStore.saveAccounts(
+    accounts
   );
 }
 
@@ -150,10 +110,7 @@ function protectAdminPage() {
     return false;
   }
 
-  if (
-    String(currentUser.role)
-      .toUpperCase() !== 'ADMIN'
-  ) {
+  if (!AuthStore.isAdmin(currentUser)) {
     window.alert(
       'Bạn không có quyền truy cập trang quản trị.'
     );
@@ -274,31 +231,17 @@ function showMessage(
   message,
   type
 ) {
-  if (!adminMessage) {
+  if (!window.Toast) {
+    console.log(message);
+
     return;
   }
 
-  adminMessage.textContent =
-    message;
+  const toastMethod =
+    Toast[type] ||
+    Toast.info;
 
-  adminMessage.className =
-    `admin-message show ${type}`;
-
-  window.clearTimeout(
-    showMessage.timeoutId
-  );
-
-  showMessage.timeoutId =
-    window.setTimeout(
-      function () {
-        adminMessage.className =
-          'admin-message';
-
-        adminMessage.textContent =
-          '';
-      },
-      3500
-    );
+  toastMethod(message);
 }
 
 
@@ -850,7 +793,7 @@ function closeAccountModal() {
    THAY ĐỔI VAI TRÒ
 ===================================== */
 
-function changeAccountRole(
+async function changeAccountRole(
   accountId
 ) {
   const accounts =
@@ -916,11 +859,26 @@ function changeAccountRole(
       : 'ADMIN';
 
   const confirmation =
-    window.confirm(
-      newRole === 'ADMIN'
-        ? `Cấp quyền quản trị cho ${account.name}?`
-        : `Hạ quyền ${account.name} xuống người dùng?`
-    );
+    await AppModal.confirm({
+      type: 'warning',
+
+      title:
+        newRole === 'ADMIN'
+          ? 'Cấp quyền quản trị'
+          : 'Hạ quyền tài khoản',
+
+      message:
+        newRole === 'ADMIN'
+          ? `Bạn có chắc muốn cấp quyền quản trị cho ${account.name}?`
+          : `Bạn có chắc muốn chuyển ${account.name} về quyền người dùng?`,
+
+      confirmText:
+        newRole === 'ADMIN'
+          ? 'Cấp quyền'
+          : 'Hạ quyền',
+
+      cancelText: 'Hủy'
+    });
 
   if (!confirmation) {
     return;
@@ -944,7 +902,7 @@ function changeAccountRole(
    KHÓA HOẶC MỞ KHÓA
 ===================================== */
 
-function toggleAccountStatus(
+async function toggleAccountStatus(
   accountId
 ) {
   const accounts =
@@ -998,11 +956,29 @@ function toggleAccountStatus(
       : 'LOCKED';
 
   const confirmation =
-    window.confirm(
-      newStatus === 'LOCKED'
-        ? `Khóa tài khoản ${account.name}?`
-        : `Mở khóa tài khoản ${account.name}?`
-    );
+    await AppModal.confirm({
+      type:
+        newStatus === 'LOCKED'
+          ? 'warning'
+          : 'success',
+
+      title:
+        newStatus === 'LOCKED'
+          ? 'Khóa tài khoản'
+          : 'Mở khóa tài khoản',
+
+      message:
+        newStatus === 'LOCKED'
+          ? `Tài khoản ${account.name} sẽ không thể đăng nhập sau khi bị khóa.`
+          : `Tài khoản ${account.name} sẽ có thể đăng nhập lại.`,
+
+      confirmText:
+        newStatus === 'LOCKED'
+          ? 'Khóa tài khoản'
+          : 'Mở khóa',
+
+      cancelText: 'Hủy'
+    });
 
   if (!confirmation) {
     return;
@@ -1026,7 +1002,7 @@ function toggleAccountStatus(
    XÓA TÀI KHOẢN
 ===================================== */
 
-function deleteAccount(
+async function deleteAccount(
   accountId
 ) {
   const accounts =
@@ -1087,9 +1063,20 @@ function deleteAccount(
   }
 
   const confirmation =
-    window.confirm(
-      `Bạn có chắc muốn xóa tài khoản ${account.name}?\n\nThao tác này không thể hoàn tác trong bản demo.`
-    );
+    await AppModal.confirm({
+      type: 'danger',
+
+      title: 'Xóa tài khoản',
+
+      message:
+        `Bạn có chắc muốn xóa tài khoản ${account.name}?\n\nThao tác này không thể hoàn tác.`,
+
+      confirmText: 'Xóa tài khoản',
+
+      cancelText: 'Không xóa',
+
+      closeOnOverlay: false
+    });
 
   if (!confirmation) {
     return;
@@ -1126,7 +1113,7 @@ function setupTableActions() {
 
   accountTableBody.addEventListener(
     'click',
-    function (event) {
+    async function (event) {
       const button =
         event.target.closest(
           '[data-action]'
@@ -1158,19 +1145,23 @@ function setupTableActions() {
       if (action === 'view') {
         openAccountModal(account);
       }
-
+      
       if (action === 'role') {
-        changeAccountRole(accountId);
+        await changeAccountRole(
+          accountId
+        );
       }
 
       if (action === 'status') {
-        toggleAccountStatus(
+        await toggleAccountStatus(
           accountId
         );
       }
 
       if (action === 'delete') {
-        deleteAccount(accountId);
+        await deleteAccount(
+          accountId
+        );
       }
     }
   );

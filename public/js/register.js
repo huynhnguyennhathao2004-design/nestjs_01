@@ -43,99 +43,14 @@ const toggleConfirmPassword =
     'toggleConfirmPassword'
   );
 
-
-const DEFAULT_ADMIN = {
-  id: 1,
-  name: 'Admin',
-  email: 'admin@gmail.com',
-  password: '123456',
-  role: 'ADMIN',
-  status: 'ACTIVE',
-  provider: 'LOCAL',
-  avatar: '',
-  createdAt:
-    new Date().toISOString()
-};
-
-
-function getAccounts() {
-  const savedAccounts =
-    localStorage.getItem(
-      'travelTtsAccounts'
-    );
-
-  if (savedAccounts) {
-    try {
-      const accounts =
-        JSON.parse(savedAccounts);
-
-      return Array.isArray(accounts)
-        ? accounts
-        : [];
-    } catch (error) {
-      localStorage.removeItem(
-        'travelTtsAccounts'
-      );
-    }
-  }
-
-  const accounts = [
-    DEFAULT_ADMIN
-  ];
-
-  saveAccounts(accounts);
-
-  return accounts;
-}
-
-
-function saveAccounts(accounts) {
-  localStorage.setItem(
-    'travelTtsAccounts',
-    JSON.stringify(accounts)
-  );
-}
-
-
-function createAccountId() {
-  if (
-    window.crypto &&
-    typeof window.crypto.randomUUID ===
-      'function'
-  ) {
-    return window.crypto.randomUUID();
-  }
-
-  return (
-    Date.now().toString() +
-    Math.random()
-      .toString(16)
-      .slice(2)
-  );
-}
-
-
-function normalizeEmail(email) {
-  return String(email || '')
-    .trim()
-    .toLowerCase();
-}
-
-
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-    email
-  );
-}
+  
 
 
 function showRegisterMessage(
   message,
   type
 ) {
-  if (!registerMessage) {
-    return;
-  }
+
 
   registerMessage.textContent =
     message;
@@ -146,9 +61,7 @@ function showRegisterMessage(
 
 
 function clearRegisterMessage() {
-  if (!registerMessage) {
-    return;
-  }
+
 
   registerMessage.textContent = '';
 
@@ -200,9 +113,9 @@ if (registerForm) {
         fullNameInput.value.trim();
 
       const email =
-        normalizeEmail(
-          registerEmailInput.value
-        );
+        registerEmailInput.value
+          .trim()
+          .toLowerCase();
 
       const password =
         registerPasswordInput.value;
@@ -210,40 +123,10 @@ if (registerForm) {
       const confirmPassword =
         confirmPasswordInput.value;
 
-      if (name.length < 2) {
-        showRegisterMessage(
-          'Họ và tên phải có ít nhất 2 ký tự.',
-          'error'
-        );
-
-        fullNameInput.focus();
-
-        return;
-      }
-
-      if (!isValidEmail(email)) {
-        showRegisterMessage(
-          'Địa chỉ email không hợp lệ.',
-          'error'
-        );
-
-        registerEmailInput.focus();
-
-        return;
-      }
-
-      if (password.length < 8) {
-        showRegisterMessage(
-          'Mật khẩu phải có ít nhất 8 ký tự.',
-          'error'
-        );
-
-        registerPasswordInput.focus();
-
-        return;
-      }
-
-      if (password !== confirmPassword) {
+      if (
+        password !==
+        confirmPassword
+      ) {
         showRegisterMessage(
           'Mật khẩu nhập lại không khớp.',
           'error'
@@ -254,7 +137,9 @@ if (registerForm) {
         return;
       }
 
-      if (!acceptPolicyInput.checked) {
+      if (
+        !acceptPolicyInput.checked
+      ) {
         showRegisterMessage(
           'Bạn cần đồng ý với điều khoản sử dụng.',
           'error'
@@ -263,50 +148,28 @@ if (registerForm) {
         return;
       }
 
-      const accounts =
-        getAccounts();
+      const result =
+        AuthStore.register({
+          name: name,
+          email: email,
+          password: password
+        });
 
-      const emailExists =
-        accounts.some(
-          function (account) {
-            return (
-              normalizeEmail(
-                account.email
-              ) === email
-            );
-          }
-        );
-
-      if (emailExists) {
+      if (!result.ok) {
         showRegisterMessage(
-          'Email này đã được sử dụng.',
+          result.message,
           'error'
         );
 
-        registerEmailInput.focus();
+
 
         return;
       }
 
-      const newAccount = {
-        id: createAccountId(),
-        name: name,
-        email: email,
-        password: password,
-        role: 'USER',
-        status: 'ACTIVE',
-        provider: 'LOCAL',
-        avatar: '',
-        createdAt:
-          new Date().toISOString()
-      };
 
-      accounts.push(newAccount);
-
-      saveAccounts(accounts);
 
       showRegisterMessage(
-        'Tạo tài khoản thành công. Đang chuyển tới trang đăng nhập...',
+        'Tạo tài khoản thành công. Đang chuyển đến trang đăng nhập...',
         'success'
       );
 
@@ -314,12 +177,37 @@ if (registerForm) {
 
       window.setTimeout(
         function () {
-          window.location.href =
+          const params =
+            new URLSearchParams(
+              window.location.search
+            );
+
+          const redirect =
+            params.get('redirect');
+
+          let loginUrl =
             `/login.html?email=${encodeURIComponent(
               email
             )}`;
+
+          if (redirect) {
+            const safeRedirect =
+              AuthGuard.sanitizeRedirect(
+                redirect,
+                '/index.html'
+              );
+
+            loginUrl +=
+              `&redirect=${encodeURIComponent(
+                safeRedirect
+              )}`;
+          }
+
+          window.location.replace(
+            loginUrl
+          );
         },
-        1200
+        1000
       );
     }
   );

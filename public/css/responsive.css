@@ -1,0 +1,547 @@
+/* =========================================
+   THIẾT LẬP RESPONSIVE DÙNG CHUNG
+========================================= */
+
+:root {
+  --page-padding:
+    clamp(16px, 5vw, 72px);
+
+  --content-width:
+    1400px;
+}
+
+html {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Ngăn hình ảnh và video vượt khỏi màn hình */
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+img {
+  height: auto;
+}
+
+/* Giúp hình ảnh không bị nhảy bố cục */
+
+img[width][height] {
+  height: auto;
+}
+
+/* Khung hình dùng chung */
+
+.media-frame {
+  position: relative;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      110deg,
+      #e2e8f0 8%,
+      #f8fafc 18%,
+      #e2e8f0 33%
+    );
+
+  background-size: 200% 100%;
+
+  animation:
+    imagePlaceholder
+    1.4s linear infinite;
+}
+
+.media-frame.image-loaded {
+  background: #e2e8f0;
+  animation: none;
+}
+
+.media-frame img {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+
+  opacity: 0;
+
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+}
+
+.media-frame.image-loaded img {
+  opacity: 1;
+}
+
+@keyframes imagePlaceholder {
+  to {
+    background-position-x: -200%;
+  }
+}
+
+/* =========================================
+   CONTAINER DÙNG CHUNG
+========================================= */
+
+.page-container,
+.home-container,
+.destinations-container,
+.detail-container,
+.tts-container,
+.account-container,
+.admin-container {
+  width: min(
+    100%,
+    var(--content-width)
+  );
+
+  margin-left: auto;
+  margin-right: auto;
+
+  padding-left:
+    var(--page-padding);
+
+  padding-right:
+    var(--page-padding);
+}
+
+/* =========================================
+   HERO
+========================================= */
+
+.hero,
+.hero-section,
+.home-hero {
+  width: 100%;
+
+  min-height:
+    min(850px, 100vh);
+
+  position: relative;
+
+  overflow: hidden;
+}
+
+.hero img,
+.hero-slide img,
+.home-hero img {
+  width: 100%;
+  height: 100%;
+
+  position: absolute;
+  inset: 0;
+
+  object-fit: cover;
+  object-position: center;
+}
+
+/* =========================================
+   CARD ĐỊA ĐIỂM
+========================================= */
+
+.destination-grid,
+.destinations-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap: 24px;
+}
+
+.destination-card {
+  min-width: 0;
+}
+
+.destination-card-image,
+.destination-image,
+.destination-card .media-frame {
+  width: 100%;
+
+  aspect-ratio: 16 / 10;
+
+  overflow: hidden;
+
+  border-radius: inherit;
+}
+
+.destination-card img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+/* =========================================
+   ĐIỂM KHÁM PHÁ VÀ ẨM THỰC
+========================================= */
+
+.detail-media-grid,
+.highlight-grid,
+.food-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap: 22px;
+}
+
+.detail-media-card {
+  min-width: 0;
+}
+
+.detail-media-card-image,
+.detail-media-card .media-frame {
+  width: 100%;
+
+  aspect-ratio: 16 / 10;
+
+  overflow: hidden;
+}
+
+.detail-media-card img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+/* =========================================
+   TÍNH NĂNG TRANG CHỦ
+========================================= */
+
+.feature-grid,
+.features-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap: 22px;
+}
+
+/* =========================================
+   ACCOUNT VÀ ADMIN
+========================================= */
+
+.account-layout {
+  min-width: 0;
+}
+
+.account-content {
+  min-width: 0;
+}
+
+.account-statistics {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+
+  gap: 18px;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+
+  -webkit-overflow-scrolling:
+    touch;
+}
+
+.accounts-table {
+  min-width: 960px;
+}
+
+/* =========================================
+   FORM
+========================================= */
+
+input,
+textarea,
+select,
+button {
+  max-width: 100%;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.form-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 16px;
+}
+
+/* =========================================
+   TABLET LỚN
+========================================= */
+
+@media (max-width: 1200px) {
+  .destination-grid,
+  .destinations-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .detail-media-grid,
+  .highlight-grid,
+  .food-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .account-statistics {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 900px) {
+  :root {
+    --page-padding: 24px;
+  }
+
+  .hero,
+  .hero-section,
+  .home-hero {
+    min-height: 720px;
+  }
+
+  .feature-grid,
+  .features-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .account-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-card {
+    position: static;
+  }
+
+  .filter-panel {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .filter-search {
+    grid-column: 1 / -1;
+  }
+}
+
+/* =========================================
+   ĐIỆN THOẠI
+========================================= */
+
+@media (max-width: 700px) {
+  :root {
+    --page-padding: 18px;
+  }
+
+  .hero,
+  .hero-section,
+  .home-hero {
+    min-height: 650px;
+  }
+
+  .hero-content,
+  .hero-text {
+    width: 100%;
+
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .destination-grid,
+  .destinations-grid,
+  .detail-media-grid,
+  .highlight-grid,
+  .food-grid,
+  .feature-grid,
+  .features-grid,
+  .account-statistics,
+  .filter-panel,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-search {
+    grid-column: auto;
+  }
+
+  .detail-action-bar {
+    display: grid;
+    grid-template-columns: 1fr;
+
+    gap: 10px;
+  }
+
+  .detail-action-btn {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .account-heading,
+  .admin-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .account-back-btn,
+  .back-home-btn,
+  .reset-filter-btn {
+    width: 100%;
+  }
+
+  .account-panel,
+  .accounts-panel {
+    border-radius: 18px;
+  }
+
+  .modal-card,
+  .app-modal-dialog {
+    max-height:
+      calc(100vh - 32px);
+
+    overflow-y: auto;
+  }
+}
+
+/* =========================================
+   ĐIỆN THOẠI NHỎ
+========================================= */
+
+@media (max-width: 480px) {
+  :root {
+    --page-padding: 14px;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
+  .hero,
+  .hero-section,
+  .home-hero {
+    min-height: 600px;
+  }
+
+  .hero-title,
+  .hero h1 {
+    font-size:
+      clamp(
+        32px,
+        11vw,
+        46px
+      );
+  }
+
+  .destination-card,
+  .detail-media-card,
+  .feature-card,
+  .account-panel,
+  .stat-card {
+    border-radius: 16px;
+  }
+
+  .destination-card-image,
+  .destination-image,
+  .destination-card .media-frame {
+    aspect-ratio: 4 / 3;
+  }
+
+  .detail-media-card-image,
+  .detail-media-card .media-frame {
+    aspect-ratio: 4 / 3;
+  }
+
+  .profile-summary {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .account-actions {
+    min-width: 230px;
+  }
+}
+
+/* =========================================
+   GIẢM HIỆU ỨNG KHI THIẾT BỊ YÊU CẦU
+========================================= */
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+
+    animation-duration:
+      0.01ms !important;
+
+    animation-iteration-count:
+      1 !important;
+
+    transition-duration:
+      0.01ms !important;
+  }
+}

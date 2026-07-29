@@ -12,7 +12,7 @@ const emptyState =
   document.getElementById(
     'emptyState'
   );
-
+  
 
 function getMainImage(item) {
   if (
@@ -71,13 +71,12 @@ function renderDestinations(items) {
     emptyState.style.display =
       'none';
   }
+  
 
   items.forEach(function (item) {
-    const mainImage =
-      getMainImage(item);
+    const mainImage = getMainImage(item);
 
-    const categories =
-      getCategories(item);
+    const categories = getCategories(item);
 
     const categoryTags =
       categories
@@ -100,13 +99,17 @@ function renderDestinations(items) {
       'destination-card';
 
     card.innerHTML = `
-      <div
-        class="destination-img"
-        style="
-          background-image:
-          url('${mainImage}');
-        "
-      >
+      <div class="destination-img media-frame">
+        <img
+          src="${mainImage}"
+          alt="${item.name || 'Địa điểm du lịch'}"
+          width="800"
+          height="500"
+          loading="lazy"
+          decoding="async"
+          data-fallback="/assets/images/default-place.jpg"
+        />
+
         <div class="tag-row">
           <span class="tag">
             ${item.region || 'Chưa xác định'}
@@ -166,6 +169,12 @@ function renderDestinations(items) {
 
     destinationGrid.appendChild(card);
   });
+
+  if (window.ImageUtils) {
+    ImageUtils.scan(
+      destinationGrid
+  );
+}
 }
 
 
@@ -183,6 +192,7 @@ function getFilterState() {
       params.get('category') || 'all'
   };
 }
+
 
 
 function filterDestinationsFromUrl() {

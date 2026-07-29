@@ -1,0 +1,539 @@
+/* =========================================
+   TOAST THÔNG BÁO
+========================================= */
+
+.app-toast-container {
+  position: fixed;
+  top: 94px;
+  right: 22px;
+
+  z-index: 30000;
+
+  width: min(390px, calc(100vw - 32px));
+
+  display: grid;
+  gap: 12px;
+
+  pointer-events: none;
+}
+
+.app-toast {
+  position: relative;
+
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 32px;
+  align-items: flex-start;
+  gap: 11px;
+
+  overflow: hidden;
+
+  padding: 15px 14px;
+
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.97);
+
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+
+  box-shadow:
+    0 20px 55px
+    rgba(15, 23, 42, 0.2);
+
+  backdrop-filter: blur(16px);
+
+  pointer-events: auto;
+
+  animation:
+    appToastEnter
+    0.28s ease;
+}
+
+.app-toast.is-leaving {
+  animation:
+    appToastLeave
+    0.22s ease forwards;
+}
+
+@keyframes appToastEnter {
+  from {
+    opacity: 0;
+
+    transform:
+      translateX(25px)
+      translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateX(0)
+      translateY(0);
+  }
+}
+
+@keyframes appToastLeave {
+  from {
+    opacity: 1;
+
+    transform:
+      translateX(0);
+  }
+
+  to {
+    opacity: 0;
+
+    transform:
+      translateX(35px);
+  }
+}
+
+.app-toast-icon {
+  width: 42px;
+  height: 42px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 13px;
+
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.app-toast-content {
+  min-width: 0;
+
+  padding-top: 2px;
+}
+
+.app-toast-title {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: #0f172a;
+
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.app-toast-message {
+  margin: 0;
+
+  color: #475569;
+
+  font-size: 12px;
+  line-height: 1.55;
+
+  overflow-wrap: anywhere;
+}
+
+.app-toast-close {
+  width: 30px;
+  height: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #64748b;
+  background: transparent;
+
+  border: none;
+  border-radius: 8px;
+
+  font-size: 20px;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.app-toast-close:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+.app-toast-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  height: 3px;
+
+  transform-origin: left;
+
+  animation-name:
+    appToastProgress;
+
+  animation-timing-function:
+    linear;
+
+  animation-fill-mode:
+    forwards;
+}
+
+.app-toast:hover
+.app-toast-progress {
+  animation-play-state: paused;
+}
+
+@keyframes appToastProgress {
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Toast success */
+
+.app-toast-success {
+  border-left: 4px solid #16a34a;
+}
+
+.app-toast-success
+.app-toast-icon {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.app-toast-success
+.app-toast-progress {
+  background: #16a34a;
+}
+
+/* Toast error */
+
+.app-toast-error {
+  border-left: 4px solid #dc2626;
+}
+
+.app-toast-error
+.app-toast-icon {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.app-toast-error
+.app-toast-progress {
+  background: #dc2626;
+}
+
+/* Toast warning */
+
+.app-toast-warning {
+  border-left: 4px solid #d97706;
+}
+
+.app-toast-warning
+.app-toast-icon {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.app-toast-warning
+.app-toast-progress {
+  background: #d97706;
+}
+
+/* Toast info */
+
+.app-toast-info {
+  border-left: 4px solid #2563eb;
+}
+
+.app-toast-info
+.app-toast-icon {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.app-toast-info
+.app-toast-progress {
+  background: #2563eb;
+}
+
+/* =========================================
+   MODAL DÙNG CHUNG
+========================================= */
+
+body.app-modal-open {
+  overflow: hidden;
+}
+
+.app-modal-root {
+  position: fixed;
+  inset: 0;
+
+  z-index: 29000;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+}
+
+.app-modal-root.show {
+  display: flex;
+}
+
+.app-modal-overlay {
+  position: absolute;
+  inset: 0;
+
+  background:
+    rgba(2, 6, 23, 0.72);
+
+  backdrop-filter: blur(6px);
+
+  animation:
+    appModalOverlayEnter
+    0.22s ease;
+}
+
+@keyframes appModalOverlayEnter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.app-modal-dialog {
+  width: min(100%, 470px);
+
+  position: relative;
+  z-index: 1;
+
+  overflow: hidden;
+
+  padding: 30px;
+
+  color: #0f172a;
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+
+  box-shadow:
+    0 30px 90px
+    rgba(2, 6, 23, 0.4);
+
+  animation:
+    appModalDialogEnter
+    0.26s ease;
+}
+
+@keyframes appModalDialogEnter {
+  from {
+    opacity: 0;
+
+    transform:
+      translateY(18px)
+      scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+.app-modal-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+
+  margin-bottom: 18px;
+}
+
+.app-modal-icon {
+  width: 52px;
+  height: 52px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 16px;
+
+  font-size: 23px;
+  font-weight: 900;
+}
+
+.app-modal-title {
+  margin: 2px 0 7px;
+
+  color: #0f172a;
+
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.app-modal-message {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 13px;
+  line-height: 1.65;
+
+  white-space: pre-line;
+}
+
+.app-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 11px;
+
+  margin-top: 26px;
+}
+
+.app-modal-button {
+  min-height: 44px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 18px;
+
+  border-radius: 12px;
+
+  font-size: 12px;
+  font-weight: 850;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    background 0.22s ease;
+}
+
+.app-modal-button:hover {
+  transform: translateY(-1px);
+}
+
+.app-modal-cancel {
+  color: #334155;
+  background: #ffffff;
+
+  border: 1px solid #cbd5e1;
+}
+
+.app-modal-cancel:hover {
+  background: #f8fafc;
+}
+
+.app-modal-confirm {
+  color: #ffffff;
+  background: #2563eb;
+
+  border: 1px solid #2563eb;
+
+  box-shadow:
+    0 10px 24px
+    rgba(37, 99, 235, 0.24);
+}
+
+/* Modal danger */
+
+.app-modal-danger
+.app-modal-icon {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.app-modal-danger
+.app-modal-confirm {
+  background: #dc2626;
+
+  border-color: #dc2626;
+
+  box-shadow:
+    0 10px 24px
+    rgba(220, 38, 38, 0.25);
+}
+
+/* Modal warning */
+
+.app-modal-warning
+.app-modal-icon {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.app-modal-warning
+.app-modal-confirm {
+  background: #d97706;
+
+  border-color: #d97706;
+
+  box-shadow:
+    0 10px 24px
+    rgba(217, 119, 6, 0.25);
+}
+
+/* Modal success */
+
+.app-modal-success
+.app-modal-icon {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.app-modal-success
+.app-modal-confirm {
+  background: #16a34a;
+
+  border-color: #16a34a;
+}
+
+/* Modal info */
+
+.app-modal-info
+.app-modal-icon {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+@media (max-width: 600px) {
+  .app-toast-container {
+    top: 82px;
+    right: 16px;
+    left: 16px;
+
+    width: auto;
+  }
+
+  .app-modal-dialog {
+    padding: 24px 19px;
+
+    border-radius: 20px;
+  }
+
+  .app-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .app-modal-button {
+    width: 100%;
+  }
+}

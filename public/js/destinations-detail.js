@@ -356,11 +356,21 @@ function renderRelatedPlaces(
         return `
           <article class="related-card">
             <a
-              class="related-image"
+              class="related-image media-frame"
               href="/destinations-detail.html?id=${item.id}"
-              style="background-image: url('${image}');"
+  
               aria-label="Xem ${item.name}"
-            ></a>
+            >
+              <img
+                src="${image}"
+                alt="${item.name}"
+                width="800"
+                height="500"
+                loading="lazy"
+                decoding="async"
+                data-fallback="${fallbackImage}"
+              />
+            </a>
 
             <div class="related-content">
               <span>
@@ -389,6 +399,12 @@ function renderRelatedPlaces(
         `;
       })
       .join('');
+
+      if (window.ImageUtils) {
+        ImageUtils.scan(
+          relatedGrid
+        );
+      }
 }
 
 
@@ -544,23 +560,7 @@ function renderPlace() {
       .join('')
   );
 
-  // setHtml(
-  //   'highlightList',
-  //   (place.highlights || [])
-  //     .map(function (item) {
-  //       return `<li>${item}</li>`;
-  //     })
-  //     .join('')
-  // );
 
-  // setHtml(
-  //   'foodList',
-  //   (place.foods || [])
-  //     .map(function (item) {
-  //       return `<li>${item}</li>`;
-  //     })
-  //     .join('')
-  // );
 
   renderGallery(images);
   renderHighlights(place.highlights);
@@ -689,12 +689,15 @@ function renderHighlights(items) {
 
       return `
         <article class="detail-media-card">
-          <div class="detail-media-image">
+          <div class="detail-media-image media-frame">
             <img
               src="${item.image}"
               alt="${item.name}"
+              width="800"
+              height="500"
               loading="lazy"
-              onerror="this.src='${fallbackImage}'"
+              decoding="async"
+              data-fallback="${fallbackImage}"
             />
 
             <span class="detail-media-label">
@@ -730,7 +733,11 @@ function renderHighlights(items) {
         </article>
       `;
     })
-    .join('');
+      .join('');
+
+    if (window.ImageUtils) {
+      ImageUtils.scan(container);
+    }
   }
 
   function renderFoods(items) {
@@ -760,12 +767,15 @@ function renderHighlights(items) {
     .map(function (item) {
       return `
         <article class="detail-media-card food-card">
-          <div class="detail-media-image">
+          <div class="detail-media-image media-frame">
             <img
               src="${item.image}"
               alt="${item.name}"
+              width="800"
+              height="500"
               loading="lazy"
-              onerror="this.src='${fallbackImage}'"
+              decoding="async"
+              data-fallback="${fallbackImage}"
             />
 
             <span class="detail-media-label">
@@ -804,6 +814,10 @@ function renderHighlights(items) {
       `;
     })
     .join('');
+
+    if (window.ImageUtils) {
+      ImageUtils.scan(container);
+    }
 }
 
 /* =====================================
@@ -814,53 +828,7 @@ function createTtsReviewContent(item) {
   if (!item) {
     return '';
   }
-
-  const categoryText =
-    getCategories(item).join(', ') ||
-    'Chưa phân loại';
-
-  const highlights =
-    Array.isArray(item.highlights) &&
-    item.highlights.length > 0
-      ? item.highlights.join(', ')
-      : 'Chưa có thông tin';
-
-  const foods =
-    Array.isArray(item.foods) &&
-    item.foods.length > 0
-      ? item.foods.join(', ')
-      : 'Chưa có thông tin';
-
-  const features =
-    getFeatures(item)
-      .map(function (feature) {
-        return (
-          `${feature.title}: ` +
-          `${feature.text}`
-        );
-      })
-      .join('\n');
-
-  return `
-${item.name}
-
-${item.description || ''}
-
-Thông tin địa điểm:
-- Tỉnh hoặc thành phố: ${item.province || 'Đang cập nhật'}
-- Khu vực: ${item.region || 'Đang cập nhật'}
-- Danh mục du lịch: ${categoryText}
-- Thời điểm nên đi: ${item.time || 'Đang cập nhật'}
-
-Đặc điểm nổi bật:
-${features}
-
-Điểm nên khám phá:
-${highlights}
-
-Ẩm thực gợi ý:
-${foods}
-  `.trim();
+    return item.description || '';
 }
 
 
@@ -876,7 +844,7 @@ if (quickCopyBtn && place) {
     'click',
     function () {
       copyPlaceContent(
-        getReviewContent(place)
+        place.description || ''
       );
     }
   );

@@ -1,36 +1,7 @@
 const authBox =
-  document.getElementById('authBox');
-
-
-function getCurrentUser() {
-  const savedUser =
-    sessionStorage.getItem('user');
-
-  if (!savedUser) {
-    return null;
-  }
-
-  try {
-    const user =
-      JSON.parse(savedUser);
-
-    if (!user || !user.email) {
-      sessionStorage.removeItem('user');
-      return null;
-    }
-
-    return user;
-  } catch (error) {
-    console.error(
-      'Không thể đọc thông tin đăng nhập:',
-      error
-    );
-
-    sessionStorage.removeItem('user');
-
-    return null;
-  }
-}
+  document.getElementById(
+    'authBox'
+  );
 
 
 function escapeHtml(value) {
@@ -43,25 +14,15 @@ function escapeHtml(value) {
 }
 
 
-function getUserInitial(name) {
-  const safeName =
-    String(name || 'U').trim();
-
-  return safeName
+function getInitial(name) {
+  return String(name || 'U')
+    .trim()
     .charAt(0)
     .toUpperCase();
 }
 
 
-function logout() {
-  sessionStorage.removeItem('user');
-
-  window.location.href =
-    '/index.html';
-}
-
-
-function renderGuestActions() {
+function renderGuestMenu() {
   if (!authBox) {
     return;
   }
@@ -94,16 +55,17 @@ function renderUserMenu(user) {
       user.name || user.email
     );
 
-  const userRole =
-    String(user.role || 'USER')
-      .toUpperCase();
+  const isAdmin =
+    AuthStore.isAdmin(user);
 
-  const avatar =
+  const avatarHtml =
     user.avatar
       ? `
         <img
-          src="${escapeHtml(user.avatar)}"
-          alt="Ảnh đại diện ${userName}"
+          src="${escapeHtml(
+            user.avatar
+          )}"
+          alt="${userName}"
           class="account-avatar-image"
           onerror="
             this.style.display='none';
@@ -113,19 +75,21 @@ function renderUserMenu(user) {
 
         <span
           class="account-avatar-fallback"
-          style="display: none;"
+          style="display:none"
         >
-          ${getUserInitial(userName)}
+          ${getInitial(user.name)}
         </span>
       `
       : `
-        <span class="account-avatar-fallback">
-          ${getUserInitial(userName)}
+        <span
+          class="account-avatar-fallback"
+        >
+          ${getInitial(user.name)}
         </span>
       `;
 
-  const adminMenuItem =
-    userRole === 'ADMIN'
+  const adminMenu =
+    isAdmin
       ? `
         <a
           href="/admin-users.html"
@@ -149,10 +113,10 @@ function renderUserMenu(user) {
         class="account-trigger"
         id="accountMenuButton"
         aria-expanded="false"
-        aria-controls="accountDropdownMenu"
+        
       >
         <span class="account-avatar">
-          ${avatar}
+          ${avatarHtml}
         </span>
 
         <span class="account-summary">
@@ -160,7 +124,7 @@ function renderUserMenu(user) {
 
           <small>
             ${
-              userRole === 'ADMIN'
+              isAdmin
                 ? 'Quản trị viên'
                 : 'Người dùng'
             }
@@ -197,7 +161,7 @@ function renderUserMenu(user) {
           </span>
         </a>
 
-        ${adminMenuItem}
+        ${adminMenu}
 
         <button
           type="button"
@@ -208,83 +172,77 @@ function renderUserMenu(user) {
             ↪
           </span>
 
-          <span>
-            Đăng xuất
-          </span>
+          <span>Đăng xuất</span>
         </button>
       </div>
     </div>
   `;
 
-  setupAccountMenu();
+  setupUserMenu();
 }
 
 
-function setupAccountMenu() {
-  const menuButton =
+function setupUserMenu() {
+  const accountMenuButton =
     document.getElementById(
       'accountMenuButton'
     );
 
-  const dropdownMenu =
+  const accountDropdownMenu =
     document.getElementById(
       'accountDropdownMenu'
     );
 
-  const logoutButton =
+  const logoutBtn =
     document.getElementById(
       'logoutBtn'
     );
 
   if (
-    !menuButton ||
-    !dropdownMenu
+    !accountMenuButton ||
+    !accountDropdownMenu
   ) {
     return;
   }
 
   function closeMenu() {
-    dropdownMenu.classList.remove(
+    accountDropdownMenu.classList.remove(
       'show'
     );
 
-    menuButton.classList.remove(
+    accountMenuButton.classList.remove(
       'active'
     );
 
-    menuButton.setAttribute(
+    accountMenuButton.setAttribute(
       'aria-expanded',
       'false'
     );
   }
 
-  function toggleMenu() {
-    const isOpen =
-      dropdownMenu.classList.toggle(
-        'show'
-      );
-
-    menuButton.classList.toggle(
-      'active',
-      isOpen
-    );
-
-    menuButton.setAttribute(
-      'aria-expanded',
-      String(isOpen)
-    );
-  }
-
-  menuButton.addEventListener(
+  accountMenuButton.addEventListener(
     'click',
     function (event) {
       event.stopPropagation();
 
-      toggleMenu();
+      const isOpen =
+        accountDropdownMenu
+          .classList
+          .toggle('show');
+
+      accountMenuButton.classList.toggle(
+        'active',
+        isOpen
+      );
+
+      accountMenuButton.setAttribute(
+        'aria-expanded',
+        String(isOpen)
+      );
     }
   );
 
-  dropdownMenu.addEventListener(
+  accountDropdownMenu.addEventListener(
     'click',
     function (event) {
       event.stopPropagation();
@@ -305,40 +263,62 @@ function setupAccountMenu() {
     }
   );
 
-  if (logoutButton) {
-    logoutButton.addEventListener(
+  if (logoutBtn) {
+    logoutBtn.addEventListener(
       'click',
-      logout
+      function () {
+        AuthStore.logout();
+
+        window.location.href =
+          '/index.html';
+      }
     );
   }
 }
 
 
 function renderAuthenticationUI() {
-  if (!authBox) {
-    return;
-  }
+
 
   const currentUser =
-    getCurrentUser();
+    AuthStore.getCurrentUser();
 
   if (!currentUser) {
-    renderGuestActions();
+    renderGuestMenu();
+
     return;
   }
+
+  renderUserMenu(
+    currentUser
+  );
+}
+
+function showAuthGuardNotice() {
+  if (
+    !window.AuthGuard ||
+    !window.Toast
+  ) {
+    return;
+  }
+
+  const notice =
+    AuthGuard.consumeNotice();
 
   if (
-    currentUser.status === 'LOCKED'
+    !notice ||
+    !notice.message
   ) {
-    sessionStorage.removeItem('user');
-
-    renderGuestActions();
-
     return;
   }
 
-  renderUserMenu(currentUser);
+  const method =
+    Toast[notice.type] ||
+    Toast.info;
+
+  method(notice.message);
 }
 
 
 renderAuthenticationUI();
+showAuthGuardNotice();

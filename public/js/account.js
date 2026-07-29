@@ -67,58 +67,25 @@ let currentAccount = null;
 ===================================== */
 
 function getCurrentUser() {
-  const savedUser =
-    sessionStorage.getItem('user');
-
-  if (!savedUser) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(savedUser);
-  } catch (error) {
-    sessionStorage.removeItem('user');
-
-    return null;
-  }
+  return AuthStore.getCurrentUser();
 }
 
 
 function getAccounts() {
-  const savedAccounts =
-    localStorage.getItem(
-      'travelTtsAccounts'
-    );
-
-  if (!savedAccounts) {
-    return [];
-  }
-
-  try {
-    const accounts =
-      JSON.parse(savedAccounts);
-
-    return Array.isArray(accounts)
-      ? accounts
-      : [];
-  } catch (error) {
-    return [];
-  }
+  return AuthStore.getAccounts();
 }
 
 
 function saveAccounts(accounts) {
-  localStorage.setItem(
-    'travelTtsAccounts',
-    JSON.stringify(accounts)
+  return AuthStore.saveAccounts(
+    accounts
   );
 }
 
 
 function saveCurrentUser(user) {
-  sessionStorage.setItem(
-    'user',
-    JSON.stringify(user)
+  return AuthStore.saveCurrentUser(
+    user
   );
 }
 
@@ -170,31 +137,21 @@ function formatDate(value) {
 }
 
 
-function showMessage(message, type) {
-  if (!accountMessage) {
+function showMessage(
+  message,
+  type
+) {
+  if (!window.Toast) {
+    console.log(message);
+
     return;
   }
 
-  accountMessage.textContent =
-    message;
+  const toastMethod =
+    Toast[type] ||
+    Toast.info;
 
-  accountMessage.className =
-    `account-page-message show ${type}`;
-
-  window.clearTimeout(
-    showMessage.timeoutId
-  );
-
-  showMessage.timeoutId =
-    window.setTimeout(
-      function () {
-        accountMessage.textContent = '';
-
-        accountMessage.className =
-          'account-page-message';
-      },
-      3500
-    );
+  toastMethod(message);
 }
 
 
@@ -695,7 +652,18 @@ if (accountLogoutBtn) {
   accountLogoutBtn.addEventListener(
     'click',
     function () {
-      sessionStorage.removeItem('user');
+      AuthStore.logout();
+
+      window.location.href =
+        '/index.html';
+    }
+  );
+  
+}if (accountLogoutBtn) {
+  accountLogoutBtn.addEventListener(
+    'click',
+    function () {
+      AuthStore.logout();
 
       window.location.href =
         '/index.html';

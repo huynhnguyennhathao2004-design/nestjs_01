@@ -12,6 +12,18 @@
     Thông tin tài khoản - Vietnam Travel TTS
   </title>
 
+  <style>
+  html.auth-checking body {
+    visibility: hidden;
+  }
+  </style>
+
+  <script>
+    document.documentElement.classList.add(
+      'auth-checking'
+    );
+  </script>
+
   <link
     rel="preconnect"
     href="https://fonts.googleapis.com"
@@ -28,18 +40,12 @@
     rel="stylesheet"
   />
 
-  <link
-    rel="stylesheet"
-    href="/css/account.css"
-  />
-
-  <link
-    rel="stylesheet"
-    href="/css/navbar.css"
-  />
+  <link rel="stylesheet" href="/css/account.css"/>
+  <link rel="stylesheet" href="/css/components.css"/>
+  <link rel="stylesheet" href="/css/navbar.css"/>
 </head>
 
-<body>
+<body data-auth="guest">
   <!-- Taskbar dùng chung -->
   <!-- <div id="siteNavbar"></div> -->
 
@@ -373,10 +379,21 @@
     </div>
   </main>
 
+
   <script src="/js/destinations-data.js"></script>
+
+  <script src="/js/auth-guard.js"></script>
+  <script src="/js/auth-store.js"></script>
+
+
+  <script src="/js/toast.js"></script>
+  <script src="/js/modal.js"></script>
+
   <script src="/js/site-navbar.js"></script>
   <script src="/js/navbar-scroll.js"></script>
   <script src="/js/auth-ui.js"></script>
+
   <script src="/js/account.js"></script>
+  <script src="/js/image-utils.js"></script>
 </body>
 </html>
