@@ -1,6 +1,11 @@
 const ttsText = document.getElementById('ttsText');
 const charCount = document.getElementById('charCount');
+
+// Nếu đã sửa HTML sang speedSelect thì dùng tốc độ được chọn.
+// Nếu HTML vẫn còn voiceSelect thì mặc định speed = 1.0.
+const speedSelect = document.getElementById('speedSelect');
 const voiceSelect = document.getElementById('voiceSelect');
+
 const fileNameInput = document.getElementById('fileName');
 
 const pasteBtn = document.getElementById('pasteBtn');
@@ -9,218 +14,777 @@ const resetBtn = document.getElementById('resetBtn');
 const generateBtn = document.getElementById('generateBtn');
 
 const ttsMessage = document.getElementById('ttsMessage');
-const audioPlaceholder = document.getElementById('audioPlaceholder');
-const audioResult = document.getElementById('audioResult');
-const audioPlayer = document.getElementById('audioPlayer');
-const downloadLink = document.getElementById('downloadLink');
+const ttsColdStartHint =
+  document.getElementById('ttsColdStartHint');
 
-const ttsSourceNotice = document.getElementById('ttsSourceNotice');
-const ttsSourceName = document.getElementById('ttsSourceName');
-const clearSourceBtn = document.getElementById('clearSourceBtn');
+const audioPlaceholder =
+  document.getElementById('audioPlaceholder');
+const audioResult =
+  document.getElementById('audioResult');
+const audioPlayer =
+  document.getElementById('audioPlayer');
+const downloadLink =
+  document.getElementById('downloadLink');
 
+const ttsSourceNotice =
+  document.getElementById('ttsSourceNotice');
+const ttsSourceName =
+  document.getElementById('ttsSourceName');
+const clearSourceBtn =
+  document.getElementById('clearSourceBtn');
+
+const MAX_TEXT_CHARACTERS = 800;
+const POLLING_INTERVAL_MS = 2000;
+const COLD_START_HINT_DELAY_MS = 7000;
+const MAX_WAIT_TIME_MS = 10 * 60 * 1000;
 
 let currentAudioUrl = null;
+let currentJobId = null;
+let isGenerating = false;
 
-function updateCharCount() {
-  const length = ttsText.value.trim().length;
-  charCount.textContent = `${length} ký tự`;
+/**
+ * Tạm dừng trong một khoảng thời gian.
+ */
+function sleep(milliseconds) {
+  return new Promise(function (resolve) {
+    window.setTimeout(resolve, milliseconds);
+  });
 }
 
+/**
+ * Chuẩn hóa văn bản trước khi gửi tới backend.
+ */
+function normalizeText(value) {
+  return value
+    .normalize('NFC')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Cập nhật số ký tự.
+ */
+function updateCharCount() {
+  if (!ttsText || !charCount) {
+    return;
+  }
+
+  const length = ttsText.value.length;
+
+  charCount.textContent =
+    `${length}/${MAX_TEXT_CHARACTERS} ký tự`;
+}
+
+/**
+ * Hiển thị thông báo trên giao diện.
+ */
 function setMessage(message, type = 'error') {
+  if (!ttsMessage) {
+    return;
+  }
+
   ttsMessage.textContent = message;
 
-  if (type === 'success') {
-    ttsMessage.classList.add('success');
-  } else {
-    ttsMessage.classList.remove('success');
+  ttsMessage.classList.remove(
+    'success',
+    'error',
+    'loading',
+    'info',
+  );
+
+  if (type) {
+    ttsMessage.classList.add(type);
   }
 }
 
+/**
+ * Xóa thông báo.
+ */
 function clearMessage() {
+  if (!ttsMessage) {
+    return;
+  }
+
   ttsMessage.textContent = '';
-  ttsMessage.classList.remove('success');
+
+  ttsMessage.classList.remove(
+    'success',
+    'error',
+    'loading',
+    'info',
+  );
 }
 
+/**
+ * Hiển thị hoặc ẩn thông báo cold start.
+ */
+function showColdStartHint(show) {
+  if (!ttsColdStartHint) {
+    return;
+  }
+
+  if (show) {
+    ttsColdStartHint.classList.remove('hidden');
+  } else {
+    ttsColdStartHint.classList.add('hidden');
+  }
+}
+
+/**
+ * Tạo tên file an toàn.
+ */
 function createSafeFileName(name) {
   const fallbackName = 'travel-tts-audio';
 
-  const safeName = name
+  const safeName = String(name || '')
     .trim()
     .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
     .replace(/\s+/g, '-')
-    .replace(/[^\w-]/g, '');
+    .replace(/[^a-z0-9_-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 
   return safeName || fallbackName;
 }
 
+/**
+ * Lấy tốc độ đọc.
+ *
+ * Nếu HTML chưa có speedSelect thì dùng mặc định 1.0.
+ */
+function getSelectedSpeed() {
+  if (!speedSelect) {
+    return 1.0;
+  }
+
+  const speed = Number(speedSelect.value);
+
+  if (!Number.isFinite(speed)) {
+    return 1.0;
+  }
+
+  return speed;
+}
+
+/**
+ * Khóa hoặc mở giao diện trong lúc tạo audio.
+ */
 function showLoading(isLoading) {
-  if (isLoading) {
-    generateBtn.disabled = true;
-    generateBtn.textContent = 'Đang tạo audio...';
-  } else {
-    generateBtn.disabled = false;
-    generateBtn.textContent = 'Tạo audio';
+  isGenerating = isLoading;
+
+  if (generateBtn) {
+    generateBtn.disabled = isLoading;
+
+    generateBtn.textContent = isLoading
+      ? 'Đang xử lý...'
+      : 'Tạo audio';
+  }
+
+  if (ttsText) {
+    ttsText.disabled = isLoading;
+  }
+
+  if (speedSelect) {
+    speedSelect.disabled = isLoading;
+  }
+
+  if (voiceSelect) {
+    voiceSelect.disabled = isLoading;
+  }
+
+  if (fileNameInput) {
+    fileNameInput.disabled = isLoading;
   }
 }
 
+/**
+ * Xóa kết quả audio cũ.
+ */
 function resetAudioResult() {
   if (currentAudioUrl) {
     URL.revokeObjectURL(currentAudioUrl);
     currentAudioUrl = null;
   }
 
-  audioPlayer.removeAttribute('src');
-  downloadLink.removeAttribute('href');
+  if (audioPlayer) {
+    audioPlayer.pause();
+    audioPlayer.removeAttribute('src');
+    audioPlayer.load();
+  }
 
-  audioResult.classList.add('hidden');
-  audioPlaceholder.classList.remove('hidden');
+  if (downloadLink) {
+    downloadLink.removeAttribute('href');
+  }
+
+  if (audioResult) {
+    audioResult.classList.add('hidden');
+  }
+
+  if (audioPlaceholder) {
+    audioPlaceholder.classList.remove('hidden');
+  }
 }
 
+/**
+ * Lấy thông báo lỗi từ response backend.
+ */
+function getApiErrorMessage(
+  responseBody,
+  fallbackMessage,
+) {
+  if (!responseBody) {
+    return fallbackMessage;
+  }
+
+  if (Array.isArray(responseBody.message)) {
+    return responseBody.message.join(' ');
+  }
+
+  if (
+    typeof responseBody.message === 'string'
+  ) {
+    return responseBody.message;
+  }
+
+  if (
+    typeof responseBody.error === 'string'
+  ) {
+    return responseBody.error;
+  }
+
+  if (
+    responseBody.error &&
+    typeof responseBody.error.message === 'string'
+  ) {
+    return responseBody.error.message;
+  }
+
+  return fallbackMessage;
+}
+
+/**
+ * Gọi API và đọc JSON.
+ */
+async function requestJson(url, options = {}) {
+  const response = await fetch(url, {
+    cache: 'no-store',
+    ...options,
+  });
+
+  let responseBody = null;
+
+  try {
+    responseBody = await response.json();
+  } catch (error) {
+    responseBody = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      getApiErrorMessage(
+        responseBody,
+        `Yêu cầu thất bại với mã ${response.status}.`,
+      ),
+    );
+  }
+
+  return responseBody;
+}
+
+/**
+ * Gửi job mới tới NestJS.
+ */
+async function createTtsJob(text, speed) {
+  return requestJson('/api/tts/jobs', {
+    method: 'POST',
+
+    headers: {
+      'Content-Type':
+        'application/json; charset=utf-8',
+    },
+
+    body: JSON.stringify({
+      text: text,
+      speed: speed,
+      nfeStep: 32,
+    }),
+  });
+}
+
+/**
+ * Kiểm tra trạng thái job cho đến khi hoàn tất.
+ */
+async function waitForTtsJob(
+  jobId,
+  statusUrl,
+) {
+  const startedAt = Date.now();
+
+  const resolvedStatusUrl =
+    statusUrl ||
+    `/api/tts/jobs/${encodeURIComponent(jobId)}`;
+
+  let coldStartHintShown = false;
+
+  while (true) {
+    const elapsedTime =
+      Date.now() - startedAt;
+
+    if (elapsedTime >= MAX_WAIT_TIME_MS) {
+      throw new Error(
+        'Quá thời gian chờ tạo giọng đọc. Vui lòng thử lại.',
+      );
+    }
+
+    const statusData =
+      await requestJson(resolvedStatusUrl);
+
+    if (
+      elapsedTime >=
+        COLD_START_HINT_DELAY_MS &&
+      !coldStartHintShown
+    ) {
+      coldStartHintShown = true;
+      showColdStartHint(true);
+    }
+
+    switch (statusData.status) {
+      case 'queued':
+        setMessage(
+          'Đang khởi động mô hình AI...',
+          'loading',
+        );
+        break;
+
+      case 'processing':
+        setMessage(
+          'Đang tạo giọng đọc...',
+          'loading',
+        );
+        break;
+
+      case 'completed':
+        setMessage(
+          'Tạo giọng đọc hoàn thành.',
+          'success',
+        );
+
+        return statusData;
+
+      case 'failed':
+        throw new Error(
+          statusData.error ||
+          statusData.message ||
+          'Tạo giọng đọc thất bại.',
+        );
+
+      default:
+        setMessage(
+          'Đang kiểm tra trạng thái...',
+          'loading',
+        );
+    }
+
+    await sleep(POLLING_INTERVAL_MS);
+  }
+}
+
+/**
+ * Tải WAV từ NestJS dưới dạng Blob.
+ */
+async function fetchAudioBlob(audioUrl) {
+  const separator =
+    audioUrl.includes('?') ? '&' : '?';
+
+  const response = await fetch(
+    `${audioUrl}${separator}t=${Date.now()}`,
+    {
+      method: 'GET',
+
+      headers: {
+        Accept: 'audio/wav',
+      },
+    },
+  );
+
+  if (!response.ok) {
+    let errorMessage =
+      'Không thể tải file âm thanh từ backend.';
+
+    try {
+      const responseBody =
+        await response.json();
+
+      errorMessage = getApiErrorMessage(
+        responseBody,
+        errorMessage,
+      );
+    } catch (error) {
+      // Response lỗi không phải JSON.
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  const audioBlob = await response.blob();
+
+  if (!audioBlob || audioBlob.size === 0) {
+    throw new Error(
+      'File âm thanh backend trả về đang trống.',
+    );
+  }
+
+  return audioBlob;
+}
+
+/**
+ * Tải nội dung được gửi từ trang trước.
+ */
 function loadDraftText() {
-  const savedDraft = localStorage.getItem('ttsDraftText');
+  if (!ttsText) {
+    return;
+  }
+
+  const savedDraft =
+    localStorage.getItem('ttsDraftText');
 
   if (savedDraft) {
     ttsText.value = savedDraft;
-    localStorage.removeItem('ttsDraftText');
-  }
 
-  updateCharCount();
-}
+    localStorage.removeItem(
+      'ttsDraftText',
+    );
 
-ttsText.addEventListener('input', function () {
-  updateCharCount();
-  clearMessage();
-});
-
-pasteBtn.addEventListener('click', async function () {
-  try {
-    const text = await navigator.clipboard.readText();
-
-    if (!text.trim()) {
-      setMessage('Clipboard không có nội dung để dán.');
-      return;
-    }
-
-    ttsText.value = text;
-    updateCharCount();
-    setMessage('Đã dán nội dung vào ô văn bản. Bạn có thể chỉnh sửa trước khi tạo audio.', 'success');
-  } catch (error) {
-    setMessage('Trình duyệt không cho phép đọc clipboard. Bạn có thể dán thủ công bằng Ctrl + V.');
-  }
-});
-
-clearBtn.addEventListener('click', function () {
-  ttsText.value = '';
-  updateCharCount();
-  resetAudioResult();
-  clearMessage();
-  ttsText.focus();
-});
-
-resetBtn.addEventListener('click', function () {
-  ttsText.value = '';
-  fileNameInput.value = 'travel-tts-audio';
-  voiceSelect.selectedIndex = 0;
-
-  updateCharCount();
-  resetAudioResult();
-  clearMessage();
-  ttsText.focus();
-});
-
-generateBtn.addEventListener('click', async function () {
-  const text = ttsText.value.trim();
-  const voice = voiceSelect.value;
-  const fileName = createSafeFileName(fileNameInput.value);
-
-  if (!text) {
-    setMessage('Vui lòng nhập nội dung cần chuyển thành giọng đọc.');
     ttsText.focus();
-    return;
   }
 
-  if (text.length < 10) {
-    setMessage('Nội dung quá ngắn. Vui lòng nhập ít nhất 10 ký tự.');
-    return;
-  }
-
-  try {
-    showLoading(true);
-    clearMessage();
-    resetAudioResult();
-
-    const response = await fetch('/tts/generate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        text: text,
-        voice: voice
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error('Không thể tạo audio. Vui lòng kiểm tra API TTS.');
-    }
-
-    const audioBlob = await response.blob();
-
-    if (!audioBlob || audioBlob.size === 0) {
-      throw new Error('Audio trả về không hợp lệ.');
-    }
-
-    currentAudioUrl = URL.createObjectURL(audioBlob);
-
-    audioPlayer.src = currentAudioUrl;
-    downloadLink.href = currentAudioUrl;
-    downloadLink.download = `${fileName}.mp3`;
-
-    audioPlaceholder.classList.add('hidden');
-    audioResult.classList.remove('hidden');
-
-    setMessage('Tạo audio thành công. Bạn có thể nghe hoặc tải file MP3.', 'success');
-  } catch (error) {
-    setMessage(error.message || 'Đã xảy ra lỗi khi tạo audio.');
-  } finally {
-    showLoading(false);
-  }
-});
-
-loadDraftText();
-
-function loadDraftTextFromReview() {
-  const draftText = localStorage.getItem('ttsDraftText');
-
-  if (!draftText) return;
-
-  ttsText.value = draftText;
-
-  localStorage.removeItem('ttsDraftText');
-
-  if (typeof updateCharCount === 'function') {
-    updateCharCount();
-  }
-
-  ttsText.focus();
+  updateCharCount();
 }
 
-loadDraftTextFromReview();
+/**
+ * Theo dõi textarea.
+ */
+if (ttsText) {
+  ttsText.maxLength =
+    MAX_TEXT_CHARACTERS;
 
+  ttsText.addEventListener(
+    'input',
+    function () {
+      updateCharCount();
+      clearMessage();
+      showColdStartHint(false);
+    },
+  );
+}
+
+/**
+ * Dán nội dung từ clipboard.
+ */
+if (pasteBtn) {
+  pasteBtn.addEventListener(
+    'click',
+    async function () {
+      try {
+        const text =
+          await navigator.clipboard.readText();
+
+        if (!text.trim()) {
+          setMessage(
+            'Clipboard không có nội dung để dán.',
+            'error',
+          );
+
+          return;
+        }
+
+        if (
+          text.length >
+          MAX_TEXT_CHARACTERS
+        ) {
+          setMessage(
+            `Nội dung clipboard vượt quá ${MAX_TEXT_CHARACTERS} ký tự.`,
+            'error',
+          );
+
+          return;
+        }
+
+        ttsText.value = text;
+
+        updateCharCount();
+
+        setMessage(
+          'Đã dán nội dung vào ô văn bản. Bạn có thể chỉnh sửa trước khi tạo audio.',
+          'success',
+        );
+      } catch (error) {
+        setMessage(
+          'Trình duyệt không cho phép đọc clipboard. Bạn có thể dán thủ công bằng Ctrl + V.',
+          'error',
+        );
+      }
+    },
+  );
+}
+
+/**
+ * Xóa nội dung.
+ */
+if (clearBtn) {
+  clearBtn.addEventListener(
+    'click',
+    function () {
+      ttsText.value = '';
+
+      updateCharCount();
+      resetAudioResult();
+      clearMessage();
+      showColdStartHint(false);
+
+      ttsText.focus();
+    },
+  );
+}
+
+/**
+ * Làm mới toàn bộ form.
+ */
+if (resetBtn) {
+  resetBtn.addEventListener(
+    'click',
+    function () {
+      ttsText.value = '';
+
+      if (fileNameInput) {
+        fileNameInput.value =
+          'travel-tts-audio';
+      }
+
+      if (speedSelect) {
+        speedSelect.value = '1.0';
+      }
+
+      if (voiceSelect) {
+        voiceSelect.selectedIndex = 0;
+      }
+
+      currentJobId = null;
+
+      updateCharCount();
+      resetAudioResult();
+      clearMessage();
+      showColdStartHint(false);
+
+      ttsText.focus();
+    },
+  );
+}
+
+/**
+ * Tạo audio bằng NestJS và RunPod.
+ */
+if (generateBtn) {
+  generateBtn.addEventListener(
+    'click',
+    async function () {
+      if (isGenerating) {
+        return;
+      }
+
+      const text = normalizeText(
+        ttsText.value,
+      );
+
+      const speed =
+        getSelectedSpeed();
+
+      const fileName =
+        createSafeFileName(
+          fileNameInput
+            ? fileNameInput.value
+            : '',
+        );
+
+      if (!text) {
+        setMessage(
+          'Vui lòng nhập nội dung cần chuyển thành giọng đọc.',
+          'error',
+        );
+
+        ttsText.focus();
+
+        return;
+      }
+
+      if (text.length < 10) {
+        setMessage(
+          'Nội dung quá ngắn. Vui lòng nhập ít nhất 10 ký tự.',
+          'error',
+        );
+
+        ttsText.focus();
+
+        return;
+      }
+
+      if (
+        text.length >
+        MAX_TEXT_CHARACTERS
+      ) {
+        setMessage(
+          `Nội dung không được vượt quá ${MAX_TEXT_CHARACTERS} ký tự.`,
+          'error',
+        );
+
+        ttsText.focus();
+
+        return;
+      }
+
+      try {
+        showLoading(true);
+        showColdStartHint(false);
+        resetAudioResult();
+
+        setMessage(
+          'Đang gửi nội dung...',
+          'loading',
+        );
+
+        const jobData =
+          await createTtsJob(
+            text,
+            speed,
+          );
+
+        currentJobId =
+          jobData.jobId;
+
+        if (!currentJobId) {
+          throw new Error(
+            'Backend không trả về Job ID.',
+          );
+        }
+
+        setMessage(
+          jobData.message ||
+          'Đang khởi động mô hình AI...',
+          'loading',
+        );
+
+        const completedJob =
+          await waitForTtsJob(
+            currentJobId,
+            jobData.statusUrl,
+          );
+
+        if (!completedJob.audioReady) {
+          throw new Error(
+            'Job đã hoàn thành nhưng chưa có file âm thanh.',
+          );
+        }
+
+        const audioUrl =
+          completedJob.audioUrl ||
+          `/api/tts/jobs/${encodeURIComponent(
+            currentJobId,
+          )}/audio`;
+
+        const audioBlob =
+          await fetchAudioBlob(
+            audioUrl,
+          );
+
+        currentAudioUrl =
+          URL.createObjectURL(
+            audioBlob,
+          );
+
+        if (audioPlayer) {
+          audioPlayer.src =
+            currentAudioUrl;
+
+          audioPlayer.load();
+        }
+
+        if (downloadLink) {
+          downloadLink.href =
+            currentAudioUrl;
+
+          downloadLink.download =
+            `${fileName}.wav`;
+
+          downloadLink.textContent =
+            'Tải file WAV';
+        }
+
+        if (audioPlaceholder) {
+          audioPlaceholder.classList.add(
+            'hidden',
+          );
+        }
+
+        if (audioResult) {
+          audioResult.classList.remove(
+            'hidden',
+          );
+        }
+
+        setMessage(
+          'Tạo audio thành công. Bạn có thể nghe hoặc tải file WAV.',
+          'success',
+        );
+      } catch (error) {
+        console.error(
+          'Lỗi tạo giọng đọc:',
+          error,
+        );
+
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : 'Đã xảy ra lỗi khi tạo audio.',
+          'error',
+        );
+      } finally {
+        showLoading(false);
+      }
+    },
+  );
+}
+
+/**
+ * Tạo nội dung thuyết minh từ dữ liệu địa điểm.
+ */
 function createReviewContent(place) {
-  const features = place.features && place.features.length > 0
-    ? place.features.map(function (feature) {
-        return `- ${feature.title}: ${feature.text}`;
-      }).join('\n')
-    : '- Chưa có thông tin nổi bật.';
+  const features =
+    place.features &&
+    place.features.length > 0
+      ? place.features
+          .map(function (feature) {
+            return (
+              `- ${feature.title}: ` +
+              `${feature.text}`
+            );
+          })
+          .join('\n')
+      : '- Chưa có thông tin nổi bật.';
 
-  const highlights = place.highlights && place.highlights.length > 0
-    ? place.highlights.join(', ')
-    : 'Chưa có thông tin';
+  const highlights =
+    place.highlights &&
+    place.highlights.length > 0
+      ? place.highlights.join(', ')
+      : 'Chưa có thông tin';
 
-  const foods = place.foods && place.foods.length > 0
-    ? place.foods.join(', ')
-    : 'Chưa có thông tin';
+  const foods =
+    place.foods &&
+    place.foods.length > 0
+      ? place.foods.join(', ')
+      : 'Chưa có thông tin';
 
   return `
 ${place.name}
@@ -243,56 +807,132 @@ ${foods}
   `.trim();
 }
 
+/**
+ * Tải nội dung địa điểm từ URL.
+ */
 function loadPlaceContentFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  const placeId = params.get('id');
+  if (!ttsText) {
+    return;
+  }
 
-  if (!placeId) return;
+  const params =
+    new URLSearchParams(
+      window.location.search,
+    );
 
-  const destinations = window.destinations || [];
-  const place = destinations.find(function (item) {
-    return item.id === placeId;
-  });
+  const placeId =
+    params.get('id');
 
-  if (!place) return;
+  if (!placeId) {
+    return;
+  }
 
-  const reviewContent = createReviewContent(place);
+  const destinations =
+    window.destinations || [];
 
-  ttsText.value = reviewContent;
+  const place =
+    destinations.find(
+      function (item) {
+        return item.id === placeId;
+      },
+    );
 
-  if (ttsSourceNotice && ttsSourceName) {
-    ttsSourceName.textContent = place.name;
-    ttsSourceNotice.classList.remove('hidden');
+  if (!place) {
+    return;
+  }
+
+  const reviewContent =
+    createReviewContent(place);
+
+  ttsText.value =
+    reviewContent;
+
+  if (
+    ttsSourceNotice &&
+    ttsSourceName
+  ) {
+    ttsSourceName.textContent =
+      place.name;
+
+    ttsSourceNotice.classList.remove(
+      'hidden',
+    );
   }
 
   if (fileNameInput) {
-    fileNameInput.value = `tts-${place.id}`;
+    fileNameInput.value =
+      `tts-${place.id}`;
   }
 
   updateCharCount();
 
-  setMessage(
-    `Đã lấy nội dung review của ${place.name}. Bạn có thể chỉnh sửa trước khi tạo audio.`,
-    'success'
+  if (
+    reviewContent.length >
+    MAX_TEXT_CHARACTERS
+  ) {
+    setMessage(
+      `Nội dung của ${place.name} có ${reviewContent.length} ký tự. ` +
+      `Bạn cần rút gọn xuống tối đa ${MAX_TEXT_CHARACTERS} ký tự trước khi tạo audio.`,
+      'error',
+    );
+  } else {
+    setMessage(
+      `Đã lấy nội dung review của ${place.name}. ` +
+      'Bạn có thể chỉnh sửa trước khi tạo audio.',
+      'success',
+    );
+  }
+}
+
+/**
+ * Chuyển về chế độ soạn nội dung mới.
+ */
+if (clearSourceBtn) {
+  clearSourceBtn.addEventListener(
+    'click',
+    function () {
+      ttsText.value = '';
+
+      if (fileNameInput) {
+        fileNameInput.value =
+          'travel-tts-audio';
+      }
+
+      if (ttsSourceNotice) {
+        ttsSourceNotice.classList.add(
+          'hidden',
+        );
+      }
+
+      updateCharCount();
+      resetAudioResult();
+      clearMessage();
+      showColdStartHint(false);
+
+      ttsText.focus();
+
+      const newUrl =
+        window.location.pathname;
+
+      window.history.replaceState(
+        {},
+        document.title,
+        newUrl,
+      );
+    },
   );
 }
 
-if (clearSourceBtn) {
-  clearSourceBtn.addEventListener('click', function () {
-    ttsText.value = '';
-    fileNameInput.value = 'travel-tts-audio';
+/**
+ * Chạy khi trang được tải.
+ *
+ * Chỉ gọi loadDraftText một lần để tránh lỗi
+ * đọc và xóa localStorage hai lần như file cũ.
+ */
+loadDraftText();
 
-    if (ttsSourceNotice) {
-      ttsSourceNotice.classList.add('hidden');
-    }
-
-    updateCharCount();
-    clearMessage();
-    ttsText.focus();
-
-    const newUrl = window.location.pathname;
-    window.history.replaceState({}, document.title, newUrl);
-  });
-}
-
+/**
+ * Nếu URL có id địa điểm thì nội dung địa điểm
+ * sẽ được ưu tiên hiển thị.
+ */
 loadPlaceContentFromUrl();

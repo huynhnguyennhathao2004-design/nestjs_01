@@ -12,6 +12,8 @@ import { TtsModule } from './tts/tts.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
+      cache: true,
     }),
 
     ServeStaticModule.forRoot({
