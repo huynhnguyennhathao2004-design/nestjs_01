@@ -3,9 +3,21 @@ const profileForm =
     'profileForm'
   );
 
+const profileSubmitButton =
+  profileForm
+    ? profileForm.querySelector(
+        'button[type="submit"]'
+      )
+    : null;
+
 const passwordForm =
   document.getElementById(
     'passwordForm'
+  );
+
+const passwordSubmitButton =
+  document.getElementById(
+    'passwordSubmitButton'
   );
 
 const accountNameInput =
@@ -71,16 +83,6 @@ function getCurrentUser() {
 }
 
 
-function getAccounts() {
-  return AuthStore.getAccounts();
-}
-
-
-function saveAccounts(accounts) {
-  return AuthStore.saveAccounts(
-    accounts
-  );
-}
 
 
 function saveCurrentUser(user) {
@@ -180,23 +182,42 @@ function createAvatarHtml(
    BẢO VỆ TRANG
 ===================================== */
 
-function protectAccountPage() {
+async function protectAccountPage() {
+  /*
+   * Chờ auth-guard hoàn tất refresh token
+   * và kiểm tra người dùng.
+   */
+  if (
+    window.AuthGuard &&
+    window.AuthGuard.ready
+  ) {
+    await window.AuthGuard.ready;
+  }
+
   currentUser =
-    getCurrentUser();
+    window.AuthStore &&
+    typeof AuthStore
+      .getCurrentUser === 'function'
+      ? AuthStore.getCurrentUser()
+      : null;
 
   if (!currentUser) {
     window.location.replace(
-      '/login.html'
+      '/login.html?redirect=' +
+      encodeURIComponent(
+        '/account.html'
+      )
     );
 
     return false;
   }
 
   if (
-    String(currentUser.status)
-      .toUpperCase() === 'LOCKED'
+    String(
+      currentUser.status || ''
+    ).toUpperCase() !== 'ACTIVE'
   ) {
-    sessionStorage.removeItem('user');
+    await AuthStore.logout();
 
     window.location.replace(
       '/login.html'
@@ -205,28 +226,12 @@ function protectAccountPage() {
     return false;
   }
 
-  const accounts =
-    getAccounts();
-
+  /*
+   * Không còn lấy tài khoản từ localStorage.
+   * Dùng người dùng đã được backend xác thực.
+   */
   currentAccount =
-    accounts.find(
-      function (account) {
-        return isSameId(
-          account.id,
-          currentUser.id
-        );
-      }
-    );
-
-  if (!currentAccount) {
-    sessionStorage.removeItem('user');
-
-    window.location.replace(
-      '/login.html'
-    );
-
-    return false;
-  }
+    currentUser;
 
   return true;
 }
@@ -394,14 +399,31 @@ function updateAvatarPreview() {
    CẬP NHẬT THÔNG TIN
 ===================================== */
 
-function updateProfile() {
-  const name =
-    accountNameInput.value.trim();
+function setProfileSubmitting(
+  isSubmitting
+) {
+  if (!profileSubmitButton) {
+    return;
+  }
 
-  const avatar =
-    accountAvatarInput.value.trim();
+  profileSubmitButton.disabled =
+    isSubmitting;
 
-  if (name.length < 2) {
+  profileSubmitButton.textContent =
+    isSubmitting
+      ? 'Đang lưu...'
+      : 'Lưu thay đổi';
+}
+
+async function updateProfile() {
+  const fullName =
+    String(
+      accountNameInput.value || ''
+    )
+      .trim()
+      .replace(/\s+/g, ' ');
+
+  if (fullName.length < 2) {
     showMessage(
       'Họ và tên phải có ít nhất 2 ký tự.',
       'error'
@@ -412,60 +434,147 @@ function updateProfile() {
     return;
   }
 
-  const accounts =
-    getAccounts();
-
-  const accountIndex =
-    accounts.findIndex(
-      function (account) {
-        return isSameId(
-          account.id,
-          currentAccount.id
-        );
-      }
+  if (fullName.length > 120) {
+    showMessage(
+      'Họ và tên không được vượt quá 120 ký tự.',
+      'error'
     );
 
-  if (accountIndex === -1) {
+    accountNameInput.focus();
+
+    return;
+  }
+
+  if (
+    !window.AuthStore ||
+    typeof AuthStore.authFetch !==
+      'function'
+  ) {
     showMessage(
-      'Không tìm thấy tài khoản.',
+      'Thành phần xác thực chưa được tải.',
       'error'
     );
 
     return;
   }
 
-  accounts[accountIndex].name =
-    name;
+  setProfileSubmitting(true);
 
-  accounts[accountIndex].avatar =
-    avatar;
+  try {
+    const response =
+      await AuthStore.authFetch(
+        '/api/auth/me/profile',
+        {
+          method: 'PATCH',
 
-  saveAccounts(accounts);
+          headers: {
+            'Content-Type':
+              'application/json',
 
-  currentAccount =
-    accounts[accountIndex];
+            Accept:
+              'application/json'
+          },
 
-  currentUser = {
-    ...currentUser,
-    name: name,
-    avatar: avatar
-  };
+          body: JSON.stringify({
+            fullName
+          })
+        }
+      );
 
-  saveCurrentUser(currentUser);
+    let responseData = null;
 
-  renderAccount();
+    try {
+      responseData =
+        await response.json();
+    } catch (error) {
+      responseData = null;
+    }
 
-  showMessage(
-    'Cập nhật thông tin tài khoản thành công.',
-    'success'
-  );
+    if (!response.ok) {
+      let errorMessage =
+        'Không thể cập nhật hồ sơ.';
 
-  window.setTimeout(
-    function () {
-      window.location.reload();
-    },
-    700
-  );
+      if (
+        responseData &&
+        Array.isArray(
+          responseData.message
+        )
+      ) {
+        errorMessage =
+          responseData.message.join(' ');
+      } else if (
+        responseData &&
+        typeof responseData.message ===
+          'string'
+      ) {
+        errorMessage =
+          responseData.message;
+      }
+
+      throw new Error(
+        errorMessage
+      );
+    }
+
+    if (
+      !responseData ||
+      !responseData.user
+    ) {
+      throw new Error(
+        'Backend không trả về thông tin người dùng hợp lệ.'
+      );
+    }
+
+    const savedUser =
+      AuthStore.saveCurrentUser(
+        responseData.user
+      );
+
+    if (!savedUser) {
+      throw new Error(
+        'Không thể lưu thông tin người dùng mới.'
+      );
+    }
+
+    currentUser =
+      savedUser;
+
+    currentAccount =
+      savedUser;
+
+    renderAccount();
+
+    showMessage(
+      responseData.message ||
+        'Cập nhật hồ sơ thành công.',
+      'success'
+    );
+
+    /*
+     * Tải lại sau một khoảng ngắn
+     * để navbar hiển thị tên mới.
+     */
+    window.setTimeout(
+      function () {
+        window.location.reload();
+      },
+      800
+    );
+  } catch (error) {
+    console.error(
+      'Lỗi cập nhật hồ sơ:',
+      error
+    );
+
+    showMessage(
+      error instanceof Error
+        ? error.message
+        : 'Không thể cập nhật hồ sơ.',
+      'error'
+    );
+  } finally {
+    setProfileSubmitting(false);
+  }
 }
 
 
@@ -473,27 +582,59 @@ function updateProfile() {
    ĐỔI MẬT KHẨU
 ===================================== */
 
-function changePassword() {
+function setPasswordSubmitting(
+  isSubmitting
+) {
+  if (!passwordSubmitButton) {
+    return;
+  }
+
+  passwordSubmitButton.disabled =
+    isSubmitting;
+
+  passwordSubmitButton.textContent =
+    isSubmitting
+      ? 'Đang cập nhật...'
+      : 'Cập nhật mật khẩu';
+}
+
+
+async function changePassword() {
   const currentPassword =
-    currentPasswordInput.value;
+    String(
+      currentPasswordInput?.value ||
+      ''
+    );
 
   const newPassword =
-    newPasswordInput.value;
+    String(
+      newPasswordInput?.value ||
+      ''
+    );
 
   const confirmNewPassword =
-    confirmNewPasswordInput.value;
+    String(
+      confirmNewPasswordInput?.value ||
+      ''
+    );
 
-  if (
-    currentPassword !==
-    currentAccount.password
-  ) {
+  if (!currentPassword) {
     showMessage(
-      'Mật khẩu hiện tại không chính xác.',
+      'Vui lòng nhập mật khẩu hiện tại.',
       'error'
     );
 
-    currentPasswordInput.focus();
+    currentPasswordInput?.focus();
+    return;
+  }
 
+  if (currentPassword.length > 128) {
+    showMessage(
+      'Mật khẩu hiện tại không được vượt quá 128 ký tự.',
+      'error'
+    );
+
+    currentPasswordInput?.focus();
     return;
   }
 
@@ -503,7 +644,31 @@ function changePassword() {
       'error'
     );
 
-    newPasswordInput.focus();
+    newPasswordInput?.focus();
+    return;
+  }
+
+  if (newPassword.length > 128) {
+    showMessage(
+      'Mật khẩu mới không được vượt quá 128 ký tự.',
+      'error'
+    );
+
+    newPasswordInput?.focus();
+    return;
+  }
+
+  if (
+    newPassword !==
+    confirmNewPassword
+  ) {
+    showMessage(
+      'Mật khẩu xác nhận không khớp.',
+      'error'
+    );
+
+    confirmNewPasswordInput?.focus();
+    confirmNewPasswordInput?.select();
 
     return;
   }
@@ -517,61 +682,161 @@ function changePassword() {
       'error'
     );
 
-    newPasswordInput.focus();
+    newPasswordInput?.focus();
+    newPasswordInput?.select();
 
     return;
   }
 
   if (
-    newPassword !==
-    confirmNewPassword
+    !window.AuthStore ||
+    typeof AuthStore.authFetch !==
+      'function'
   ) {
     showMessage(
-      'Mật khẩu nhập lại không khớp.',
+      'Thành phần xác thực chưa được tải.',
       'error'
     );
-
-    confirmNewPasswordInput.focus();
 
     return;
   }
 
-  const accounts =
-    getAccounts();
+  setPasswordSubmitting(true);
 
-  const accountIndex =
-    accounts.findIndex(
-      function (account) {
-        return isSameId(
-          account.id,
-          currentAccount.id
+  let passwordChanged = false;
+
+  try {
+    const response =
+      await AuthStore.authFetch(
+        '/api/auth/me/password',
+        {
+          method: 'PATCH',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+
+            Accept:
+              'application/json'
+          },
+
+          body: JSON.stringify({
+            currentPassword,
+            newPassword,
+            confirmNewPassword
+          })
+        }
+      );
+
+    let responseData = null;
+
+    try {
+      responseData =
+        await response.json();
+    } catch (error) {
+      responseData = null;
+    }
+
+    if (!response.ok) {
+      let errorMessage =
+        'Không thể đổi mật khẩu.';
+
+      if (
+        responseData &&
+        Array.isArray(
+          responseData.message
+        )
+      ) {
+        errorMessage =
+          responseData.message.join(' ');
+      } else if (
+        responseData &&
+        typeof responseData.message ===
+          'string'
+      ) {
+        errorMessage =
+          responseData.message;
+      }
+
+      throw new Error(
+        errorMessage
+      );
+    }
+
+    if (
+      !responseData ||
+      responseData.success !== true
+    ) {
+      throw new Error(
+        'Backend không trả về kết quả đổi mật khẩu hợp lệ.'
+      );
+    }
+
+    passwordChanged = true;
+
+    passwordForm?.reset();
+
+    showMessage(
+      responseData.message ||
+        'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.',
+      'success'
+    );
+
+    /*
+     * Endpoint đã tăng tokenVersion,
+     * thu hồi refresh sessions và
+     * xóa refresh cookie.
+     *
+     * AuthStore.logout() xóa tiếp
+     * access token và user ở trình duyệt.
+     */
+    await new Promise(
+      function (resolve) {
+        window.setTimeout(
+          resolve,
+          1200
         );
       }
     );
 
-  if (accountIndex === -1) {
+    await AuthStore.logout();
+
+    window.location.replace(
+      '/login.html'
+    );
+  } catch (error) {
+    console.error(
+      'Lỗi đổi mật khẩu:',
+      error
+    );
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Không thể đổi mật khẩu.';
+
     showMessage(
-      'Không tìm thấy tài khoản.',
+      message,
       'error'
     );
 
-    return;
+    if (
+      message.includes(
+        'Mật khẩu hiện tại'
+      )
+    ) {
+      currentPasswordInput?.focus();
+      currentPasswordInput?.select();
+    }
+  } finally {
+    /*
+     * Khi thành công, giữ nút bị khóa
+     * cho đến khi chuyển sang login.
+     */
+    if (!passwordChanged) {
+      setPasswordSubmitting(false);
+    }
   }
-
-  accounts[accountIndex].password =
-    newPassword;
-
-  saveAccounts(accounts);
-
-  currentAccount =
-    accounts[accountIndex];
-
-  passwordForm.reset();
-
-  showMessage(
-    'Đổi mật khẩu thành công.',
-    'success'
-  );
 }
 
 
@@ -582,22 +847,21 @@ function changePassword() {
 if (profileForm) {
   profileForm.addEventListener(
     'submit',
-    function (event) {
+    async function (event) {
       event.preventDefault();
 
-      updateProfile();
+      await updateProfile();
     }
   );
 }
 
-
 if (passwordForm) {
   passwordForm.addEventListener(
     'submit',
-    function (event) {
+    async function (event) {
       event.preventDefault();
 
-      changePassword();
+      await changePassword();
     }
   );
 }
@@ -651,22 +915,17 @@ document
 if (accountLogoutBtn) {
   accountLogoutBtn.addEventListener(
     'click',
-    function () {
-      AuthStore.logout();
+    async function () {
+      accountLogoutBtn.disabled =
+        true;
 
-      window.location.href =
-        '/index.html';
-    }
-  );
-  
-}if (accountLogoutBtn) {
-  accountLogoutBtn.addEventListener(
-    'click',
-    function () {
-      AuthStore.logout();
-
-      window.location.href =
-        '/index.html';
+      try {
+        await AuthStore.logout();
+      } finally {
+        window.location.replace(
+          '/index.html'
+        );
+      }
     }
   );
 }
@@ -675,7 +934,19 @@ if (accountLogoutBtn) {
 /* =====================================
    KHỞI TẠO
 ===================================== */
+async function initializeAccountPage() {
+  const allowed =
+    await protectAccountPage();
 
-if (protectAccountPage()) {
-  renderAccount();
+  if (allowed) {
+    renderAccount();
+  }
 }
+
+initializeAccountPage()
+  .catch(function (error) {
+    console.error(
+      'Không thể khởi tạo trang tài khoản:',
+      error
+    );
+  });

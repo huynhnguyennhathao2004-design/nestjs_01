@@ -8,6 +8,14 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { TtsModule } from './tts/tts.module';
 
+import { PrismaModule } from './prisma/prisma.module';
+
+
+import {
+  AdminModule,
+} from './admin/admin.module';
+
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -19,6 +27,10 @@ import { TtsModule } from './tts/tts.module';
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'public'),
     }),
+	
+    AdminModule,
+
+    PrismaModule,
 
     AuthModule,
 

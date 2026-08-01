@@ -182,7 +182,7 @@
   }
 
 
-  function enforce() {
+  async function enforce() {
     state.checked = true;
 
     const body =
@@ -214,11 +214,21 @@
         AUTH_MODES.PUBLIC
       ).toLowerCase();
 
-    const currentUser =
-      AuthStore.getCurrentUser();
+let currentUser =
+  AuthStore.getCurrentUser();
 
-    state.mode = mode;
-    state.user = currentUser;
+if (
+  typeof AuthStore
+    .refreshCurrentUser ===
+      'function'
+) {
+  currentUser =
+    await AuthStore
+      .refreshCurrentUser();
+}
+
+state.mode = mode;
+state.user = currentUser;
 
     /*
      * Trang công khai:
@@ -418,15 +428,45 @@
   window.AuthGuard =
     AuthGuard;
 
-  if (document.body) {
-    enforce();
-  } else {
-    document.addEventListener(
-      'DOMContentLoaded',
-      enforce,
-      {
-        once: true
+let enforcementPromise = null;
+
+function startEnforcement() {
+  if (enforcementPromise) {
+    return enforcementPromise;
+  }
+
+  enforcementPromise =
+    enforce().catch(
+      function (error) {
+        console.error(
+          'Không thể kiểm tra quyền truy cập:',
+          error
+        );
+
+        revealPage();
+
+        return null;
       }
     );
-  }
+
+  window.AuthGuard =
+    window.AuthGuard || {};
+
+  window.AuthGuard.ready =
+    enforcementPromise;
+
+  return enforcementPromise;
+}
+
+if (document.body) {
+  startEnforcement();
+} else {
+  document.addEventListener(
+    'DOMContentLoaded',
+    startEnforcement,
+    {
+      once: true
+    }
+  );
+}
 })(window);

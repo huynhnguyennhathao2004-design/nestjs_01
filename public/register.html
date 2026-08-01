@@ -65,6 +65,8 @@
             id="fullName"
             placeholder="Nhập họ và tên"
             autocomplete="name"
+            minlength="2"
+            maxlength="120"
             required
           />
         </div>
@@ -94,6 +96,8 @@
               id="registerPassword"
               placeholder="Tối thiểu 8 ký tự"
               autocomplete="new-password"
+              minlength="8"
+              maxlength="128"
               required
             />
 
@@ -123,6 +127,8 @@
               id="confirmPassword"
               placeholder="Nhập lại mật khẩu"
               autocomplete="new-password"
+              minlength="8"
+              maxlength="128"
               required
             />
 
@@ -184,6 +190,7 @@
   </main>
   
   <script src="/js/auth-store.js"></script>
+<script src="/js/auth-api.js"></script>
   <script src="/js/auth-guard.js"></script>
   <script src="/js/register.js"></script>
 </body>

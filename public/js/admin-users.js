@@ -1,3 +1,5 @@
+'use strict';
+
 const accountTableBody =
   document.getElementById(
     'accountTableBody'
@@ -38,11 +40,6 @@ const resetFilterBtn =
     'resetFilterBtn'
   );
 
-const adminMessage =
-  document.getElementById(
-    'adminMessage'
-  );
-
 const accountModal =
   document.getElementById(
     'accountModal'
@@ -58,93 +55,68 @@ const modalCloseBtn =
     'modalCloseBtn'
   );
 
+const adminUsersState = {
+  accounts: [],
 
-const DEFAULT_ADMIN = {
-  id: 1,
-  name: 'Admin',
-  email: 'admin@gmail.com',
-  password: '123456',
-  role: 'ADMIN',
-  status: 'ACTIVE',
-  provider: 'LOCAL',
-  avatar: '',
-  createdAt:
-    new Date().toISOString()
+  pagination: {
+    page: 1,
+    limit: 100,
+    total: 0,
+    totalPages: 1
+  },
+
+  loading: false,
+
+  pendingStatusIds:
+    new Set()
 };
 
+let searchTimer = null;
 
 /* =====================================
-   ĐỌC VÀ LƯU DỮ LIỆU
+   NGƯỜI DÙNG HIỆN TẠI
 ===================================== */
 
 function getCurrentUser() {
-  return AuthStore.getCurrentUser();
+  try {
+    const rawUser =
+      sessionStorage.getItem(
+        'user'
+      );
+
+    return rawUser
+      ? JSON.parse(rawUser)
+      : null;
+  } catch (error) {
+    return null;
+  }
 }
 
-
-function getAccounts() {
-  return AuthStore.getAccounts();
-}
-
-
-function saveAccounts(accounts) {
-  return AuthStore.saveAccounts(
-    accounts
+function isAdmin(user) {
+  return Boolean(
+    user &&
+    String(user.role || '')
+      .toUpperCase() ===
+      'ADMIN'
   );
 }
 
-
-/* =====================================
-   BẢO VỆ TRANG ADMIN
-===================================== */
-
-function protectAdminPage() {
-  const currentUser =
-    getCurrentUser();
-
-  if (!currentUser) {
-    window.location.replace(
-      '/login.html'
-    );
-
-    return false;
-  }
-
-  if (!AuthStore.isAdmin(currentUser)) {
-    window.alert(
-      'Bạn không có quyền truy cập trang quản trị.'
-    );
-
-    window.location.replace(
-      '/index.html'
-    );
-
-    return false;
-  }
-
-  if (
-    String(currentUser.status)
-      .toUpperCase() === 'LOCKED'
-  ) {
-    sessionStorage.removeItem('user');
-
-    window.location.replace(
-      '/login.html'
-    );
-
-    return false;
-  }
-
-  return true;
+function isSameAccount(
+  firstId,
+  secondId
+) {
+  return (
+    String(firstId) ===
+    String(secondId)
+  );
 }
-
 
 /* =====================================
    HÀM HỖ TRỢ
 ===================================== */
 
 function escapeHtml(value) {
-  return String(value || '')
+  return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -152,27 +124,15 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
-
-function normalizeText(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(
-      /[\u0300-\u036f]/g,
-      ''
-    )
-    .replace(/đ/g, 'd');
-}
-
-
 function getInitial(name) {
-  return String(name || 'U')
-    .trim()
-    .charAt(0)
-    .toUpperCase();
+  return (
+    String(name || 'U')
+      .trim()
+      .charAt(0)
+      .toUpperCase() ||
+    'U'
+  );
 }
-
 
 function formatDate(value) {
   if (!value) {
@@ -202,54 +162,177 @@ function formatDate(value) {
   ).format(date);
 }
 
+function normalizeAccount(source) {
+  const account =
+    source || {};
 
-function isSameAccount(
-  firstId,
-  secondId
+  return {
+    id:
+      String(
+        account.id || ''
+      ),
+
+    name:
+      String(
+        account.name ||
+        account.fullName ||
+        'Chưa đặt tên'
+      ),
+
+    fullName:
+      String(
+        account.fullName ||
+        account.name ||
+        'Chưa đặt tên'
+      ),
+
+    email:
+      String(
+        account.email || ''
+      ),
+
+    avatar:
+      String(
+        account.avatar ||
+        account.avatarUrl ||
+        ''
+      ),
+
+    avatarUrl:
+      account.avatarUrl || null,
+
+    role:
+      String(
+        account.role ||
+        'USER'
+      ).toUpperCase(),
+
+    status:
+      String(
+        account.status ||
+        'ACTIVE'
+      ).toUpperCase(),
+
+    /*
+     * API hiện chưa trả provider.
+     * Tạm mặc định là LOCAL.
+     */
+    provider:
+      String(
+        account.provider ||
+        'LOCAL'
+      ).toUpperCase(),
+
+    emailVerifiedAt:
+      account.emailVerifiedAt ||
+      null,
+
+    lastLoginAt:
+      account.lastLoginAt ||
+      null,
+
+    createdAt:
+      account.createdAt ||
+      null,
+
+    updatedAt:
+      account.updatedAt ||
+      null
+  };
+}
+
+async function readResponseData(
+  response
 ) {
-  return (
-    String(firstId) ===
-    String(secondId)
-  );
+  try {
+    return await response.json();
+  } catch (error) {
+    return null;
+  }
 }
 
+function getErrorMessage(
+  responseData,
+  fallbackMessage
+) {
+  if (
+    responseData &&
+    Array.isArray(
+      responseData.message
+    )
+  ) {
+    return responseData.message
+      .join(' ');
+  }
 
-function countAdmins(accounts) {
-  return accounts.filter(
-    function (account) {
-      return (
-        String(account.role)
-          .toUpperCase() ===
-          'ADMIN'
-      );
-    }
-  ).length;
+  if (
+    responseData &&
+    typeof responseData.message ===
+      'string'
+  ) {
+    return responseData.message;
+  }
+
+  return fallbackMessage;
 }
-
 
 function showMessage(
   message,
-  type
+  type = 'info'
 ) {
-  if (!window.Toast) {
-    console.log(message);
-
+  if (
+    window.Toast &&
+    typeof Toast[type] ===
+      'function'
+  ) {
+    Toast[type](message);
     return;
   }
 
-  const toastMethod =
-    Toast[type] ||
-    Toast.info;
-
-  toastMethod(message);
+  console.log(message);
 }
 
+async function confirmAction(
+  options
+) {
+  if (
+    window.AppModal &&
+    typeof AppModal.confirm ===
+      'function'
+  ) {
+    return AppModal.confirm(
+      options
+    );
+  }
+
+  return window.confirm(
+    options.message ||
+    'Bạn có chắc muốn tiếp tục?'
+  );
+}
+
+function setLoading(
+  isLoading
+) {
+  adminUsersState.loading =
+    isLoading;
+
+  if (
+    accountResultLine &&
+    isLoading
+  ) {
+    accountResultLine.textContent =
+      'Đang tải danh sách tài khoản...';
+  }
+}
 
 /* =====================================
    THỐNG KÊ
 ===================================== */
 
-function updateStatistics(accounts) {
+function updateStatistics(
+  accounts
+) {
   const totalAccounts =
     document.getElementById(
       'totalAccounts'
@@ -274,8 +357,7 @@ function updateStatistics(accounts) {
     accounts.filter(
       function (account) {
         return (
-          String(account.status)
-            .toUpperCase() ===
+          account.status ===
           'ACTIVE'
         );
       }
@@ -285,52 +367,52 @@ function updateStatistics(accounts) {
     accounts.filter(
       function (account) {
         return (
-          String(account.status)
-            .toUpperCase() ===
+          account.status ===
           'LOCKED'
         );
       }
     ).length;
 
   const adminCount =
-    countAdmins(accounts);
+    accounts.filter(
+      function (account) {
+        return (
+          account.role ===
+          'ADMIN'
+        );
+      }
+    ).length;
 
   if (totalAccounts) {
     totalAccounts.textContent =
-      accounts.length;
+      String(
+        adminUsersState
+          .pagination.total ||
+        accounts.length
+      );
   }
 
   if (activeAccounts) {
     activeAccounts.textContent =
-      activeCount;
+      String(activeCount);
   }
 
   if (lockedAccounts) {
     lockedAccounts.textContent =
-      lockedCount;
+      String(lockedCount);
   }
 
   if (adminAccounts) {
     adminAccounts.textContent =
-      adminCount;
+      String(adminCount);
   }
 }
 
-
 /* =====================================
-   LỌC TÀI KHOẢN
+   BỘ LỌC
 ===================================== */
 
-function getFilteredAccounts(
-  accounts
-) {
-  const keyword =
-    normalizeText(
-      adminSearchInput
-        ? adminSearchInput.value
-        : ''
-    );
-
+function getFilteredAccounts() {
   const selectedRole =
     roleFilter
       ? roleFilter.value
@@ -346,65 +428,36 @@ function getFilteredAccounts(
       ? providerFilter.value
       : 'ALL';
 
-  return accounts.filter(
-    function (account) {
-      const searchableText =
-        normalizeText(
-          [
-            account.name,
-            account.email,
-            account.id
-          ].join(' ')
+  return adminUsersState
+    .accounts
+    .filter(
+      function (account) {
+        const roleMatches =
+          selectedRole ===
+            'ALL' ||
+          account.role ===
+            selectedRole;
+
+        const statusMatches =
+          selectedStatus ===
+            'ALL' ||
+          account.status ===
+            selectedStatus;
+
+        const providerMatches =
+          selectedProvider ===
+            'ALL' ||
+          account.provider ===
+            selectedProvider;
+
+        return (
+          roleMatches &&
+          statusMatches &&
+          providerMatches
         );
-
-      const matchKeyword =
-        !keyword ||
-        searchableText.includes(
-          keyword
-        );
-
-      const accountRole =
-        String(
-          account.role || 'USER'
-        ).toUpperCase();
-
-      const accountStatus =
-        String(
-          account.status ||
-          'ACTIVE'
-        ).toUpperCase();
-
-      const accountProvider =
-        String(
-          account.provider ||
-          'LOCAL'
-        ).toUpperCase();
-
-      const matchRole =
-        selectedRole === 'ALL' ||
-        accountRole ===
-          selectedRole;
-
-      const matchStatus =
-        selectedStatus === 'ALL' ||
-        accountStatus ===
-          selectedStatus;
-
-      const matchProvider =
-        selectedProvider === 'ALL' ||
-        accountProvider ===
-          selectedProvider;
-
-      return (
-        matchKeyword &&
-        matchRole &&
-        matchStatus &&
-        matchProvider
-      );
-    }
-  );
+      }
+    );
 }
-
 
 /* =====================================
    HIỂN THỊ BẢNG
@@ -421,10 +474,6 @@ function createAvatar(account) {
           alt="${escapeHtml(
             account.name
           )}"
-          onerror="
-            this.parentElement.textContent =
-            '${getInitial(account.name)}';
-          "
         />
       </div>
     `;
@@ -432,74 +481,59 @@ function createAvatar(account) {
 
   return `
     <div class="table-avatar">
-      ${getInitial(account.name)}
+      ${escapeHtml(
+        getInitial(
+          account.name
+        )
+      )}
     </div>
   `;
 }
-
 
 function renderAccounts() {
   if (!accountTableBody) {
     return;
   }
 
-  const accounts =
-    getAccounts();
-
   const currentUser =
     getCurrentUser();
 
   const filteredAccounts =
-    getFilteredAccounts(accounts);
+    getFilteredAccounts();
 
-  updateStatistics(accounts);
+  updateStatistics(
+    adminUsersState.accounts
+  );
 
-  accountTableBody.innerHTML = '';
+  accountTableBody.innerHTML =
+    '';
 
-  if (
-    accountResultLine
-  ) {
+  if (accountResultLine) {
     accountResultLine.textContent =
-      `Đang hiển thị ${filteredAccounts.length} trên ${accounts.length} tài khoản.`;
+      `Đang hiển thị ` +
+      `${filteredAccounts.length} ` +
+      `trên ` +
+      `${adminUsersState.pagination.total} ` +
+      `tài khoản.`;
   }
 
   if (
-    filteredAccounts.length === 0
+    filteredAccounts.length ===
+    0
   ) {
-    if (emptyAccounts) {
-      emptyAccounts.classList.add(
-        'show'
-      );
-    }
+    emptyAccounts?.classList.add(
+      'show'
+    );
 
     return;
   }
 
-  if (emptyAccounts) {
-    emptyAccounts.classList.remove(
-      'show'
-    );
-  }
+  emptyAccounts?.classList.remove(
+    'show'
+  );
 
   filteredAccounts.forEach(
     function (account) {
-      const role =
-        String(
-          account.role || 'USER'
-        ).toUpperCase();
-
-      const status =
-        String(
-          account.status ||
-          'ACTIVE'
-        ).toUpperCase();
-
-      const provider =
-        String(
-          account.provider ||
-          'LOCAL'
-        ).toUpperCase();
-
       const isCurrentAccount =
         currentUser &&
         isSameAccount(
@@ -507,26 +541,39 @@ function renderAccounts() {
           currentUser.id
         );
 
+      const isPending =
+        adminUsersState
+          .pendingStatusIds
+          .has(account.id);
+
+      const providerLabel =
+        account.provider ===
+        'GOOGLE'
+          ? 'Google'
+          : 'Tài khoản thường';
+
       const row =
-        document.createElement('tr');
+        document.createElement(
+          'tr'
+        );
 
       row.innerHTML = `
         <td>
           <div class="account-cell">
-            ${createAvatar(account)}
+            ${createAvatar(
+              account
+            )}
 
             <div>
               <strong>
                 ${escapeHtml(
-                  account.name ||
-                  'Chưa đặt tên'
+                  account.name
                 )}
               </strong>
 
               <span>
                 ${escapeHtml(
-                  account.email ||
-                  'Không có email'
+                  account.email
                 )}
               </span>
 
@@ -548,29 +595,28 @@ function renderAccounts() {
         <td>
           <span
             class="account-badge ${
-              provider === 'GOOGLE'
+              account.provider ===
+              'GOOGLE'
                 ? 'provider-google'
                 : 'provider-local'
             }"
           >
-            ${
-              provider === 'GOOGLE'
-                ? 'Google'
-                : 'Tài khoản thường'
-            }
+            ${providerLabel}
           </span>
         </td>
 
         <td>
           <span
             class="account-badge ${
-              role === 'ADMIN'
+              account.role ===
+              'ADMIN'
                 ? 'role-admin'
                 : 'role-user'
             }"
           >
             ${
-              role === 'ADMIN'
+              account.role ===
+              'ADMIN'
                 ? 'Quản trị viên'
                 : 'Người dùng'
             }
@@ -580,13 +626,15 @@ function renderAccounts() {
         <td>
           <span
             class="account-badge ${
-              status === 'LOCKED'
+              account.status ===
+              'LOCKED'
                 ? 'status-locked'
                 : 'status-active'
             }"
           >
             ${
-              status === 'LOCKED'
+              account.status ===
+              'LOCKED'
                 ? 'Đã khóa'
                 : 'Hoạt động'
             }
@@ -603,7 +651,10 @@ function renderAccounts() {
           <div class="account-actions">
             <button
               type="button"
-              class="table-action-btn view-action"
+              class="
+                table-action-btn
+                view-action
+              "
               data-action="view"
               data-account-id="${escapeHtml(
                 account.id
@@ -614,62 +665,34 @@ function renderAccounts() {
 
             <button
               type="button"
-              class="table-action-btn role-action"
-              data-action="role"
-              data-account-id="${escapeHtml(
-                account.id
-              )}"
-              ${
-                isCurrentAccount
-                  ? 'disabled'
-                  : ''
-              }
-            >
-              ${
-                role === 'ADMIN'
-                  ? 'Hạ quyền'
-                  : 'Cấp Admin'
-              }
-            </button>
-
-            <button
-              type="button"
-              class="table-action-btn ${
-                status === 'LOCKED'
-                  ? 'unlock-action'
-                  : 'lock-action'
-              }"
+              class="
+                table-action-btn
+                ${
+                  account.status ===
+                  'LOCKED'
+                    ? 'unlock-action'
+                    : 'lock-action'
+                }
+              "
               data-action="status"
               data-account-id="${escapeHtml(
                 account.id
               )}"
               ${
-                isCurrentAccount
+                isCurrentAccount ||
+                isPending
                   ? 'disabled'
                   : ''
               }
             >
               ${
-                status === 'LOCKED'
-                  ? 'Mở khóa'
-                  : 'Khóa'
+                isPending
+                  ? 'Đang xử lý...'
+                  : account.status ===
+                    'LOCKED'
+                    ? 'Mở khóa'
+                    : 'Khóa'
               }
-            </button>
-
-            <button
-              type="button"
-              class="table-action-btn delete-action"
-              data-action="delete"
-              data-account-id="${escapeHtml(
-                account.id
-              )}"
-              ${
-                isCurrentAccount
-                  ? 'disabled'
-                  : ''
-              }
-            >
-              Xóa
             </button>
           </div>
         </td>
@@ -682,80 +705,295 @@ function renderAccounts() {
   );
 }
 
+/* =====================================
+   GỌI API DANH SÁCH
+===================================== */
+
+async function loadAccounts() {
+  if (
+    !window.AuthStore ||
+    typeof AuthStore.authFetch !==
+      'function'
+  ) {
+    showMessage(
+      'Thành phần xác thực chưa được tải.',
+      'error'
+    );
+
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const keyword =
+      adminSearchInput
+        ? adminSearchInput
+            .value
+            .trim()
+        : '';
+
+    const query =
+      new URLSearchParams({
+        page: '1',
+        limit: '100'
+      });
+
+    if (keyword) {
+      query.set(
+        'search',
+        keyword
+      );
+    }
+
+    const response =
+      await AuthStore.authFetch(
+        `/api/admin/users?${query.toString()}`,
+        {
+          headers: {
+            Accept:
+              'application/json'
+          }
+        }
+      );
+
+    const responseData =
+      await readResponseData(
+        response
+      );
+
+    if (!response.ok) {
+      if (
+        response.status ===
+        401
+      ) {
+        window.location.replace(
+          '/login.html'
+        );
+
+        return;
+      }
+
+      if (
+        response.status ===
+        403
+      ) {
+        showMessage(
+          getErrorMessage(
+            responseData,
+            'Bạn không có quyền quản trị hệ thống.'
+          ),
+          'error'
+        );
+
+        window.setTimeout(
+          function () {
+            window.location.replace(
+              '/index.html'
+            );
+          },
+          900
+        );
+
+        return;
+      }
+
+      throw new Error(
+        getErrorMessage(
+          responseData,
+          'Không thể tải danh sách tài khoản.'
+        )
+      );
+    }
+
+    if (
+      !responseData ||
+      !Array.isArray(
+        responseData.data
+      )
+    ) {
+      throw new Error(
+        'Backend không trả về danh sách tài khoản hợp lệ.'
+      );
+    }
+
+    adminUsersState.accounts =
+      responseData.data.map(
+        normalizeAccount
+      );
+
+    adminUsersState.pagination = {
+      page:
+        responseData
+          .pagination?.page ||
+        1,
+
+      limit:
+        responseData
+          .pagination?.limit ||
+        100,
+
+      total:
+        responseData
+          .pagination?.total ||
+        0,
+
+      totalPages:
+        responseData
+          .pagination
+          ?.totalPages ||
+        1
+    };
+
+    renderAccounts();
+  } catch (error) {
+    console.error(
+      'Lỗi tải danh sách tài khoản:',
+      error
+    );
+
+    adminUsersState.accounts =
+      [];
+
+    adminUsersState
+      .pagination
+      .total = 0;
+
+    renderAccounts();
+
+    showMessage(
+      error instanceof Error
+        ? error.message
+        : 'Không thể tải danh sách tài khoản.',
+      'error'
+    );
+  } finally {
+    setLoading(false);
+  }
+}
 
 /* =====================================
    XEM CHI TIẾT
 ===================================== */
 
+function findAccount(accountId) {
+  return (
+    adminUsersState
+      .accounts
+      .find(
+        function (account) {
+          return isSameAccount(
+            account.id,
+            accountId
+          );
+        }
+      ) ||
+    null
+  );
+}
+
 function openAccountModal(account) {
-  if (!accountModal || !account) {
+  if (
+    !accountModal ||
+    !account
+  ) {
     return;
   }
 
-  const role =
-    String(
-      account.role || 'USER'
-    ).toUpperCase();
-
-  const status =
-    String(
-      account.status || 'ACTIVE'
-    ).toUpperCase();
-
-  const provider =
-    String(
-      account.provider || 'LOCAL'
-    ).toUpperCase();
-
-  document.getElementById(
-    'modalAvatar'
-  ).textContent =
-    getInitial(account.name);
-
-  document.getElementById(
-    'modalAccountName'
-  ).textContent =
-    account.name ||
-    'Chưa đặt tên';
-
-  document.getElementById(
-    'modalAccountEmail'
-  ).textContent =
-    account.email ||
-    'Không có email';
-
-  document.getElementById(
-    'modalAccountId'
-  ).textContent =
-    account.id || '—';
-
-  document.getElementById(
-    'modalAccountRole'
-  ).textContent =
-    role === 'ADMIN'
-      ? 'Quản trị viên'
-      : 'Người dùng';
-
-  document.getElementById(
-    'modalAccountStatus'
-  ).textContent =
-    status === 'LOCKED'
-      ? 'Đã bị khóa'
-      : 'Đang hoạt động';
-
-  document.getElementById(
-    'modalAccountProvider'
-  ).textContent =
-    provider === 'GOOGLE'
-      ? 'Google'
-      : 'Tài khoản thường';
-
-  document.getElementById(
-    'modalAccountCreatedAt'
-  ).textContent =
-    formatDate(
-      account.createdAt
+  const modalAvatar =
+    document.getElementById(
+      'modalAvatar'
     );
+
+  const modalAccountName =
+    document.getElementById(
+      'modalAccountName'
+    );
+
+  const modalAccountEmail =
+    document.getElementById(
+      'modalAccountEmail'
+    );
+
+  const modalAccountId =
+    document.getElementById(
+      'modalAccountId'
+    );
+
+  const modalAccountRole =
+    document.getElementById(
+      'modalAccountRole'
+    );
+
+  const modalAccountStatus =
+    document.getElementById(
+      'modalAccountStatus'
+    );
+
+  const modalAccountProvider =
+    document.getElementById(
+      'modalAccountProvider'
+    );
+
+  const modalAccountCreatedAt =
+    document.getElementById(
+      'modalAccountCreatedAt'
+    );
+
+  if (modalAvatar) {
+    modalAvatar.textContent =
+      getInitial(
+        account.name
+      );
+  }
+
+  if (modalAccountName) {
+    modalAccountName.textContent =
+      account.name;
+  }
+
+  if (modalAccountEmail) {
+    modalAccountEmail.textContent =
+      account.email ||
+      'Không có email';
+  }
+
+  if (modalAccountId) {
+    modalAccountId.textContent =
+      account.id ||
+      '—';
+  }
+
+  if (modalAccountRole) {
+    modalAccountRole.textContent =
+      account.role ===
+      'ADMIN'
+        ? 'Quản trị viên'
+        : 'Người dùng';
+  }
+
+  if (modalAccountStatus) {
+    modalAccountStatus.textContent =
+      account.status ===
+      'LOCKED'
+        ? 'Đã bị khóa'
+        : 'Đang hoạt động';
+  }
+
+  if (modalAccountProvider) {
+    modalAccountProvider.textContent =
+      account.provider ===
+      'GOOGLE'
+        ? 'Google'
+        : 'Tài khoản thường';
+  }
+
+  if (modalAccountCreatedAt) {
+    modalAccountCreatedAt.textContent =
+      formatDate(
+        account.createdAt
+      );
+  }
 
   accountModal.classList.add(
     'show'
@@ -769,7 +1007,6 @@ function openAccountModal(account) {
   document.body.style.overflow =
     'hidden';
 }
-
 
 function closeAccountModal() {
   if (!accountModal) {
@@ -785,118 +1022,9 @@ function closeAccountModal() {
     'true'
   );
 
-  document.body.style.overflow = '';
+  document.body.style.overflow =
+    '';
 }
-
-
-/* =====================================
-   THAY ĐỔI VAI TRÒ
-===================================== */
-
-async function changeAccountRole(
-  accountId
-) {
-  const accounts =
-    getAccounts();
-
-  const account =
-    accounts.find(
-      function (item) {
-        return isSameAccount(
-          item.id,
-          accountId
-        );
-      }
-    );
-
-  const currentUser =
-    getCurrentUser();
-
-  if (!account) {
-    showMessage(
-      'Không tìm thấy tài khoản.',
-      'error'
-    );
-
-    return;
-  }
-
-  if (
-    currentUser &&
-    isSameAccount(
-      account.id,
-      currentUser.id
-    )
-  ) {
-    showMessage(
-      'Bạn không thể tự thay đổi quyền của chính mình.',
-      'error'
-    );
-
-    return;
-  }
-
-  const currentRole =
-    String(
-      account.role || 'USER'
-    ).toUpperCase();
-
-  if (
-    currentRole === 'ADMIN' &&
-    countAdmins(accounts) <= 1
-  ) {
-    showMessage(
-      'Hệ thống phải có ít nhất một quản trị viên.',
-      'error'
-    );
-
-    return;
-  }
-
-  const newRole =
-    currentRole === 'ADMIN'
-      ? 'USER'
-      : 'ADMIN';
-
-  const confirmation =
-    await AppModal.confirm({
-      type: 'warning',
-
-      title:
-        newRole === 'ADMIN'
-          ? 'Cấp quyền quản trị'
-          : 'Hạ quyền tài khoản',
-
-      message:
-        newRole === 'ADMIN'
-          ? `Bạn có chắc muốn cấp quyền quản trị cho ${account.name}?`
-          : `Bạn có chắc muốn chuyển ${account.name} về quyền người dùng?`,
-
-      confirmText:
-        newRole === 'ADMIN'
-          ? 'Cấp quyền'
-          : 'Hạ quyền',
-
-      cancelText: 'Hủy'
-    });
-
-  if (!confirmation) {
-    return;
-  }
-
-  account.role = newRole;
-
-  saveAccounts(accounts);
-  renderAccounts();
-
-  showMessage(
-    newRole === 'ADMIN'
-      ? 'Đã cấp quyền quản trị.'
-      : 'Đã chuyển tài khoản về quyền người dùng.',
-    'success'
-  );
-}
-
 
 /* =====================================
    KHÓA HOẶC MỞ KHÓA
@@ -905,18 +1033,8 @@ async function changeAccountRole(
 async function toggleAccountStatus(
   accountId
 ) {
-  const accounts =
-    getAccounts();
-
   const account =
-    accounts.find(
-      function (item) {
-        return isSameAccount(
-          item.id,
-          accountId
-        );
-      }
-    );
+    findAccount(accountId);
 
   const currentUser =
     getCurrentUser();
@@ -945,269 +1063,265 @@ async function toggleAccountStatus(
     return;
   }
 
-  const currentStatus =
-    String(
-      account.status || 'ACTIVE'
-    ).toUpperCase();
+  if (
+    adminUsersState
+      .pendingStatusIds
+      .has(account.id)
+  ) {
+    return;
+  }
 
   const newStatus =
-    currentStatus === 'LOCKED'
+    account.status ===
+    'LOCKED'
       ? 'ACTIVE'
       : 'LOCKED';
 
-  const confirmation =
-    await AppModal.confirm({
+  const confirmed =
+    await confirmAction({
       type:
-        newStatus === 'LOCKED'
+        newStatus ===
+        'LOCKED'
           ? 'warning'
           : 'success',
 
       title:
-        newStatus === 'LOCKED'
+        newStatus ===
+        'LOCKED'
           ? 'Khóa tài khoản'
           : 'Mở khóa tài khoản',
 
       message:
-        newStatus === 'LOCKED'
+        newStatus ===
+        'LOCKED'
           ? `Tài khoản ${account.name} sẽ không thể đăng nhập sau khi bị khóa.`
           : `Tài khoản ${account.name} sẽ có thể đăng nhập lại.`,
 
       confirmText:
-        newStatus === 'LOCKED'
+        newStatus ===
+        'LOCKED'
           ? 'Khóa tài khoản'
           : 'Mở khóa',
 
-      cancelText: 'Hủy'
+      cancelText:
+        'Hủy'
     });
 
-  if (!confirmation) {
+  if (!confirmed) {
     return;
   }
 
-  account.status = newStatus;
+  adminUsersState
+    .pendingStatusIds
+    .add(account.id);
 
-  saveAccounts(accounts);
   renderAccounts();
 
-  showMessage(
-    newStatus === 'LOCKED'
-      ? 'Đã khóa tài khoản.'
-      : 'Đã mở khóa tài khoản.',
-    'success'
-  );
-}
+  try {
+    const response =
+      await AuthStore.authFetch(
+        `/api/admin/users/${encodeURIComponent(
+          account.id
+        )}/status`,
+        {
+          method: 'PATCH',
 
+          headers: {
+            'Content-Type':
+              'application/json',
 
-/* =====================================
-   XÓA TÀI KHOẢN
-===================================== */
+            Accept:
+              'application/json'
+          },
 
-async function deleteAccount(
-  accountId
-) {
-  const accounts =
-    getAccounts();
+          body: JSON.stringify({
+            status:
+              newStatus
+          })
+        }
+      );
 
-  const currentUser =
-    getCurrentUser();
+    const responseData =
+      await readResponseData(
+        response
+      );
 
-  const account =
-    accounts.find(
-      function (item) {
-        return isSameAccount(
-          item.id,
-          accountId
-        );
-      }
-    );
+    if (!response.ok) {
+      throw new Error(
+        getErrorMessage(
+          responseData,
+          'Không thể cập nhật trạng thái tài khoản.'
+        )
+      );
+    }
 
-  if (!account) {
-    showMessage(
-      'Không tìm thấy tài khoản.',
-      'error'
-    );
+    if (!responseData?.user) {
+      throw new Error(
+        'Backend không trả về tài khoản đã cập nhật.'
+      );
+    }
 
-    return;
-  }
+    const updatedAccount =
+      normalizeAccount(
+        responseData.user
+      );
 
-  if (
-    currentUser &&
-    isSameAccount(
-      account.id,
-      currentUser.id
-    )
-  ) {
-    showMessage(
-      'Bạn không thể xóa tài khoản đang đăng nhập.',
-      'error'
-    );
-
-    return;
-  }
-
-  const accountRole =
-    String(
-      account.role || 'USER'
-    ).toUpperCase();
-
-  if (
-    accountRole === 'ADMIN' &&
-    countAdmins(accounts) <= 1
-  ) {
-    showMessage(
-      'Không thể xóa quản trị viên cuối cùng.',
-      'error'
-    );
-
-    return;
-  }
-
-  const confirmation =
-    await AppModal.confirm({
-      type: 'danger',
-
-      title: 'Xóa tài khoản',
-
-      message:
-        `Bạn có chắc muốn xóa tài khoản ${account.name}?\n\nThao tác này không thể hoàn tác.`,
-
-      confirmText: 'Xóa tài khoản',
-
-      cancelText: 'Không xóa',
-
-      closeOnOverlay: false
-    });
-
-  if (!confirmation) {
-    return;
-  }
-
-  const updatedAccounts =
-    accounts.filter(
-      function (item) {
-        return !isSameAccount(
-          item.id,
-          accountId
-        );
-      }
-    );
-
-  saveAccounts(updatedAccounts);
-  renderAccounts();
-
-  showMessage(
-    'Đã xóa tài khoản.',
-    'success'
-  );
-}
-
-
-/* =====================================
-   XỬ LÝ NÚT TRONG BẢNG
-===================================== */
-
-function setupTableActions() {
-  if (!accountTableBody) {
-    return;
-  }
-
-  accountTableBody.addEventListener(
-    'click',
-    async function (event) {
-      const button =
-        event.target.closest(
-          '[data-action]'
-        );
-
-      if (
-        !button ||
-        button.disabled
-      ) {
-        return;
-      }
-
-      const action =
-        button.dataset.action;
-
-      const accountId =
-        button.dataset.accountId;
-
-      const account =
-        getAccounts().find(
+    adminUsersState.accounts =
+      adminUsersState
+        .accounts
+        .map(
           function (item) {
             return isSameAccount(
               item.id,
-              accountId
-            );
+              updatedAccount.id
+            )
+              ? updatedAccount
+              : item;
           }
         );
 
-      if (action === 'view') {
-        openAccountModal(account);
-      }
-      
-      if (action === 'role') {
-        await changeAccountRole(
-          accountId
-        );
-      }
+    showMessage(
+      responseData.message ||
+        (
+          newStatus ===
+          'LOCKED'
+            ? 'Khóa tài khoản thành công.'
+            : 'Mở khóa tài khoản thành công.'
+        ),
+      'success'
+    );
+  } catch (error) {
+    console.error(
+      'Lỗi cập nhật trạng thái:',
+      error
+    );
 
-      if (action === 'status') {
-        await toggleAccountStatus(
-          accountId
-        );
-      }
+    showMessage(
+      error instanceof Error
+        ? error.message
+        : 'Không thể cập nhật trạng thái tài khoản.',
+      'error'
+    );
+  } finally {
+    adminUsersState
+      .pendingStatusIds
+      .delete(account.id);
 
-      if (action === 'delete') {
-        await deleteAccount(
-          accountId
-        );
-      }
-    }
-  );
+    renderAccounts();
+  }
 }
 
+/* =====================================
+   SỰ KIỆN BẢNG
+===================================== */
+
+function setupTableActions() {
+  accountTableBody
+    ?.addEventListener(
+      'click',
+      async function (event) {
+        const button =
+          event.target.closest(
+            '[data-action]'
+          );
+
+        if (
+          !button ||
+          button.disabled
+        ) {
+          return;
+        }
+
+        const action =
+          button.dataset.action;
+
+        const accountId =
+          button.dataset.accountId;
+
+        const account =
+          findAccount(
+            accountId
+          );
+
+        if (
+          action ===
+          'view'
+        ) {
+          openAccountModal(
+            account
+          );
+
+          return;
+        }
+
+        if (
+          action ===
+          'status'
+        ) {
+          await toggleAccountStatus(
+            accountId
+          );
+        }
+      }
+    );
+}
 
 /* =====================================
    SỰ KIỆN BỘ LỌC
 ===================================== */
 
 function setupFilters() {
-  [
-    adminSearchInput,
-    roleFilter,
-    statusFilter,
-    providerFilter
-  ].forEach(function (element) {
-    if (!element) {
-      return;
-    }
+  adminSearchInput
+    ?.addEventListener(
+      'input',
+      function () {
+        window.clearTimeout(
+          searchTimer
+        );
 
-    const eventName =
-      element.tagName === 'INPUT'
-        ? 'input'
-        : 'change';
+        searchTimer =
+          window.setTimeout(
+            loadAccounts,
+            350
+          );
+      }
+    );
 
-    element.addEventListener(
-      eventName,
+  roleFilter
+    ?.addEventListener(
+      'change',
       renderAccounts
     );
-  });
 
-  if (resetFilterBtn) {
-    resetFilterBtn.addEventListener(
+  statusFilter
+    ?.addEventListener(
+      'change',
+      renderAccounts
+    );
+
+  providerFilter
+    ?.addEventListener(
+      'change',
+      renderAccounts
+    );
+
+  resetFilterBtn
+    ?.addEventListener(
       'click',
-      function () {
+      async function () {
         if (adminSearchInput) {
-          adminSearchInput.value = '';
+          adminSearchInput.value =
+            '';
         }
 
         if (roleFilter) {
-          roleFilter.value = 'ALL';
+          roleFilter.value =
+            'ALL';
         }
 
         if (statusFilter) {
-          statusFilter.value = 'ALL';
+          statusFilter.value =
+            'ALL';
         }
 
         if (providerFilter) {
@@ -1215,37 +1329,34 @@ function setupFilters() {
             'ALL';
         }
 
-        renderAccounts();
+        await loadAccounts();
       }
     );
-  }
 }
-
 
 /* =====================================
    SỰ KIỆN MODAL
 ===================================== */
 
 function setupModalEvents() {
-  if (modalCloseBtn) {
-    modalCloseBtn.addEventListener(
+  modalCloseBtn
+    ?.addEventListener(
       'click',
       closeAccountModal
     );
-  }
 
-  if (modalOverlay) {
-    modalOverlay.addEventListener(
+  modalOverlay
+    ?.addEventListener(
       'click',
       closeAccountModal
     );
-  }
 
   document.addEventListener(
     'keydown',
     function (event) {
       if (
-        event.key === 'Escape'
+        event.key ===
+        'Escape'
       ) {
         closeAccountModal();
       }
@@ -1253,14 +1364,66 @@ function setupModalEvents() {
   );
 }
 
-
 /* =====================================
    KHỞI TẠO
 ===================================== */
 
-if (protectAdminPage()) {
-  setupTableActions();
-  setupFilters();
-  setupModalEvents();
-  renderAccounts();
+async function initializeAdminUsersPage() {
+  try {
+    if (
+      window.AuthGuard?.ready
+    ) {
+      await window.AuthGuard
+        .ready;
+    }
+
+    const currentUser =
+      getCurrentUser();
+
+    if (!currentUser) {
+      window.location.replace(
+        '/login.html'
+      );
+
+      return;
+    }
+
+    if (
+      !isAdmin(currentUser)
+    ) {
+      showMessage(
+        'Bạn không có quyền truy cập trang quản trị.',
+        'error'
+      );
+
+      window.setTimeout(
+        function () {
+          window.location.replace(
+            '/index.html'
+          );
+        },
+        800
+      );
+
+      return;
+    }
+
+    setupTableActions();
+    setupFilters();
+    setupModalEvents();
+
+    await loadAccounts();
+  } catch (error) {
+    console.error(
+      'Lỗi khởi tạo trang quản lý tài khoản:',
+      error
+    );
+
+    showMessage(
+      'Không thể mở trang quản lý tài khoản.',
+      'error'
+    );
+  }
 }
+
+initializeAdminUsersPage();

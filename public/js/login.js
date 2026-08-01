@@ -28,7 +28,12 @@ const rememberMe =
     'rememberMe'
   );
 
-
+const submitButton =
+  loginForm
+    ? loginForm.querySelector(
+        '.login-submit'
+      )
+    : null;
 
 function showLoginError(message) {
   if (!loginMessage) {
@@ -43,7 +48,6 @@ function showLoginError(message) {
   );
 }
 
-
 function clearLoginMessage() {
   if (!loginMessage) {
     return;
@@ -56,6 +60,19 @@ function clearLoginMessage() {
   );
 }
 
+function setSubmitting(isSubmitting) {
+  if (!submitButton) {
+    return;
+  }
+
+  submitButton.disabled =
+    isSubmitting;
+
+  submitButton.textContent =
+    isSubmitting
+      ? 'Đang đăng nhập...'
+      : 'Đăng nhập';
+}
 
 function loadEmail() {
   const params =
@@ -74,7 +91,6 @@ function loadEmail() {
       emailFromUrl;
 
     passwordInput.focus();
-
     return;
   }
 
@@ -88,98 +104,45 @@ function loadEmail() {
   }
 }
 
+function updateRegisterLink() {
+  const registerLinks =
+    document.querySelectorAll(
+      'a[href^="/register.html"]'
+    );
 
-if (
-  togglePassword &&
-  passwordInput
-) {
-  togglePassword.addEventListener(
-    'click',
-    function () {
-      passwordInput.type =
-        passwordInput.type ===
-        'password'
-          ? 'text'
-          : 'password';
-    }
-  );
-}
+  if (
+    !registerLinks ||
+    registerLinks.length === 0
+  ) {
+    return;
+  }
 
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
 
-if (loginForm) {
-  loginForm.addEventListener(
-    'submit',
-    function (event) {
-      event.preventDefault();
+  const redirect =
+    params.get('redirect');
 
-      clearLoginMessage();
+  if (!redirect) {
+    return;
+  }
 
-      const result =
-        AuthStore.login(
-          emailInput.value,
-          passwordInput.value,
-          {
-            remember:
-              Boolean(
-                rememberMe &&
-                rememberMe.checked
-              )
-          }
-        );
+  const safeRedirect =
+    window.AuthGuard
+      ? AuthGuard.sanitizeRedirect(
+          redirect,
+          '/index.html'
+        )
+      : '/index.html';
 
-      if (!result.ok) {
-        showLoginError(
-          result.message
-        );
-
-        return;
-      }
-
-    
-      const redirectTarget =
-        window.AuthGuard
-          ? AuthGuard.getRedirectTarget(
-              '/index.html'
-            )
-          : '/index.html';
-
-      window.location.replace(
-        redirectTarget
-      );
-
-      function updateRegisterLink() {
-        const registerLink =
-          document.querySelector(
-            '.register-link-box a'
-          );
-
-        if (!registerLink) {
-          return;
-        }
-
-        const params =
-          new URLSearchParams(
-            window.location.search
-          );
-
-        const redirect =
-          params.get('redirect');
-
-        if (!redirect) {
-          return;
-        }
-
-        const safeRedirect =
-          AuthGuard.sanitizeRedirect(
-            redirect,
-            '/index.html'
-          );
-
-        registerLink.href =
-          `/register.html?redirect=${encodeURIComponent(
-            safeRedirect
-          )}`;
-      }
+  registerLinks.forEach(
+    function (registerLink) {
+      registerLink.href =
+        `/register.html?redirect=${encodeURIComponent(
+          safeRedirect
+        )}`;
     }
   );
 }
@@ -209,6 +172,91 @@ function showLoginNotice() {
   method(notice.message);
 }
 
+if (
+  togglePassword &&
+  passwordInput
+) {
+  togglePassword.addEventListener(
+    'click',
+    function () {
+      const showPassword =
+        passwordInput.type ===
+        'password';
+
+      passwordInput.type =
+        showPassword
+          ? 'text'
+          : 'password';
+
+      togglePassword.setAttribute(
+        'aria-label',
+        showPassword
+          ? 'Ẩn mật khẩu'
+          : 'Hiện mật khẩu'
+      );
+    }
+  );
+}
+
+if (loginForm) {
+  loginForm.addEventListener(
+    'submit',
+    async function (event) {
+      event.preventDefault();
+
+      if (
+        !window.AuthStore ||
+        typeof AuthStore.login !==
+          'function'
+      ) {
+        showLoginError(
+          'Thành phần đăng nhập chưa được tải.'
+        );
+
+        return;
+      }
+
+      clearLoginMessage();
+      setSubmitting(true);
+
+      const result =
+        await AuthStore.login(
+          emailInput.value,
+          passwordInput.value,
+          {
+            remember: Boolean(
+              rememberMe &&
+              rememberMe.checked
+            )
+          }
+        );
+
+      if (!result.ok) {
+        setSubmitting(false);
+
+        showLoginError(
+          result.message
+        );
+
+        passwordInput.focus();
+        passwordInput.select();
+
+        return;
+      }
+
+      const redirectTarget =
+        window.AuthGuard
+          ? AuthGuard.getRedirectTarget(
+              '/index.html'
+            )
+          : '/index.html';
+
+      window.location.replace(
+        redirectTarget
+      );
+    }
+  );
+}
 
 loadEmail();
 updateRegisterLink();

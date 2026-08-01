@@ -43,14 +43,20 @@ const toggleConfirmPassword =
     'toggleConfirmPassword'
   );
 
-  
-
+const submitButton =
+  registerForm
+    ? registerForm.querySelector(
+        '.register-submit'
+      )
+    : null;
 
 function showRegisterMessage(
   message,
   type
 ) {
-
+  if (!registerMessage) {
+    return;
+  }
 
   registerMessage.textContent =
     message;
@@ -59,9 +65,10 @@ function showRegisterMessage(
     `register-message ${type}`;
 }
 
-
 function clearRegisterMessage() {
-
+  if (!registerMessage) {
+    return;
+  }
 
   registerMessage.textContent = '';
 
@@ -69,6 +76,21 @@ function clearRegisterMessage() {
     'register-message';
 }
 
+function setSubmitting(
+  isSubmitting
+) {
+  if (!submitButton) {
+    return;
+  }
+
+  submitButton.disabled =
+    isSubmitting;
+
+  submitButton.textContent =
+    isSubmitting
+      ? 'Đang tạo tài khoản...'
+      : 'Tạo tài khoản';
+}
 
 function setupPasswordToggle(
   button,
@@ -81,14 +103,55 @@ function setupPasswordToggle(
   button.addEventListener(
     'click',
     function () {
+      const showPassword =
+        input.type === 'password';
+
       input.type =
-        input.type === 'password'
+        showPassword
           ? 'text'
           : 'password';
+
+      button.setAttribute(
+        'aria-label',
+        showPassword
+          ? 'Ẩn mật khẩu'
+          : 'Hiện mật khẩu'
+      );
     }
   );
 }
 
+function createLoginUrl(email) {
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+  const redirect =
+    params.get('redirect');
+
+  let loginUrl =
+    `/login.html?email=${encodeURIComponent(
+      email
+    )}`;
+
+  if (redirect) {
+    const safeRedirect =
+      window.AuthGuard
+        ? AuthGuard.sanitizeRedirect(
+            redirect,
+            '/index.html'
+          )
+        : '/index.html';
+
+    loginUrl +=
+      `&redirect=${encodeURIComponent(
+        safeRedirect
+      )}`;
+  }
+
+  return loginUrl;
+}
 
 setupPasswordToggle(
   toggleRegisterPassword,
@@ -100,17 +163,18 @@ setupPasswordToggle(
   confirmPasswordInput
 );
 
-
 if (registerForm) {
   registerForm.addEventListener(
     'submit',
-    function (event) {
+    async function (event) {
       event.preventDefault();
 
       clearRegisterMessage();
 
-      const name =
-        fullNameInput.value.trim();
+      const fullName =
+        fullNameInput.value
+          .trim()
+          .replace(/\s+/g, ' ');
 
       const email =
         registerEmailInput.value
@@ -123,6 +187,36 @@ if (registerForm) {
       const confirmPassword =
         confirmPasswordInput.value;
 
+      if (fullName.length < 2) {
+        showRegisterMessage(
+          'Họ và tên phải có ít nhất 2 ký tự.',
+          'error'
+        );
+
+        fullNameInput.focus();
+        return;
+      }
+
+      if (!email) {
+        showRegisterMessage(
+          'Vui lòng nhập địa chỉ email.',
+          'error'
+        );
+
+        registerEmailInput.focus();
+        return;
+      }
+
+      if (password.length < 8) {
+        showRegisterMessage(
+          'Mật khẩu phải có ít nhất 8 ký tự.',
+          'error'
+        );
+
+        registerPasswordInput.focus();
+        return;
+      }
+
       if (
         password !==
         confirmPassword
@@ -133,6 +227,7 @@ if (registerForm) {
         );
 
         confirmPasswordInput.focus();
+        confirmPasswordInput.select();
 
         return;
       }
@@ -145,30 +240,53 @@ if (registerForm) {
           'error'
         );
 
+        acceptPolicyInput.focus();
         return;
       }
 
+      if (
+        !window.AuthStore ||
+        typeof AuthStore.register !==
+          'function'
+      ) {
+        showRegisterMessage(
+          'Thành phần đăng ký chưa được tải.',
+          'error'
+        );
+
+        return;
+      }
+
+      setSubmitting(true);
+
       const result =
-        AuthStore.register({
-          name: name,
-          email: email,
-          password: password
+        await AuthStore.register({
+          fullName,
+          email,
+          password
         });
 
       if (!result.ok) {
+        setSubmitting(false);
+
         showRegisterMessage(
           result.message,
           'error'
         );
 
-
+        if (
+          result.code ===
+          'EMAIL_EXISTS'
+        ) {
+          registerEmailInput.focus();
+          registerEmailInput.select();
+        }
 
         return;
       }
 
-
-
       showRegisterMessage(
+        result.message ||
         'Tạo tài khoản thành công. Đang chuyển đến trang đăng nhập...',
         'success'
       );
@@ -177,34 +295,8 @@ if (registerForm) {
 
       window.setTimeout(
         function () {
-          const params =
-            new URLSearchParams(
-              window.location.search
-            );
-
-          const redirect =
-            params.get('redirect');
-
-          let loginUrl =
-            `/login.html?email=${encodeURIComponent(
-              email
-            )}`;
-
-          if (redirect) {
-            const safeRedirect =
-              AuthGuard.sanitizeRedirect(
-                redirect,
-                '/index.html'
-              );
-
-            loginUrl +=
-              `&redirect=${encodeURIComponent(
-                safeRedirect
-              )}`;
-          }
-
           window.location.replace(
-            loginUrl
+            createLoginUrl(email)
           );
         },
         1000

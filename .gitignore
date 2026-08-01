@@ -55,5 +55,17 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-
+prisma/schema.prisma.backup
 /generated/prisma
+
+# Generated Prisma Client
+src/generated/prisma/
+
+
+
+# Local Prisma config backup
+prisma.config.ts.backup
+
+# Local JavaScript backups
+*.js.backup
+*.backup

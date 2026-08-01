@@ -263,17 +263,22 @@ function setupUserMenu() {
     }
   );
 
-  if (logoutBtn) {
-    logoutBtn.addEventListener(
-      'click',
-      function () {
-        AuthStore.logout();
+if (logoutBtn) {
+  logoutBtn.addEventListener(
+    'click',
+    async function () {
+      logoutBtn.disabled = true;
 
-        window.location.href =
-          '/index.html';
+      try {
+        await AuthStore.logout();
+      } finally {
+        window.location.replace(
+          '/index.html'
+        );
       }
-    );
-  }
+    }
+  );
+}
 }
 
 
@@ -319,6 +324,49 @@ function showAuthGuardNotice() {
   method(notice.message);
 }
 
+function pageHasAuthGuard() {
+  return Array
+    .from(document.scripts)
+    .some(function (script) {
+      return (
+        script.src &&
+        script.src.includes(
+          '/js/auth-guard.js'
+        )
+      );
+    });
+}
 
-renderAuthenticationUI();
-showAuthGuardNotice();
+async function initializeAuthenticationUI() {
+  /*
+   * Trang có auth-guard:
+   * để Guard chịu trách nhiệm refresh.
+   *
+   * Trang không có Guard như index.html:
+   * auth-ui sẽ tự kiểm tra phiên.
+   */
+  if (
+    !pageHasAuthGuard() &&
+    window.AuthStore &&
+    typeof AuthStore
+      .refreshCurrentUser ===
+        'function'
+  ) {
+    await AuthStore
+      .refreshCurrentUser();
+  }
+
+  renderAuthenticationUI();
+  showAuthGuardNotice();
+}
+
+initializeAuthenticationUI()
+  .catch(function (error) {
+    console.error(
+      'Không thể khởi tạo giao diện tài khoản:',
+      error
+    );
+
+    renderAuthenticationUI();
+    showAuthGuardNotice();
+  });
