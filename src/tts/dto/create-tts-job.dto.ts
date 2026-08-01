@@ -23,8 +23,8 @@ export class CreateTtsJobDto {
   })
   @IsString({ message: 'Nội dung phải là chuỗi văn bản.' })
   @MinLength(1, { message: 'Nội dung không được để trống.' })
-  @MaxLength(800, {
-    message: 'Nội dung không được vượt quá 800 ký tự.',
+  @MaxLength(5000, {
+    message: 'Nội dung không được vượt quá 5000 ký tự.',
   })
   text!: string;
 

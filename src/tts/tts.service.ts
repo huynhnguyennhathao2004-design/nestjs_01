@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import OpenAI from 'openai';
 
+import { TextNormalizerService } from '../common/text-normalizer/text-normalizer.service';
+
 type TtsVoice =
   | 'alloy'
   | 'ash'
@@ -21,7 +23,9 @@ type TtsVoice =
 export class TtsService {
   private readonly openai: OpenAI;
 
-  constructor() {
+  constructor(
+    private readonly textNormalizer: TextNormalizerService,
+  ) {
     if (!process.env.OPENAI_API_KEY) {
       throw new InternalServerErrorException(
         'Thiếu OPENAI_API_KEY trong file .env',
@@ -33,7 +37,10 @@ export class TtsService {
     });
   }
 
-  async generateSpeech(text: string, voice: TtsVoice = 'alloy'): Promise<Buffer> {
+  async generateSpeech(
+    text: string,
+    voice: TtsVoice = 'alloy',
+  ): Promise<Buffer> {
     if (!text || text.trim().length === 0) {
       throw new BadRequestException('Vui lòng nhập nội dung văn bản');
     }
@@ -45,11 +52,18 @@ export class TtsService {
     }
 
     try {
-      const cleanText = this.normalizeTravelText(text);
+      // Chuẩn hóa số trước khi tạo âm thanh
+      const normalizedText = this.textNormalizer.normalize(text);
+
+      console.log('Văn bản gốc:', text);
+      console.log('Văn bản chuẩn hóa:', normalizedText);
+
+      // Đưa văn bản đã chuẩn hóa vào nội dung thuyết minh
+      const cleanText = this.normalizeTravelText(normalizedText);
 
       const response = await this.openai.audio.speech.create({
         model: 'gpt-4o-mini-tts',
-        voice: voice,
+        voice,
         input: cleanText,
         response_format: 'mp3',
       });
@@ -79,6 +93,6 @@ Hãy đọc bằng giọng tự nhiên, rõ ràng, truyền cảm, phù hợp đ
 
 Nội dung:
 ${text.trim()}
-    `;
+    `.trim();
   }
 }

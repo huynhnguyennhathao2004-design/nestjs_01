@@ -33,10 +33,10 @@ const ttsSourceName =
 const clearSourceBtn =
   document.getElementById('clearSourceBtn');
 
-const MAX_TEXT_CHARACTERS = 800;
+const MAX_TEXT_CHARACTERS = 5000;
 const POLLING_INTERVAL_MS = 2000;
 const COLD_START_HINT_DELAY_MS = 7000;
-const MAX_WAIT_TIME_MS = 10 * 60 * 1000;
+const MAX_WAIT_TIME_MS = 20 * 60 * 1000;
 
 let currentAudioUrl = null;
 let currentJobId = null;
@@ -269,17 +269,58 @@ function getApiErrorMessage(
  * Gọi API và đọc JSON.
  */
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
-    cache: 'no-store',
-    ...options,
-  });
+  let response;
+
+  try {
+    response = await fetch(url, {
+      cache: 'no-store',
+      ...options,
+    });
+  } catch (error) {
+    console.error(
+      'Không thể kết nối backend:',
+      error,
+    );
+
+    throw new Error(
+      'Không thể kết nối tới backend NestJS. ' +
+      'Hãy kiểm tra server có đang chạy tại cổng 3000 hay không.',
+    );
+  }
+
+  const rawResponse =
+    await response.text();
+    
+  console.log(
+  '[TTS HTTP RESPONSE]',
+  {
+    url: url,
+    status: response.status,
+    statusText: response.statusText,
+    contentType:
+      response.headers.get('content-type'),
+    rawResponse: rawResponse,
+  },
+);  
 
   let responseBody = null;
 
-  try {
-    responseBody = await response.json();
-  } catch (error) {
-    responseBody = null;
+  if (rawResponse) {
+    try {
+      responseBody =
+        JSON.parse(rawResponse);
+    } catch (error) {
+      console.error(
+        'Backend trả dữ liệu không phải JSON:',
+        rawResponse,
+      );
+
+      if (response.ok) {
+        throw new Error(
+          'Backend trả về dữ liệu không đúng định dạng JSON.',
+        );
+      }
+    }
   }
 
   if (!response.ok) {
@@ -288,6 +329,15 @@ async function requestJson(url, options = {}) {
         responseBody,
         `Yêu cầu thất bại với mã ${response.status}.`,
       ),
+    );
+  }
+
+  if (
+    !responseBody ||
+    typeof responseBody !== 'object'
+  ) {
+    throw new Error(
+      'Backend không trả về dữ liệu hợp lệ.',
     );
   }
 
@@ -335,7 +385,7 @@ async function waitForTtsJob(
 
     if (elapsedTime >= MAX_WAIT_TIME_MS) {
       throw new Error(
-        'Quá thời gian chờ tạo giọng đọc. Vui lòng thử lại.',
+        'Quá thời gian chờ tạo giọng đọc. Vui lò  ng thử lại.',
       );
     }
 
@@ -655,32 +705,69 @@ if (generateBtn) {
           'loading',
         );
 
-        const jobData =
-          await createTtsJob(
-            text,
-            speed,
+        const jobResponse =
+            await createTtsJob(
+              text,
+              speed,
+            );
+
+          console.log(
+            'Phản hồi tạo job TTS:',
+            jobResponse,
           );
 
-        currentJobId =
-          jobData.jobId;
+          /*
+          * Hỗ trợ cả hai cấu trúc:
+          *
+          * { jobId: "..." }
+          *
+          * hoặc:
+          *
+          * { data: { jobId: "..." } }
+          */
+          const jobData =
+            jobResponse?.data ??
+            jobResponse;
 
-        if (!currentJobId) {
-          throw new Error(
-            'Backend không trả về Job ID.',
+          if (
+            !jobData ||
+            typeof jobData !== 'object'
+          ) {
+            throw new Error(
+              'Backend không trả về thông tin job hợp lệ.',
+            );
+          }
+
+          const receivedJobId =
+            typeof jobData.jobId === 'string'
+              ? jobData.jobId.trim()
+              : '';
+
+          if (!receivedJobId) {
+            console.error(
+              'Phản hồi không có jobId:',
+              jobResponse,
+            );
+
+            throw new Error(
+              'Backend không trả về Job ID.',
+            );
+          }
+
+          currentJobId =
+            receivedJobId;
+
+          setMessage(
+            jobData.message ||
+            'Đang khởi động mô hình AI...',
+            'loading',
           );
-        }
 
-        setMessage(
-          jobData.message ||
-          'Đang khởi động mô hình AI...',
-          'loading',
-        );
-
-        const completedJob =
-          await waitForTtsJob(
-            currentJobId,
-            jobData.statusUrl,
-          );
+          const completedJob =
+            await waitForTtsJob(
+              currentJobId,
+              jobData.statusUrl,
+            );
 
         if (!completedJob.audioReady) {
           throw new Error(

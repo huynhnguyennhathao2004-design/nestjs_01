@@ -78,12 +78,10 @@ export class TtsController {
    */
   @Post('jobs')
   @HttpCode(HttpStatus.ACCEPTED)
-  createRunpodJob(
-    @Body() createTtsJobDto: CreateTtsJobDto,
+  createJob(
+    @Body() dto: CreateTtsJobDto,
   ) {
-    return this.runpodTtsService.createJob(
-      createTtsJobDto,
-    );
+    return this.runpodTtsService.createJob(dto);
   }
 
   /**
@@ -106,37 +104,30 @@ export class TtsController {
    * GET /api/tts/jobs/:jobId/audio
    */
   @Get('jobs/:jobId/audio')
-  async getRunpodJobAudio(
-    @Param() params: TtsJobParamDto,
-    @Res() response: Response,
-  ): Promise<void> {
-    const audio =
-      await this.runpodTtsService.getAudio(
-        params.jobId,
-      );
-
-    response.setHeader(
-      'Content-Type',
-      audio.mimeType,
+async getJobAudio(
+  @Param() params: TtsJobParamDto,
+  @Res() res: Response,
+) {
+  const audio =
+    await this.runpodTtsService.getAudio(
+      params.jobId,
     );
 
-    response.setHeader(
-      'Content-Length',
-      audio.buffer.length.toString(),
-    );
+  res.setHeader(
+    'Content-Type',
+    audio.mimeType,
+  );
 
-    response.setHeader(
-      'Content-Disposition',
-      `inline; filename="${audio.filename}"`,
-    );
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${audio.filename}"`,
+  );
 
-    response.setHeader(
-      'Cache-Control',
-      'private, max-age=300',
-    );
+  res.setHeader(
+    'Content-Length',
+    audio.buffer.length.toString(),
+  );
 
-    response.status(HttpStatus.OK).send(
-      audio.buffer,
-    );
-  }
+  return res.send(audio.buffer);
+}
 }
