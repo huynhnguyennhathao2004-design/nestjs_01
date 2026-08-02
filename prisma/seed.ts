@@ -3,8 +3,13 @@ import * as argon2 from 'argon2';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PrismaClient } from '../src/generated/prisma/client';
+
+import { loadDestinationSources } from './destination-source';
+
 import {
   AuthProvider,
+  DestinationImageType,
+  DestinationStatus,
   UserRole,
   UserStatus,
 } from '../src/generated/prisma/enums';
@@ -145,6 +150,18 @@ const categories: CategorySeed[] = [
     description: 'Du lịch xanh, cộng đồng và trải nghiệm hệ sinh thái.',
     icon: 'leaf',
   },
+{
+  name: 'Tâm linh',
+  slug: 'tam-linh',
+  description: 'Đền, chùa, nhà thờ và các địa điểm tín ngưỡng.',
+  icon: 'church',
+},
+{
+  name: 'Đô thị',
+  slug: 'do-thi',
+  description: 'Thành phố, kiến trúc hiện đại và trải nghiệm đô thị.',
+  icon: 'building-2',
+},
 ];
 
 function requireAdminEnvironment(): {
@@ -229,6 +246,325 @@ async function seedCategories(): Promise<void> {
   }
 }
 
+async function seedDestinations(): Promise<void> {
+  const destinationSources = loadDestinationSources();
+
+  console.log(
+    `[SEED] Chuẩn bị nhập ${destinationSources.length} địa điểm...`,
+  );
+
+  for (const source of destinationSources) {
+    await prisma.$transaction(
+      async (tx) => {
+        /*
+         * 1. Tìm tỉnh/thành theo cả tên tỉnh và tên vùng.
+         *
+         * Việc kiểm tra tên vùng giúp tránh gán địa điểm nhầm tỉnh
+         * trong trường hợp dữ liệu có tên gần giống nhau.
+         */
+        const province = await tx.province.findFirst({
+          where: {
+            name: source.provinceName,
+            region: {
+              is: {
+                name: source.regionName,
+              },
+            },
+          },
+          select: {
+            id: true,
+            name: true,
+            region: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        });
+
+        if (!province) {
+          throw new Error(
+            `Không tìm thấy tỉnh "${source.provinceName}" ` +
+              `thuộc vùng "${source.regionName}" ` +
+              `cho địa điểm "${source.name}".`,
+          );
+        }
+
+        /*
+         * 2. Lấy danh mục chính và toàn bộ danh mục phụ.
+         *
+         * Dùng Set để tránh danh mục bị lặp.
+         */
+        const requiredCategoryNames = [
+          ...new Set([
+            source.primaryCategoryName,
+            ...source.categoryNames,
+          ]),
+        ];
+
+        const categoryRecords = await tx.category.findMany({
+          where: {
+            name: {
+              in: requiredCategoryNames,
+            },
+            isActive: true,
+          },
+          select: {
+            id: true,
+            name: true,
+          },
+        });
+
+        const categoryIdByName = new Map(
+          categoryRecords.map((category) => [
+            category.name,
+            category.id,
+          ]),
+        );
+
+        const missingCategoryNames =
+          requiredCategoryNames.filter(
+            (categoryName) =>
+              !categoryIdByName.has(categoryName),
+          );
+
+        if (missingCategoryNames.length > 0) {
+          throw new Error(
+            `Địa điểm "${source.name}" đang dùng danh mục chưa tồn tại: ` +
+              missingCategoryNames.join(', '),
+          );
+        }
+
+        const primaryCategoryId = categoryIdByName.get(
+          source.primaryCategoryName,
+        );
+
+        if (!primaryCategoryId) {
+          throw new Error(
+            `Không tìm thấy danh mục chính ` +
+              `"${source.primaryCategoryName}" ` +
+              `của địa điểm "${source.name}".`,
+          );
+        }
+
+        /*
+         * 3. Tạo mới hoặc cập nhật thông tin chính của địa điểm.
+         */
+        const savedDestination =
+          await tx.destination.upsert({
+            where: {
+              slug: source.slug,
+            },
+
+            update: {
+              provinceId: province.id,
+              primaryCategoryId,
+              name: source.name,
+              shortDescription:
+                source.shortDescription ?? null,
+              description: source.description,
+              bestTravelTime:
+                source.bestTravelTime ?? null,
+              status: DestinationStatus.PUBLISHED,
+              metaTitle: source.name,
+              metaDescription:
+                source.shortDescription ?? null,
+              deletedAt: null,
+            },
+
+            create: {
+              provinceId: province.id,
+              primaryCategoryId,
+              slug: source.slug,
+              name: source.name,
+              shortDescription:
+                source.shortDescription ?? null,
+              description: source.description,
+              bestTravelTime:
+                source.bestTravelTime ?? null,
+              status: DestinationStatus.PUBLISHED,
+              metaTitle: source.name,
+              metaDescription:
+                source.shortDescription ?? null,
+              publishedAt: new Date(),
+            },
+          });
+
+        /*
+         * Trường hợp địa điểm đã tồn tại nhưng chưa có ngày đăng.
+         */
+        if (!savedDestination.publishedAt) {
+          await tx.destination.update({
+            where: {
+              id: savedDestination.id,
+            },
+            data: {
+              publishedAt: new Date(),
+            },
+          });
+        }
+
+        /*
+         * 4. Xóa dữ liệu con cũ của đúng địa điểm này.
+         *
+         * Việc này giúp chạy seed nhiều lần mà không tạo dữ liệu trùng.
+         */
+        await tx.destinationCategory.deleteMany({
+          where: {
+            destinationId: savedDestination.id,
+          },
+        });
+
+        await tx.destinationImage.deleteMany({
+          where: {
+            destinationId: savedDestination.id,
+          },
+        });
+
+        await tx.destinationFeature.deleteMany({
+          where: {
+            destinationId: savedDestination.id,
+          },
+        });
+
+        await tx.destinationAttraction.deleteMany({
+          where: {
+            destinationId: savedDestination.id,
+          },
+        });
+
+        await tx.destinationFood.deleteMany({
+          where: {
+            destinationId: savedDestination.id,
+          },
+        });
+
+        /*
+         * 5. Tạo liên kết địa điểm và danh mục.
+         */
+        await tx.destinationCategory.createMany({
+          data: requiredCategoryNames.map(
+            (categoryName) => ({
+              destinationId: savedDestination.id,
+              categoryId:
+                categoryIdByName.get(categoryName)!,
+            }),
+          ),
+        });
+
+        /*
+         * 6. Tạo ảnh.
+         *
+         * Ảnh đầu tiên được dùng làm ảnh COVER.
+         * Các ảnh còn lại là ảnh GALLERY.
+         */
+        if (source.images.length > 0) {
+          await tx.destinationImage.createMany({
+            data: source.images.map(
+              (imageUrl, index) => ({
+                destinationId: savedDestination.id,
+                url: imageUrl,
+                altText:
+                  index === 0
+                    ? `${source.name} - ảnh đại diện`
+                    : `${source.name} - ảnh ${index + 1}`,
+                imageType:
+                  index === 0
+                    ? DestinationImageType.COVER
+                    : DestinationImageType.GALLERY,
+                sortOrder: index,
+                isActive: true,
+              }),
+            ),
+          });
+        }
+
+        /*
+         * 7. Tạo các đặc điểm nổi bật.
+         */
+        if (source.features.length > 0) {
+          await tx.destinationFeature.createMany({
+            data: source.features.map(
+              (feature, index) => ({
+                destinationId: savedDestination.id,
+                title: feature.title,
+                content: feature.content,
+                sortOrder: index,
+              }),
+            ),
+          });
+        }
+
+        /*
+         * 8. Tạo các điểm nên khám phá.
+         */
+        if (source.attractions.length > 0) {
+          await tx.destinationAttraction.createMany({
+            data: source.attractions.map(
+              (attraction, index) => ({
+                destinationId: savedDestination.id,
+                name: attraction.name,
+                description:
+                  attraction.description ?? null,
+                address: attraction.address ?? null,
+                mapQuery: attraction.mapQuery ?? null,
+                imageUrl: attraction.imageUrl ?? null,
+                imageAlt: attraction.imageUrl
+                  ? `${attraction.name} tại ${source.name}`
+                  : null,
+                sourceUrl:
+                  attraction.sourceUrl ?? null,
+                imageCredit:
+                  attraction.imageCredit ?? null,
+                sortOrder: index,
+                isActive: true,
+              }),
+            ),
+          });
+        }
+
+        /*
+         * 9. Tạo các món ăn gợi ý.
+         */
+        if (source.foods.length > 0) {
+          await tx.destinationFood.createMany({
+            data: source.foods.map(
+              (food, index) => ({
+                destinationId: savedDestination.id,
+                name: food.name,
+                description:
+                  food.description ?? null,
+                imageUrl: food.imageUrl ?? null,
+                imageAlt: food.imageUrl
+                  ? `${food.name} tại ${source.name}`
+                  : null,
+                priceMin: food.priceMin ?? null,
+                priceMax: food.priceMax ?? null,
+                priceNote: food.priceNote ?? null,
+                suggestedArea:
+                  food.suggestedArea ?? null,
+                sourceUrl: food.sourceUrl ?? null,
+                imageCredit:
+                  food.imageCredit ?? null,
+                sortOrder: index,
+                isActive: true,
+              }),
+            ),
+          });
+        }
+      },
+      {
+        maxWait: 10_000,
+        timeout: 30_000,
+      },
+    );
+
+    console.log(
+      `[SEED] Đã nhập: ${source.name} (${source.slug})`,
+    );
+  }
+}
+
 async function seedAdmin(): Promise<void> {
   const { email, password, fullName } = requireAdminEnvironment();
   const passwordHash = await argon2.hash(password, {
@@ -276,23 +612,69 @@ async function seedAdmin(): Promise<void> {
 async function main(): Promise<void> {
   console.log('[SEED] Bắt đầu tạo dữ liệu nền...');
 
-  await seedRegionsAndProvinces();
-  await seedCategories();
-  await seedAdmin();
+await seedRegionsAndProvinces();
+await seedCategories();
+await seedDestinations();
+await seedAdmin();
 
-  const [regionCount, provinceCount, categoryCount, adminCount] =
-    await Promise.all([
-      prisma.region.count(),
-      prisma.province.count(),
-      prisma.category.count(),
-      prisma.user.count({ where: { role: UserRole.ADMIN } }),
-    ]);
+const [
+  regionCount,
+  provinceCount,
+  categoryCount,
+  destinationCount,
+  destinationCategoryCount,
+  destinationImageCount,
+  destinationFeatureCount,
+  destinationAttractionCount,
+  destinationFoodCount,
+  adminCount,
+] = await Promise.all([
+  prisma.region.count(),
+  prisma.province.count(),
+  prisma.category.count(),
 
-  console.log(`[SEED] Vùng miền: ${regionCount}`);
-  console.log(`[SEED] Tỉnh/thành: ${provinceCount}`);
-  console.log(`[SEED] Danh mục: ${categoryCount}`);
-  console.log(`[SEED] Tài khoản Admin: ${adminCount}`);
-  console.log('[SEED] Hoàn thành.');
+  prisma.destination.count({
+    where: {
+      deletedAt: null,
+    },
+  }),
+
+  prisma.destinationCategory.count(),
+  prisma.destinationImage.count(),
+  prisma.destinationFeature.count(),
+  prisma.destinationAttraction.count(),
+  prisma.destinationFood.count(),
+
+  prisma.user.count({
+    where: {
+      role: UserRole.ADMIN,
+    },
+  }),
+]);
+
+console.log('==========================================');
+console.log(`[SEED] Vùng miền: ${regionCount}`);
+console.log(`[SEED] Tỉnh/thành: ${provinceCount}`);
+console.log(`[SEED] Danh mục: ${categoryCount}`);
+console.log(`[SEED] Địa điểm: ${destinationCount}`);
+console.log(
+  `[SEED] Liên kết danh mục: ${destinationCategoryCount}`,
+);
+console.log(
+  `[SEED] Ảnh địa điểm: ${destinationImageCount}`,
+);
+console.log(
+  `[SEED] Đặc điểm nổi bật: ${destinationFeatureCount}`,
+);
+console.log(
+  `[SEED] Điểm khám phá: ${destinationAttractionCount}`,
+);
+console.log(
+  `[SEED] Món ăn: ${destinationFoodCount}`,
+);
+console.log(`[SEED] Tài khoản Admin: ${adminCount}`);
+console.log('==========================================');
+console.log('[SEED] Hoàn thành.');
 }
 
 main()

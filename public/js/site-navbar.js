@@ -467,9 +467,16 @@
 
 
 /* =====================================
-   TÌM KIẾM ĐỊA ĐIỂM
+   TÌM KIẾM ĐỊA ĐIỂM BẰNG API
 ===================================== */
 
+/**
+ * Chuẩn hóa chuỗi tiếng Việt để so sánh.
+ *
+ * Ví dụ:
+ * "Đà Lạt" -> "da lat"
+ * "da-lat" -> "da lat"
+ */
 function normalizeSearchText(value) {
   return String(value || '')
     .trim()
@@ -486,83 +493,128 @@ function normalizeSearchText(value) {
     .trim();
 }
 
-
-function getDestinationSearchValues(item) {
-  const aliases =
-    Array.isArray(item.aliases)
-      ? item.aliases
-      : [];
-
-  return [
-    item.name,
-    item.id,
-    item.province,
-    ...aliases
-  ]
-    .filter(Boolean)
-    .map(normalizeSearchText);
+/**
+ * Lấy slug hoặc id dùng để mở trang chi tiết.
+ */
+function getDestinationSlug(destination) {
+  return (
+    destination?.slug ||
+    destination?.id ||
+    ''
+  );
 }
 
-
-function findDestinationByKeyword(keyword) {
-  const destinations =
-    window.destinations || [];
-
+/**
+ * Tìm kết quả khớp chính xác theo:
+ * - Tên địa điểm
+ * - Slug
+ * - ID
+ */
+function findExactDestination(
+  destinations,
+  keyword
+) {
   const normalizedKeyword =
     normalizeSearchText(keyword);
 
-  if (!normalizedKeyword) {
+  if (
+    !normalizedKeyword ||
+    !Array.isArray(destinations)
+  ) {
     return null;
-  }
-
-  const exactMatch =
-    destinations.find(
-      function (item) {
-        return getDestinationSearchValues(
-          item
-        ).includes(
-          normalizedKeyword
-        );
-      }
-    );
-
-  if (exactMatch) {
-    return exactMatch;
-  }
-
-  const startMatch =
-    destinations.find(
-      function (item) {
-        return getDestinationSearchValues(
-          item
-        ).some(function (value) {
-          return value.startsWith(
-            normalizedKeyword
-          );
-        });
-      }
-    );
-
-  if (startMatch) {
-    return startMatch;
   }
 
   return (
     destinations.find(
-      function (item) {
-        return getDestinationSearchValues(
-          item
-        ).some(function (value) {
-          return value.includes(
-            normalizedKeyword
-          );
-        });
+      function (destination) {
+        const values = [
+          destination?.name,
+          destination?.slug,
+          destination?.id
+        ]
+          .filter(Boolean)
+          .map(normalizeSearchText);
+
+        return values.includes(
+          normalizedKeyword
+        );
       }
     ) || null
   );
 }
 
+/**
+ * Gọi API tìm kiếm địa điểm.
+ */
+async function searchDestinations(
+  keyword
+) {
+  const apiUrl = new URL(
+    '/api/destinations',
+    window.location.origin
+  );
 
+  apiUrl.searchParams.set(
+    'q',
+    keyword
+  );
+
+  const response = await fetch(
+    apiUrl.toString(),
+    {
+      method: 'GET',
+
+      headers: {
+        Accept: 'application/json'
+      },
+
+      cache: 'no-store'
+    }
+  );
+
+  if (!response.ok) {
+    let errorMessage =
+      `API trả về HTTP ${response.status}.`;
+
+    try {
+      const body =
+        await response.json();
+
+      if (
+        typeof body?.message ===
+        'string'
+      ) {
+        errorMessage =
+          body.message;
+      } else if (
+        Array.isArray(body?.message)
+      ) {
+        errorMessage =
+          body.message.join(', ');
+      }
+    } catch {
+      // Giữ thông báo mặc định nếu
+      // phản hồi không phải JSON.
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  const destinations =
+    await response.json();
+
+  if (!Array.isArray(destinations)) {
+    throw new Error(
+      'Dữ liệu tìm kiếm không hợp lệ.'
+    );
+  }
+
+  return destinations;
+}
+
+/**
+ * Khởi tạo ô tìm kiếm dùng chung trên Navbar.
+ */
 function setupDestinationSearch() {
   const form =
     document.getElementById(
@@ -579,9 +631,16 @@ function setupDestinationSearch() {
       'navSearchMessage'
     );
 
+  const submitButton =
+    form?.querySelector(
+      'button[type="submit"]'
+    );
+
   if (!form || !input) {
     return;
   }
+
+  let isSearching = false;
 
   function showMessage(text) {
     if (!message) {
@@ -589,7 +648,6 @@ function setupDestinationSearch() {
     }
 
     message.textContent = text;
-
     message.classList.add('show');
   }
 
@@ -599,8 +657,25 @@ function setupDestinationSearch() {
     }
 
     message.textContent = '';
-
     message.classList.remove('show');
+  }
+
+  function setSearchingState(
+    searching
+  ) {
+    isSearching = searching;
+
+    input.disabled = searching;
+
+    if (submitButton) {
+      submitButton.disabled =
+        searching;
+
+      submitButton.setAttribute(
+        'aria-busy',
+        String(searching)
+      );
+    }
   }
 
   input.addEventListener(
@@ -610,8 +685,12 @@ function setupDestinationSearch() {
 
   form.addEventListener(
     'submit',
-    function (event) {
+    async function (event) {
       event.preventDefault();
+
+      if (isSearching) {
+        return;
+      }
 
       const keyword =
         input.value.trim();
@@ -626,24 +705,117 @@ function setupDestinationSearch() {
         return;
       }
 
-      const destination =
-        findDestinationByKeyword(
-          keyword
+      setSearchingState(true);
+
+      showMessage(
+        'Đang tìm kiếm địa điểm...'
+      );
+
+      try {
+        const destinations =
+          await searchDestinations(
+            keyword
+          );
+
+        if (
+          destinations.length === 0
+        ) {
+          showMessage(
+            `Không tìm thấy địa điểm “${keyword}”.`
+          );
+
+          return;
+        }
+
+        /*
+         * Ưu tiên kết quả trùng chính xác.
+         *
+         * Ví dụ:
+         * Nhập "Đà Lạt" sẽ mở ngay Đà Lạt,
+         * kể cả API có trả thêm kết quả khác.
+         */
+        const exactDestination =
+          findExactDestination(
+            destinations,
+            keyword
+          );
+
+        if (exactDestination) {
+          const destinationSlug =
+            getDestinationSlug(
+              exactDestination
+            );
+
+          if (!destinationSlug) {
+            throw new Error(
+              'Địa điểm không có slug hợp lệ.'
+            );
+          }
+
+          window.location.href =
+            '/destinations-detail.html?id=' +
+            encodeURIComponent(
+              destinationSlug
+            );
+
+          return;
+        }
+
+        /*
+         * Nếu API chỉ trả một địa điểm,
+         * mở thẳng trang chi tiết.
+         */
+        if (
+          destinations.length === 1
+        ) {
+          const destinationSlug =
+            getDestinationSlug(
+              destinations[0]
+            );
+
+          if (!destinationSlug) {
+            throw new Error(
+              'Địa điểm không có slug hợp lệ.'
+            );
+          }
+
+          window.location.href =
+            '/destinations-detail.html?id=' +
+            encodeURIComponent(
+              destinationSlug
+            );
+
+          return;
+        }
+
+        /*
+         * Nếu có nhiều kết quả,
+         * chuyển về danh sách địa điểm
+         * và giữ từ khóa trong URL.
+         */
+        const params =
+          new URLSearchParams();
+
+        params.set('q', keyword);
+
+        window.location.href =
+          '/index.html?' +
+          params.toString() +
+          '#destinations';
+      } catch (error) {
+        console.error(
+          '[NAVBAR SEARCH]',
+          error
         );
 
-      if (!destination) {
         showMessage(
-          `Không tìm thấy địa điểm “${keyword}”.`
+          error instanceof Error
+            ? error.message
+            : 'Không thể tìm kiếm địa điểm.'
         );
-
-        return;
+      } finally {
+        setSearchingState(false);
       }
-
-      window.location.href =
-        '/destinations-detail.html?id=' +
-        encodeURIComponent(
-          destination.id
-        );
     }
   );
 }

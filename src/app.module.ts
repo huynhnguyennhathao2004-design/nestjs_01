@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { TtsModule } from './tts/tts.module';
 
 import { PrismaModule } from './prisma/prisma.module';
+import { DestinationsModule } from './destinations/destinations.module';
 
 
 import {
@@ -29,6 +30,8 @@ import {
     }),
 	
     AdminModule,
+
+    DestinationsModule,
 
     PrismaModule,
 

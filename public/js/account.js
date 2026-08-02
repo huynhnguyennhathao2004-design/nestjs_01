@@ -83,8 +83,6 @@ function getCurrentUser() {
 }
 
 
-
-
 function saveCurrentUser(user) {
   return AuthStore.saveCurrentUser(
     user

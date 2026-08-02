@@ -845,43 +845,153 @@ if (generateBtn) {
 }
 
 /**
+ * Chuyển danh sách điểm khám phá thành văn bản.
+ */
+function createHighlightsText(highlights) {
+  if (
+    !Array.isArray(highlights) ||
+    highlights.length === 0
+  ) {
+    return '- Chưa có thông tin.';
+  }
+
+  return highlights
+    .map(function (item) {
+      if (typeof item === 'string') {
+        return `- ${item}`;
+      }
+
+      if (
+        !item ||
+        typeof item !== 'object'
+      ) {
+        return null;
+      }
+
+      const name =
+        item.name ||
+        'Điểm khám phá';
+
+      const description =
+        item.description
+          ? `: ${item.description}`
+          : '';
+
+      return `- ${name}${description}`;
+    })
+    .filter(Boolean)
+    .join('\n');
+}
+
+/**
+ * Chuyển danh sách món ăn thành văn bản.
+ */
+function createFoodsText(foods) {
+  if (
+    !Array.isArray(foods) ||
+    foods.length === 0
+  ) {
+    return '- Chưa có thông tin.';
+  }
+
+  return foods
+    .map(function (food) {
+      if (typeof food === 'string') {
+        return `- ${food}`;
+      }
+
+      if (
+        !food ||
+        typeof food !== 'object'
+      ) {
+        return null;
+      }
+
+      const name =
+        food.name ||
+        'Món ăn địa phương';
+
+      const description =
+        food.description
+          ? `: ${food.description}`
+          : '';
+
+      const price =
+        food.priceRange
+          ? ` Giá tham khảo: ${food.priceRange}.`
+          : '';
+
+      return (
+        `- ${name}` +
+        `${description}` +
+        `${price}`
+      );
+    })
+    .filter(Boolean)
+    .join('\n');
+}
+
+/**
  * Tạo nội dung thuyết minh từ dữ liệu địa điểm.
  */
 function createReviewContent(place) {
   const features =
-    place.features &&
+    Array.isArray(place.features) &&
     place.features.length > 0
       ? place.features
           .map(function (feature) {
+            if (
+              !feature ||
+              typeof feature !== 'object'
+            ) {
+              return null;
+            }
+
+            const title =
+              feature.title ||
+              'Đặc điểm';
+
+            const content =
+              feature.text ||
+              feature.content ||
+              '';
+
             return (
-              `- ${feature.title}: ` +
-              `${feature.text}`
+              `- ${title}` +
+              `${content ? `: ${content}` : ''}`
             );
           })
+          .filter(Boolean)
           .join('\n')
       : '- Chưa có thông tin nổi bật.';
 
   const highlights =
-    place.highlights &&
-    place.highlights.length > 0
-      ? place.highlights.join(', ')
-      : 'Chưa có thông tin';
+    createHighlightsText(
+      place.highlights,
+    );
 
   const foods =
-    place.foods &&
-    place.foods.length > 0
-      ? place.foods.join(', ')
-      : 'Chưa có thông tin';
+    createFoodsText(
+      place.foods,
+    );
+
+  const categories =
+    Array.isArray(place.categories) &&
+    place.categories.length > 0
+      ? place.categories.join(', ')
+      : place.type ||
+        'Chưa phân loại';
 
   return `
-${place.name}
+${place.name || 'Địa điểm du lịch'}
 
-${place.description}
+${place.description || 'Thông tin đang được cập nhật.'}
 
 Thông tin địa điểm:
-- Khu vực: ${place.region}
-- Loại hình du lịch: ${place.type}
-- Thời điểm nên đi: ${place.time}
+- Tỉnh, thành phố: ${place.province || 'Chưa có thông tin'}
+- Khu vực: ${place.region || 'Chưa có thông tin'}
+- Loại hình du lịch: ${categories}
+- Thời điểm nên đi: ${place.time || 'Chưa có thông tin'}
 
 Đặc điểm nổi bật:
 ${features}
@@ -895,61 +1005,52 @@ ${foods}
 }
 
 /**
- * Tải nội dung địa điểm từ URL.
+ * Hiển thị dữ liệu địa điểm trong giao diện TTS.
  */
-function loadPlaceContentFromUrl() {
+function applyPlaceContent(place) {
   if (!ttsText) {
-    return;
-  }
-
-  const params =
-    new URLSearchParams(
-      window.location.search,
-    );
-
-  const placeId =
-    params.get('id');
-
-  if (!placeId) {
-    return;
-  }
-
-  const destinations =
-    window.destinations || [];
-
-  const place =
-    destinations.find(
-      function (item) {
-        return item.id === placeId;
-      },
-    );
-
-  if (!place) {
     return;
   }
 
   const reviewContent =
     createReviewContent(place);
 
-  ttsText.value =
-    reviewContent;
+  ttsText.value = reviewContent;
 
   if (
     ttsSourceNotice &&
     ttsSourceName
   ) {
     ttsSourceName.textContent =
-      place.name;
+      place.name ||
+      'Địa điểm du lịch';
 
     ttsSourceNotice.classList.remove(
       'hidden',
     );
   }
 
+  const placeSlug =
+    place.slug ||
+    place.id ||
+    'dia-diem';
+
   if (fileNameInput) {
     fileNameInput.value =
-      `tts-${place.id}`;
+      `tts-${placeSlug}`;
   }
+
+  /*
+   * Xóa dữ liệu truyền tạm từ trang chi tiết
+   * vì nội dung chính thức đã được lấy từ API.
+   */
+  localStorage.removeItem(
+    'ttsDraftText',
+  );
+
+  localStorage.removeItem(
+    'ttsSourceName',
+  );
 
   updateCharCount();
 
@@ -958,16 +1059,89 @@ function loadPlaceContentFromUrl() {
     MAX_TEXT_CHARACTERS
   ) {
     setMessage(
-      `Nội dung của ${place.name} có ${reviewContent.length} ký tự. ` +
-      `Bạn cần rút gọn xuống tối đa ${MAX_TEXT_CHARACTERS} ký tự trước khi tạo audio.`,
+      `Nội dung của ${
+        place.name || 'địa điểm'
+      } có ${reviewContent.length} ký tự. ` +
+        `Bạn cần rút gọn xuống tối đa ` +
+        `${MAX_TEXT_CHARACTERS} ký tự trước khi tạo audio.`,
       'error',
     );
-  } else {
-    setMessage(
-      `Đã lấy nội dung review của ${place.name}. ` +
+
+    return;
+  }
+
+  setMessage(
+    `Đã tải nội dung của ${
+      place.name || 'địa điểm'
+    } từ cơ sở dữ liệu. ` +
       'Bạn có thể chỉnh sửa trước khi tạo audio.',
-      'success',
+    'success',
+  );
+}
+
+/**
+ * Tải nội dung địa điểm từ API theo id hoặc slug trên URL.
+ */
+async function loadPlaceContentFromUrl() {
+  if (!ttsText) {
+    return false;
+  }
+
+  const params =
+    new URLSearchParams(
+      window.location.search,
     );
+
+  const placeId =
+    (
+      params.get('id') ||
+      params.get('slug') ||
+      ''
+    ).trim();
+
+  if (!placeId) {
+    return false;
+  }
+
+  try {
+    setMessage(
+      'Đang tải nội dung địa điểm...',
+      'loading',
+    );
+
+    const place =
+      await requestJson(
+        '/api/destinations/' +
+          encodeURIComponent(placeId),
+      );
+
+    if (
+      !place ||
+      typeof place !== 'object' ||
+      Array.isArray(place)
+    ) {
+      throw new Error(
+        'Dữ liệu địa điểm API trả về không hợp lệ.',
+      );
+    }
+
+    applyPlaceContent(place);
+
+    return true;
+  } catch (error) {
+    console.error(
+      '[TTS DESTINATION]',
+      error,
+    );
+
+    setMessage(
+      error instanceof Error
+        ? error.message
+        : 'Không thể tải nội dung địa điểm.',
+      'error',
+    );
+
+    return false;
   }
 }
 
@@ -978,7 +1152,9 @@ if (clearSourceBtn) {
   clearSourceBtn.addEventListener(
     'click',
     function () {
-      ttsText.value = '';
+      if (ttsText) {
+        ttsText.value = '';
+      }
 
       if (fileNameInput) {
         fileNameInput.value =
@@ -991,35 +1167,65 @@ if (clearSourceBtn) {
         );
       }
 
+      localStorage.removeItem(
+        'ttsDraftText',
+      );
+
+      localStorage.removeItem(
+        'ttsSourceName',
+      );
+
       updateCharCount();
       resetAudioResult();
       clearMessage();
       showColdStartHint(false);
 
-      ttsText.focus();
-
-      const newUrl =
-        window.location.pathname;
+      ttsText?.focus();
 
       window.history.replaceState(
         {},
         document.title,
-        newUrl,
+        window.location.pathname,
       );
     },
   );
 }
 
 /**
- * Chạy khi trang được tải.
+ * Khởi tạo nội dung trang TTS.
  *
- * Chỉ gọi loadDraftText một lần để tránh lỗi
- * đọc và xóa localStorage hai lần như file cũ.
+ * Nếu URL có id thì ưu tiên lấy dữ liệu từ API.
+ * Nếu không có id thì đọc bản nháp được truyền qua localStorage.
  */
-loadDraftText();
+async function initializeTtsPage() {
+  const params =
+    new URLSearchParams(
+      window.location.search,
+    );
 
-/**
- * Nếu URL có id địa điểm thì nội dung địa điểm
- * sẽ được ưu tiên hiển thị.
- */
-loadPlaceContentFromUrl();
+  const placeId =
+    (
+      params.get('id') ||
+      params.get('slug') ||
+      ''
+    ).trim();
+
+  if (placeId) {
+    const loadedFromApi =
+      await loadPlaceContentFromUrl();
+
+    /*
+     * Nếu API lỗi thì thử sử dụng nội dung tạm
+     * được truyền từ trang trước.
+     */
+    if (!loadedFromApi) {
+      loadDraftText();
+    }
+
+    return;
+  }
+
+  loadDraftText();
+}
+
+initializeTtsPage();
