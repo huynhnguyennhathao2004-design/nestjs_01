@@ -89,22 +89,35 @@ function renderUserMenu(user) {
       `;
 
   const adminMenu =
-    isAdmin
-      ? `
-        <a
-          href="/admin-users.html"
-          class="account-menu-item"
-        >
-          <span class="account-menu-icon">
-            ⚙
-          </span>
+  isAdmin
+    ? `
+      <a
+        href="/admin-users.html"
+        class="account-menu-item"
+      >
+        <span class="account-menu-icon">
+          ⚙
+        </span>
 
-          <span>
-            Quản lý tài khoản
-          </span>
-        </a>
-      `
-      : '';
+        <span>
+          Quản lý tài khoản
+        </span>
+      </a>
+
+      <a
+        href="/admin-destinations.html"
+        class="account-menu-item"
+      >
+        <span class="account-menu-icon">
+          📍
+        </span>
+
+        <span>
+          Quản lý địa điểm
+        </span>
+      </a>
+    `
+    : '';
 
   authBox.innerHTML = `
     <div class="account-dropdown">

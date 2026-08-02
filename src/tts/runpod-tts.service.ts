@@ -11,10 +11,8 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosRequestConfig } from 'axios';
 import { firstValueFrom } from 'rxjs';
+import { CreateTtsJobDto, TtsVoice } from './dto/create-tts-job.dto';
 
-
-
-import { CreateTtsJobDto } from './dto/create-tts-job.dto';
 import {
   PublicTtsJobStatus,
   RunpodStatusResponse,
@@ -25,12 +23,14 @@ import {
 @Injectable()
 export class RunpodTtsService implements OnModuleInit {
   private readonly apiKey: string;
-  private readonly endpointId: string;
+ private readonly maleEndpointId: string;
+ private readonly femaleEndpointId: string;
   private readonly baseUrl: string;
   private readonly httpTimeoutMs: number;
   private readonly maxTextCharacters: number;
   private readonly maxOutputBytes: number;
   private readonly audioDownloadTimeoutMs: number;
+
 
   constructor(
     private readonly httpService: HttpService,
@@ -40,8 +40,15 @@ export class RunpodTtsService implements OnModuleInit {
     this.apiKey =
       this.configService.get<string>('RUNPOD_API_KEY')?.trim() ?? '';
 
-    this.endpointId =
-      this.configService.get<string>('RUNPOD_ENDPOINT_ID')?.trim() ?? '';
+    this.maleEndpointId =
+    this.configService
+    .get<string>('RUNPOD_MALE_ENDPOINT_ID')
+    ?.trim() ?? '';
+
+    this.femaleEndpointId =
+    this.configService
+    .get<string>('RUNPOD_FEMALE_ENDPOINT_ID')
+    ?.trim() ?? '';
 
     this.baseUrl = (
       this.configService.get<string>('RUNPOD_API_BASE_URL') ??
@@ -68,32 +75,62 @@ export class RunpodTtsService implements OnModuleInit {
     );
   }
 
-  onModuleInit(): void {
-    if (!this.apiKey) {
+onModuleInit(): void {
+  if (!this.apiKey) {
+    throw new Error(
+      'Thiếu biến môi trường RUNPOD_API_KEY.',
+    );
+  }
+
+  const endpoints = [
+    {
+      name: 'RUNPOD_MALE_ENDPOINT_ID',
+      value: this.maleEndpointId,
+    },
+    {
+      name: 'RUNPOD_FEMALE_ENDPOINT_ID',
+      value: this.femaleEndpointId,
+    },
+  ];
+
+  for (const endpoint of endpoints) {
+    if (!endpoint.value) {
       throw new Error(
-        'Thiếu biến môi trường RUNPOD_API_KEY.',
+        `Thiếu biến môi trường ${endpoint.name}.`,
       );
     }
 
-    if (!this.endpointId) {
+    if (
+      !/^[a-zA-Z0-9_-]+$/.test(
+        endpoint.value,
+      )
+    ) {
       throw new Error(
-        'Thiếu biến môi trường RUNPOD_ENDPOINT_ID.',
-      );
-    }
-
-    if (!/^[a-zA-Z0-9_-]+$/.test(this.endpointId)) {
-      throw new Error(
-        'RUNPOD_ENDPOINT_ID không đúng định dạng.',
+        `${endpoint.name} không đúng định dạng.`,
       );
     }
   }
+}
+private getEndpointId(
+  voice: TtsVoice = TtsVoice.MALE,
+): string {
+  if (voice === TtsVoice.FEMALE) {
+    return this.femaleEndpointId;
+  }
 
+  return this.maleEndpointId;
+}
 async createJob(dto: CreateTtsJobDto) {
   /*
    * NestJS chỉ làm sạch Unicode và khoảng trắng.
    * Toàn bộ chuẩn hóa số, ngày, giờ, tiền và đơn vị
    * được thực hiện tại RunPod worker Python.
    */
+  const voice =
+  dto.voice ?? TtsVoice.MALE;
+
+const endpointId =
+  this.getEndpointId(voice);
   const requestText =
     this.normalizeWhitespace(dto.text);
 
@@ -146,7 +183,7 @@ async createJob(dto: CreateTtsJobDto) {
   try {
     const response = await firstValueFrom(
       this.httpService.post<RunpodSubmitResponse>(
-        this.getRunUrl(),
+        this.getRunUrl(endpointId),
         utf8Body,
         this.getRequestConfig(),
       ),
@@ -173,10 +210,15 @@ async createJob(dto: CreateTtsJobDto) {
         response.data.status ?? 'IN_QUEUE',
       message:
         'Đang khởi động mô hình AI.',
+      voice,
+
       statusUrl:
-        `/api/tts/jobs/${jobId}`,
+        `/api/tts/jobs/${jobId}` +
+        `?voice=${encodeURIComponent(voice)}`,
+
       audioUrl:
-        `/api/tts/jobs/${jobId}/audio`,
+        `/api/tts/jobs/${jobId}/audio` +
+        `?voice=${encodeURIComponent(voice)}`,
     };
 
     console.log(
@@ -192,9 +234,15 @@ async createJob(dto: CreateTtsJobDto) {
     );
   }
 }
-
-  async getPublicJobStatus(jobId: string) {
-    const result = await this.getRawJobStatus(jobId);
+async getPublicJobStatus(
+  jobId: string,
+  voice: TtsVoice = TtsVoice.MALE,
+) {
+  const result =
+    await this.getRawJobStatus(
+      jobId,
+      voice,
+    );
     const publicStatus = this.mapPublicStatus(result);
 
     const workerAudioUrl =
@@ -220,7 +268,10 @@ async createJob(dto: CreateTtsJobDto) {
       ),
       audioReady,
       audioUrl: audioReady
-        ? `/api/tts/jobs/${jobId}/audio`
+        ? (
+            `/api/tts/jobs/${jobId}/audio` +
+            `?voice=${encodeURIComponent(voice)}`
+          )
         : null,
       metrics: {
         delayTimeMs: result.delayTime ?? null,
@@ -247,11 +298,15 @@ async createJob(dto: CreateTtsJobDto) {
     };
   }
 
-  async getAudio(
-    jobId: string,
-  ): Promise<TtsAudioFile> {
-    const result =
-      await this.getRawJobStatus(jobId);
+async getAudio(
+  jobId: string,
+  voice: TtsVoice = TtsVoice.MALE,
+): Promise<TtsAudioFile> {
+  const result =
+    await this.getRawJobStatus(
+      jobId,
+      voice,
+    );
 
     if (
       result.status === 'IN_QUEUE' ||
@@ -554,13 +609,17 @@ async createJob(dto: CreateTtsJobDto) {
   }
 }
 
-  private async getRawJobStatus(
+    private async getRawJobStatus(
     jobId: string,
+    voice: TtsVoice = TtsVoice.MALE,
   ): Promise<RunpodStatusResponse> {
+    const endpointId =
+      this.getEndpointId(voice);
+
     try {
       const response = await firstValueFrom(
         this.httpService.get<RunpodStatusResponse>(
-          this.getStatusUrl(jobId),
+          this.getStatusUrl(endpointId, jobId),
           this.getRequestConfig(),
         ),
       );
@@ -714,21 +773,25 @@ private getSafeWorkerError(
       },
     };
   }
+private getRunUrl(
+  endpointId: string,
+): string {
+  return (
+    `${this.baseUrl}/` +
+    `${encodeURIComponent(endpointId)}/run`
+  );
+}
 
-  private getRunUrl(): string {
-    return (
-      `${this.baseUrl}/` +
-      `${encodeURIComponent(this.endpointId)}/run`
-    );
-  }
-
-  private getStatusUrl(jobId: string): string {
-    return (
-      `${this.baseUrl}/` +
-      `${encodeURIComponent(this.endpointId)}/status/` +
-      `${encodeURIComponent(jobId)}`
-    );
-  }
+private getStatusUrl(
+  endpointId: string,
+  jobId: string,
+): string {
+  return (
+    `${this.baseUrl}/` +
+    `${encodeURIComponent(endpointId)}/status/` +
+    `${encodeURIComponent(jobId)}`
+  );
+}
 
   private readPositiveInteger(
     variableName: string,

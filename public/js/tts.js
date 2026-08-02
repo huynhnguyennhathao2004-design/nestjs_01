@@ -168,6 +168,18 @@ function getSelectedSpeed() {
 
   return speed;
 }
+/**
+ * Lấy giọng đọc người dùng đã chọn.
+ */
+function getSelectedVoice() {
+  if (!voiceSelect) {
+    return 'male';
+  }
+
+  return voiceSelect.value === 'female'
+    ? 'female'
+    : 'male';
+}
 
 /**
  * Khóa hoặc mở giao diện trong lúc tạo audio.
@@ -347,7 +359,11 @@ async function requestJson(url, options = {}) {
 /**
  * Gửi job mới tới NestJS.
  */
-async function createTtsJob(text, speed) {
+async function createTtsJob(
+  text,
+  speed,
+  voice,
+) {
   return requestJson('/api/tts/jobs', {
     method: 'POST',
 
@@ -358,6 +374,7 @@ async function createTtsJob(text, speed) {
 
     body: JSON.stringify({
       text: text,
+      voice: voice,
       speed: speed,
       nfeStep: 32,
     }),
@@ -651,7 +668,8 @@ if (generateBtn) {
 
       const speed =
         getSelectedSpeed();
-
+      const voice =
+        getSelectedVoice();
       const fileName =
         createSafeFileName(
           fileNameInput
@@ -709,6 +727,7 @@ if (generateBtn) {
             await createTtsJob(
               text,
               speed,
+              voice,
             );
 
           console.log(

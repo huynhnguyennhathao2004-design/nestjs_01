@@ -8,7 +8,13 @@ import {
   MaxLength,
   Min,
   MinLength,
+  IsEnum,
 } from 'class-validator';
+
+export enum TtsVoice {
+  MALE = 'male',
+  FEMALE = 'female',
+}
 
 export class CreateTtsJobDto {
   @Transform(({ value }) => {
@@ -28,6 +34,13 @@ export class CreateTtsJobDto {
   })
   text!: string;
 
+  @IsOptional()
+  @IsEnum(TtsVoice, {
+    message:
+      'voice chỉ được phép là male hoặc female',
+  })
+  voice?: TtsVoice;
+  
   @IsOptional()
   @Type(() => Number)
   @IsNumber(

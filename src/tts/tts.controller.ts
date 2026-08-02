@@ -1,4 +1,5 @@
 import {
+  Query,
   Body,
   Controller,
   Get,
@@ -7,9 +8,12 @@ import {
   Param,
   Post,
   Res,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import type { Response } from 'express';
-
+import {
+  TtsVoice,
+} from './dto/create-tts-job.dto';
 import { CreateTtsJobDto } from './dto/create-tts-job.dto';
 import { TtsJobParamDto } from './dto/tts-job-param.dto';
 import { RunpodTtsService } from './runpod-tts.service';
@@ -78,10 +82,33 @@ export class TtsController {
    */
   @Post('jobs')
   @HttpCode(HttpStatus.ACCEPTED)
-  createJob(
+  async createJob(
     @Body() dto: CreateTtsJobDto,
   ) {
-    return this.runpodTtsService.createJob(dto);
+    console.log(
+      '[TtsController] Đã nhận yêu cầu tạo job:',
+      dto,
+    );
+
+    const result =
+      await this.runpodTtsService.createJob(dto);
+
+    console.log(
+      '[TtsController] Kết quả từ RunpodTtsService:',
+      result,
+    );
+
+    if (
+      !result ||
+      typeof result !== 'object' ||
+      !result.jobId
+    ) {
+      throw new InternalServerErrorException(
+        'RunpodTtsService không trả về Job ID.',
+      );
+    }
+
+    return result;
   }
 
   /**
@@ -89,28 +116,56 @@ export class TtsController {
    *
    * GET /api/tts/jobs/:jobId
    */
-  @Get('jobs/:jobId')
-  getRunpodJobStatus(
-    @Param() params: TtsJobParamDto,
-  ) {
-    return this.runpodTtsService.getPublicJobStatus(
-      params.jobId,
-    );
-  }
+ @Get('jobs/:jobId')
+ getRunpodJobStatus(
+  @Param() params: TtsJobParamDto,
+
+  @Query('voice')
+  voice: TtsVoice = TtsVoice.MALE,
+) {
+  const selectedVoice =
+    voice === TtsVoice.FEMALE
+      ? TtsVoice.FEMALE
+      : TtsVoice.MALE;
+
+  return this.runpodTtsService.getPublicJobStatus(
+    params.jobId,
+    selectedVoice,
+  );
+}
 
   /**
    * Lấy file WAV khi RunPod đã hoàn thành job.
    *
    * GET /api/tts/jobs/:jobId/audio
    */
-  @Get('jobs/:jobId/audio')
+@Get('jobs/:jobId/audio')
 async getJobAudio(
   @Param() params: TtsJobParamDto,
-  @Res() res: Response,
+
+  @Query('voice')
+  voice: TtsVoice = TtsVoice.MALE,
+
+  @Res()
+  res: Response,
 ) {
+  const selectedVoice =
+    voice === TtsVoice.FEMALE
+      ? TtsVoice.FEMALE
+      : TtsVoice.MALE;
+
+  console.log(
+    '[TtsController] Tải audio:',
+    {
+      jobId: params.jobId,
+      voice: selectedVoice,
+    },
+  );
+
   const audio =
     await this.runpodTtsService.getAudio(
       params.jobId,
+      selectedVoice,
     );
 
   res.setHeader(
