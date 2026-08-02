@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>
+    Quản lý địa điểm - Vietnam Travel TTS
+  </title>
+
+  <style>
+    html.auth-checking body {
+      visibility: hidden;
+    }
+  </style>
+
+  <script>
+    document.documentElement.classList.add(
+      'auth-checking'
+    );
+  </script>
+
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  />
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Montserrat:wght@600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/css/admin-users.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/css/admin-destinations.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/css/components.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/css/navbar.css"
+  />
+</head>
+
+<body data-auth="required">
+  <main class="admin-page">
+    <div class="admin-container">
+      <section class="admin-heading">
+        <div>
+          <span class="admin-badge">
+            Khu vực quản trị
+          </span>
+
+          <h1>Quản lý địa điểm</h1>
+
+          <p>
+            Theo dõi, tìm kiếm, xuất bản và quản lý
+            các địa điểm du lịch trên hệ thống.
+          </p>
+        </div>
+
+        <div class="admin-heading-actions">
+            <a
+    href="/admin-destination-editor.html"
+    class="destination-create-link"
+  >
+    + Thêm địa điểm
+  </a>
+          <a
+            href="/admin-users.html"
+            class="back-home-btn"
+          >
+            Quản lý tài khoản
+          </a>
+
+          <a
+            href="/index.html"
+            class="back-home-btn"
+          >
+            ← Về trang chủ
+          </a>
+        </div>
+      </section>
+
+      <div
+        class="admin-message"
+        id="adminMessage"
+        role="status"
+      ></div>
+
+      <section class="account-statistics">
+        <article class="stat-card">
+          <span class="stat-icon">📍</span>
+
+          <div>
+            <strong id="totalDestinations">
+              0
+            </strong>
+
+            <span>Tổng địa điểm</span>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <span class="stat-icon">✓</span>
+
+          <div>
+            <strong id="publishedDestinations">
+              0
+            </strong>
+
+            <span>Đã xuất bản</span>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <span class="stat-icon">📝</span>
+
+          <div>
+            <strong id="draftDestinations">
+              0
+            </strong>
+
+            <span>Bản nháp</span>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <span class="stat-icon">🗑</span>
+
+          <div>
+            <strong id="deletedDestinations">
+              0
+            </strong>
+
+            <span>Trong thùng rác</span>
+          </div>
+        </article>
+      </section>
+
+      <section class="filter-panel destination-filter-panel">
+        <div class="filter-search">
+          <label for="destinationSearchInput">
+            Tìm kiếm địa điểm
+          </label>
+
+          <div class="filter-search-box">
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle
+                cx="11"
+                cy="11"
+                r="7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              ></circle>
+
+              <path
+                d="M20 20L16.2 16.2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              ></path>
+            </svg>
+
+            <input
+              type="search"
+              id="destinationSearchInput"
+              placeholder="Nhập tên, slug hoặc tỉnh/thành..."
+              autocomplete="off"
+            />
+          </div>
+        </div>
+
+        <div class="filter-field">
+          <label for="destinationStatusFilter">
+            Trạng thái
+          </label>
+
+          <select id="destinationStatusFilter">
+            <option value="ALL">
+              Tất cả trạng thái
+            </option>
+
+            <option value="DRAFT">
+              Bản nháp
+            </option>
+
+            <option value="PUBLISHED">
+              Đã xuất bản
+            </option>
+
+            <option value="HIDDEN">
+              Đang ẩn
+            </option>
+
+            <option value="ARCHIVED">
+              Lưu trữ
+            </option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label for="destinationDeletedFilter">
+            Dữ liệu
+          </label>
+
+          <select id="destinationDeletedFilter">
+            <option value="ACTIVE">
+              Đang hoạt động
+            </option>
+
+            <option value="DELETED">
+              Trong thùng rác
+            </option>
+
+            <option value="ALL">
+              Tất cả
+            </option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label for="destinationRegionFilter">
+            Vùng miền
+          </label>
+
+          <select id="destinationRegionFilter">
+            <option value="ALL">
+              Tất cả vùng miền
+            </option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label for="destinationCategoryFilter">
+            Danh mục
+          </label>
+
+          <select id="destinationCategoryFilter">
+            <option value="ALL">
+              Tất cả danh mục
+            </option>
+          </select>
+        </div>
+
+        <button
+          type="button"
+          class="reset-filter-btn"
+          id="resetDestinationFilterBtn"
+        >
+          Xóa bộ lọc
+        </button>
+      </section>
+
+      <section class="accounts-panel destinations-panel">
+        <div class="accounts-panel-heading">
+          <div>
+            <h2>Danh sách địa điểm</h2>
+
+            <p id="destinationResultLine">
+              Đang tải danh sách địa điểm...
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="destination-refresh-btn"
+            id="refreshDestinationBtn"
+          >
+            Làm mới
+          </button>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="accounts-table destinations-table">
+            <thead>
+              <tr>
+                <th>Địa điểm</th>
+                <th>Khu vực</th>
+                <th>Danh mục</th>
+                <th>Trạng thái</th>
+                <th>Nổi bật</th>
+                <th>Cập nhật</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+
+            <tbody id="destinationTableBody"></tbody>
+          </table>
+        </div>
+
+        <div
+          class="empty-accounts"
+          id="emptyDestinations"
+        >
+          <span>⌕</span>
+
+          <h3>Không tìm thấy địa điểm</h3>
+
+          <p>
+            Hãy thử thay đổi từ khóa hoặc bộ lọc.
+          </p>
+        </div>
+
+        <div
+          class="destination-pagination"
+          id="destinationPagination"
+        >
+          <button
+            type="button"
+            id="previousDestinationPageBtn"
+          >
+            ← Trang trước
+          </button>
+
+          <span id="destinationPageInfo">
+            Trang 1 / 1
+          </span>
+
+          <button
+            type="button"
+            id="nextDestinationPageBtn"
+          >
+            Trang sau →
+          </button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/js/auth-store.js"></script>
+  <script src="/js/auth-api.js"></script>
+  <script src="/js/auth-guard.js"></script>
+
+  <script src="/js/toast.js"></script>
+  <script src="/js/modal.js"></script>
+
+  <script src="/js/site-navbar.js"></script>
+  <script src="/js/navbar-scroll.js"></script>
+  <script src="/js/auth-ui.js"></script>
+
+  <script src="/js/admin-destinations.js"></script>
+  <script src="/js/image-utils.js"></script>
+</body>
+</html>

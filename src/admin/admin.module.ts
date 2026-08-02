@@ -18,6 +18,14 @@ import {
   AdminGuard,
 } from './guards/admin.guard';
 
+import {
+  AdminDestinationsController,
+} from './admin-destinations.controller';
+
+import {
+  AdminDestinationsService,
+} from './admin-destinations.service';
+
 @Module({
   imports: [
     AuthModule,
@@ -25,10 +33,12 @@ import {
 
   controllers: [
     AdminUsersController,
+    AdminDestinationsController,
   ],
 
   providers: [
     AdminUsersService,
+    AdminDestinationsService,
     AdminGuard,
   ],
 })

@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>
+    Thêm địa điểm - Vietnam Travel TTS
+  </title>
+
+  <style>
+    html.auth-checking body {
+      visibility: hidden;
+    }
+  </style>
+
+  <script>
+    document.documentElement.classList.add(
+      'auth-checking'
+    );
+  </script>
+
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  />
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Montserrat:wght@600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/css/components.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/css/admin-destination-editor.css"
+  />
+</head>
+
+<body data-auth="required">
+  <main class="destination-editor-page">
+    <div class="destination-editor-container">
+      <header class="destination-editor-header">
+        <div>
+          <div class="destination-editor-badges">
+            <span class="editor-admin-badge">
+              Khu vực quản trị
+            </span>
+
+            <span
+              class="editor-mode-badge"
+              id="editorModeBadge"
+            >
+              Thêm mới
+            </span>
+
+            <span
+              class="
+                editor-status-badge
+                status-draft
+              "
+              id="editorStatusBadge"
+              hidden
+            >
+              Bản nháp
+            </span>
+          </div>
+
+          <h1 id="destinationEditorTitle">
+            Thêm địa điểm mới
+          </h1>
+
+          <p id="destinationEditorSubtitle">
+            Nhập thông tin cơ bản của địa điểm du lịch.
+          </p>
+        </div>
+
+        <div class="destination-editor-header-actions">
+          <a
+            href="/admin-destinations.html"
+            class="editor-secondary-link"
+          >
+            ← Danh sách địa điểm
+          </a>
+
+          <a
+            href="#"
+            class="editor-public-link"
+            id="viewPublicDestinationBtn"
+            target="_blank"
+            rel="noopener noreferrer"
+            hidden
+          >
+            Xem trang công khai
+          </a>
+        </div>
+      </header>
+
+      <div
+        class="destination-editor-message"
+        id="destinationEditorMessage"
+        role="status"
+      ></div>
+
+      <section
+        class="destination-editor-summary"
+        id="destinationEditorSummary"
+        hidden
+      >
+        <div>
+          <span>Mã địa điểm</span>
+          <strong id="summaryDestinationId">
+            —
+          </strong>
+        </div>
+
+        <div>
+          <span>Ngày tạo</span>
+          <strong id="summaryCreatedAt">
+            —
+          </strong>
+        </div>
+
+        <div>
+          <span>Cập nhật gần nhất</span>
+          <strong id="summaryUpdatedAt">
+            —
+          </strong>
+        </div>
+
+        <div>
+          <span>Trạng thái nổi bật</span>
+          <strong id="summaryFeatured">
+            Không
+          </strong>
+        </div>
+      </section>
+
+      <form
+        id="destinationEditorForm"
+        class="destination-editor-form"
+        novalidate
+      >
+        <section class="editor-form-card">
+          <div class="editor-card-heading">
+            <div>
+              <span class="editor-card-number">
+                01
+              </span>
+
+              <h2>Thông tin chính</h2>
+            </div>
+
+            <p>
+              Tên, đường dẫn và nội dung giới thiệu
+              của địa điểm.
+            </p>
+          </div>
+
+          <div class="editor-form-grid">
+            <div class="editor-field editor-field-wide">
+              <label for="destinationNameInput">
+                Tên địa điểm
+                <span>*</span>
+              </label>
+
+              <input
+                type="text"
+                id="destinationNameInput"
+                maxlength="180"
+                placeholder="Ví dụ: Đà Lạt"
+                required
+              />
+
+              <small>
+                Tối đa 180 ký tự.
+              </small>
+            </div>
+
+            <div class="editor-field editor-field-wide">
+              <label for="destinationSlugInput">
+                Slug
+              </label>
+
+              <input
+                type="text"
+                id="destinationSlugInput"
+                maxlength="180"
+                placeholder="Ví dụ: da-lat"
+              />
+
+              <small>
+                Để trống khi thêm mới để hệ thống tự tạo.
+              </small>
+            </div>
+
+            <div class="editor-field editor-field-full">
+              <label for="destinationShortDescriptionInput">
+                Mô tả ngắn
+              </label>
+
+              <textarea
+                id="destinationShortDescriptionInput"
+                rows="3"
+                maxlength="500"
+                placeholder="Nội dung tóm tắt hiển thị trong danh sách địa điểm..."
+              ></textarea>
+
+              <div class="editor-counter">
+                <span id="shortDescriptionCounter">
+                  0
+                </span>
+                / 500
+              </div>
+            </div>
+
+            <div class="editor-field editor-field-full">
+              <label for="destinationDescriptionInput">
+                Nội dung giới thiệu
+                <span>*</span>
+              </label>
+
+              <textarea
+                id="destinationDescriptionInput"
+                rows="12"
+                placeholder="Nhập nội dung giới thiệu chi tiết của địa điểm..."
+                required
+              ></textarea>
+
+              <small>
+                Nội dung này cũng được sử dụng khi người
+                dùng tạo giọng đọc AI.
+              </small>
+            </div>
+          </div>
+        </section>
+
+        <section class="editor-form-card">
+          <div class="editor-card-heading">
+            <div>
+              <span class="editor-card-number">
+                02
+              </span>
+
+              <h2>Phân loại địa điểm</h2>
+            </div>
+
+            <p>
+              Chọn tỉnh, danh mục chính và các danh mục
+              liên quan.
+            </p>
+          </div>
+
+          <div class="editor-form-grid">
+            <div class="editor-field editor-field-wide">
+              <label for="destinationProvinceSelect">
+                Tỉnh hoặc thành phố
+                <span>*</span>
+              </label>
+
+              <select
+                id="destinationProvinceSelect"
+                required
+              >
+                <option value="">
+                  Đang tải tỉnh/thành...
+                </option>
+              </select>
+            </div>
+
+            <div class="editor-field editor-field-wide">
+              <label for="destinationPrimaryCategorySelect">
+                    Danh mục chính
+                    <span>*</span>
+                  </label>
+
+                  <select
+                    id="destinationPrimaryCategorySelect"
+                    required
+                  >
+                <option value="">
+                  Chưa chọn danh mục chính
+                </option>
+              </select>
+            </div>
+
+            <div class="editor-field editor-field-full">
+              <label>
+                Danh mục liên quan
+              </label>
+
+              <div
+                class="editor-category-grid"
+                id="destinationCategoryCheckboxes"
+              >
+                <p class="editor-loading-text">
+                  Đang tải danh mục...
+                </p>
+              </div>
+
+              <small>
+                Danh mục chính sẽ tự động được chọn trong
+                danh mục liên quan.
+              </small>
+            </div>
+          </div>
+        </section>
+
+        <section class="editor-form-card">
+          <div class="editor-card-heading">
+            <div>
+              <span class="editor-card-number">
+                03
+              </span>
+
+              <h2>Thông tin du lịch và bản đồ</h2>
+            </div>
+
+            <p>
+              Thời điểm phù hợp, vị trí tìm kiếm và tọa độ.
+            </p>
+          </div>
+
+          <div class="editor-form-grid">
+            <div class="editor-field editor-field-wide">
+              <label for="destinationBestTimeInput">
+                Thời gian du lịch phù hợp
+              </label>
+
+              <input
+                type="text"
+                id="destinationBestTimeInput"
+                maxlength="255"
+                placeholder="Ví dụ: Tháng 11 đến tháng 4"
+              />
+            </div>
+
+            <div class="editor-field editor-field-wide">
+              <label for="destinationMapQueryInput">
+                Từ khóa tìm kiếm bản đồ
+              </label>
+
+              <input
+                type="text"
+                id="destinationMapQueryInput"
+                placeholder="Ví dụ: Đà Lạt, Lâm Đồng"
+              />
+            </div>
+
+            <div class="editor-field editor-field-wide">
+              <label for="destinationLatitudeInput">
+                Vĩ độ
+              </label>
+
+              <input
+                type="number"
+                id="destinationLatitudeInput"
+                min="-90"
+                max="90"
+                step="0.000001"
+                placeholder="11.940419"
+              />
+            </div>
+
+            <div class="editor-field editor-field-wide">
+              <label for="destinationLongitudeInput">
+                Kinh độ
+              </label>
+
+              <input
+                type="number"
+                id="destinationLongitudeInput"
+                min="-180"
+                max="180"
+                step="0.000001"
+                placeholder="108.458313"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section class="editor-form-card">
+          <div class="editor-card-heading">
+            <div>
+              <span class="editor-card-number">
+                04
+              </span>
+
+              <h2>Tối ưu công cụ tìm kiếm</h2>
+            </div>
+
+            <p>
+              Tiêu đề và mô tả dùng cho SEO.
+            </p>
+          </div>
+
+          <div class="editor-form-grid">
+            <div class="editor-field editor-field-full">
+              <label for="destinationMetaTitleInput">
+                Tiêu đề SEO
+              </label>
+
+              <input
+                type="text"
+                id="destinationMetaTitleInput"
+                maxlength="255"
+                placeholder="Để trống để dùng tên địa điểm"
+              />
+            </div>
+
+            <div class="editor-field editor-field-full">
+              <label for="destinationMetaDescriptionInput">
+                Mô tả SEO
+              </label>
+
+              <textarea
+                id="destinationMetaDescriptionInput"
+                rows="4"
+                maxlength="500"
+                placeholder="Mô tả ngắn dành cho công cụ tìm kiếm..."
+              ></textarea>
+
+              <div class="editor-counter">
+                <span id="metaDescriptionCounter">
+                  0
+                </span>
+                / 500
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="editor-form-card editor-related-card"
+          id="destinationRelatedManagement"
+        >
+          <div class="editor-card-heading">
+            <div>
+              <span class="editor-card-number">
+                05
+              </span>
+
+              <h2>Nội dung liên quan</h2>
+            </div>
+
+            <p>
+              Ảnh, đặc điểm, điểm khám phá và món ăn.
+            </p>
+          </div>
+
+          <div
+            class="editor-related-notice"
+            id="destinationRelatedNotice"
+          >
+            Hãy lưu địa điểm trước khi thêm ảnh và các
+            nội dung liên quan.
+          </div>
+
+          <div class="editor-related-grid">
+            <button
+              type="button"
+              class="editor-related-item"
+              data-related-section="images"
+              disabled
+            >
+              <span>🖼️</span>
+
+              <strong>Hình ảnh</strong>
+
+              <small id="relatedImageCount">
+                0 mục
+              </small>
+            </button>
+
+            <button
+              type="button"
+              class="editor-related-item"
+              data-related-section="features"
+              disabled
+            >
+              <span>✨</span>
+
+              <strong>Đặc điểm nổi bật</strong>
+
+              <small id="relatedFeatureCount">
+                0 mục
+              </small>
+            </button>
+
+            <button
+              type="button"
+              class="editor-related-item"
+              data-related-section="attractions"
+              disabled
+            >
+              <span>🏞️</span>
+
+              <strong>Điểm khám phá</strong>
+
+              <small id="relatedAttractionCount">
+                0 mục
+              </small>
+            </button>
+
+            <button
+              type="button"
+              class="editor-related-item"
+              data-related-section="foods"
+              disabled
+            >
+              <span>🍜</span>
+
+              <strong>Món ăn gợi ý</strong>
+
+              <small id="relatedFoodCount">
+                0 mục
+              </small>
+            </button>
+          </div>
+        </section>
+<section
+  class="editor-form-card editor-images-card"
+  id="destinationImagesSection"
+  hidden
+>
+  <div class="editor-card-heading">
+    <div>
+      <span class="editor-card-number">
+        06
+      </span>
+
+      <h2>Quản lý hình ảnh</h2>
+    </div>
+
+    <p>
+      Thêm ảnh thư viện, đặt ảnh bìa và quản lý
+      trạng thái hiển thị của từng ảnh.
+    </p>
+  </div>
+
+  <div class="destination-image-management">
+    <div class="destination-image-form-panel">
+      <div class="destination-image-form-heading">
+        <div>
+          <h3 id="destinationImageFormTitle">
+            Thêm hình ảnh
+          </h3>
+
+          <p id="destinationImageFormDescription">
+            Nhập đường dẫn ảnh nội bộ hoặc URL ảnh.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="destination-image-cancel-btn"
+          id="cancelEditDestinationImageBtn"
+          hidden
+        >
+          Hủy chỉnh sửa
+        </button>
+      </div>
+
+      <div class="editor-form-grid destination-image-form-grid">
+        <div class="editor-field editor-field-full">
+          <label for="destinationImageUrlInput">
+            Đường dẫn ảnh
+            <span>*</span>
+          </label>
+
+          <input
+            type="text"
+            id="destinationImageUrlInput"
+            maxlength="2000"
+            placeholder="/assets/images/da-lat.webp hoặc https://..."
+          />
+
+          <small>
+            Đường dẫn phải bắt đầu bằng dấu
+            <strong>/</strong>,
+            <strong>http://</strong> hoặc
+            <strong>https://</strong>.
+          </small>
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationImageAltInput">
+            Mô tả ảnh
+          </label>
+
+          <input
+            type="text"
+            id="destinationImageAltInput"
+            maxlength="500"
+            placeholder="Ví dụ: Hồ Xuân Hương vào buổi sáng"
+          />
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationImageTypeSelect">
+            Loại ảnh
+          </label>
+
+          <select id="destinationImageTypeSelect">
+            <option value="GALLERY">
+              Ảnh thư viện
+            </option>
+
+            <option value="COVER">
+              Ảnh bìa
+            </option>
+          </select>
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationImageSortOrderInput">
+            Thứ tự hiển thị
+          </label>
+
+          <input
+            type="number"
+            id="destinationImageSortOrderInput"
+            min="0"
+            step="1"
+            value="0"
+          />
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label>
+            Trạng thái
+          </label>
+
+          <label class="destination-image-active-option">
+            <input
+              type="checkbox"
+              id="destinationImageIsActiveInput"
+              checked
+            />
+
+            <span>
+              Cho phép hiển thị ảnh
+            </span>
+          </label>
+
+          <small id="destinationImageActiveHelp">
+            Ảnh đang hoạt động sẽ được hiển thị trên website.
+          </small>
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationImageSourceUrlInput">
+            URL nguồn ảnh
+          </label>
+
+          <input
+            type="text"
+            id="destinationImageSourceUrlInput"
+            maxlength="2000"
+            placeholder="https://website-nguon..."
+          />
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationImageCreditInput">
+            Nguồn hoặc bản quyền
+          </label>
+
+          <input
+            type="text"
+            id="destinationImageCreditInput"
+            maxlength="500"
+            placeholder="Ví dụ: Ảnh: Sở Du lịch Lâm Đồng"
+          />
+        </div>
+      </div>
+
+      <div class="destination-image-form-actions">
+        <button
+          type="button"
+          class="destination-image-reset-btn"
+          id="resetDestinationImageBtn"
+        >
+          Làm trống
+        </button>
+
+        <button
+          type="button"
+          class="destination-image-save-btn"
+          id="saveDestinationImageBtn"
+        >
+          Thêm hình ảnh
+        </button>
+      </div>
+    </div>
+
+    <div class="destination-image-list-panel">
+      <div class="destination-image-list-heading">
+        <div>
+          <h3>Hình ảnh hiện có</h3>
+
+          <p id="destinationImageResultLine">
+            Chưa có hình ảnh.
+          </p>
+        </div>
+      </div>
+
+      <div
+        class="destination-image-empty"
+        id="destinationImageEmpty"
+      >
+        <span>🖼️</span>
+
+        <strong>Chưa có hình ảnh</strong>
+
+        <p>
+          Thêm ảnh đầu tiên cho địa điểm bằng biểu mẫu
+          bên cạnh.
+        </p>
+      </div>
+
+      <div
+        class="destination-image-list"
+        id="destinationImageList"
+      ></div>
+    </div>
+  </div>
+</section>
+<section
+  class="editor-form-card editor-features-card"
+  id="destinationFeaturesSection"
+  hidden
+>
+  <div class="editor-card-heading">
+    <div>
+      <span class="editor-card-number">
+        07
+      </span>
+
+      <h2>Đặc điểm nổi bật</h2>
+    </div>
+
+    <p>
+      Quản lý các đặc điểm nổi bật được hiển thị
+      trong phần giới thiệu địa điểm.
+    </p>
+  </div>
+
+  <div class="destination-feature-management">
+    <div class="destination-feature-form-panel">
+      <div class="destination-feature-form-heading">
+        <div>
+          <h3 id="destinationFeatureFormTitle">
+            Thêm đặc điểm
+          </h3>
+
+          <p id="destinationFeatureFormDescription">
+            Nhập tiêu đề và nội dung của đặc điểm nổi bật.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="destination-feature-cancel-btn"
+          id="cancelEditDestinationFeatureBtn"
+          hidden
+        >
+          Hủy chỉnh sửa
+        </button>
+      </div>
+
+      <div class="editor-form-grid destination-feature-form-grid">
+        <div class="editor-field editor-field-full">
+          <label for="destinationFeatureTitleInput">
+            Tiêu đề đặc điểm
+            <span>*</span>
+          </label>
+
+          <input
+            type="text"
+            id="destinationFeatureTitleInput"
+            maxlength="180"
+            placeholder="Ví dụ: Khí hậu mát mẻ"
+          />
+        </div>
+
+        <div class="editor-field editor-field-full">
+          <label for="destinationFeatureContentInput">
+            Nội dung
+            <span>*</span>
+          </label>
+
+          <textarea
+            id="destinationFeatureContentInput"
+            rows="6"
+            maxlength="5000"
+            placeholder="Mô tả chi tiết đặc điểm nổi bật..."
+          ></textarea>
+
+          <div class="editor-counter">
+            <span id="destinationFeatureContentCounter">
+              0
+            </span>
+            / 5000
+          </div>
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationFeatureIconInput">
+            Biểu tượng
+          </label>
+
+          <input
+            type="text"
+            id="destinationFeatureIconInput"
+            maxlength="120"
+            placeholder="Ví dụ: wind, cloud-sun hoặc ✨"
+          />
+
+          <small>
+            Có thể dùng tên icon hoặc một biểu tượng emoji.
+          </small>
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationFeatureSortOrderInput">
+            Thứ tự hiển thị
+          </label>
+
+          <input
+            type="number"
+            id="destinationFeatureSortOrderInput"
+            min="0"
+            step="1"
+            value="0"
+          />
+        </div>
+      </div>
+
+      <div class="destination-feature-form-actions">
+        <button
+          type="button"
+          class="destination-feature-reset-btn"
+          id="resetDestinationFeatureBtn"
+        >
+          Làm trống
+        </button>
+
+        <button
+          type="button"
+          class="destination-feature-save-btn"
+          id="saveDestinationFeatureBtn"
+        >
+          Thêm đặc điểm
+        </button>
+      </div>
+    </div>
+
+    <div class="destination-feature-list-panel">
+      <div class="destination-feature-list-heading">
+        <div>
+          <h3>Đặc điểm hiện có</h3>
+
+          <p id="destinationFeatureResultLine">
+            Chưa có đặc điểm nổi bật.
+          </p>
+        </div>
+      </div>
+
+      <div
+        class="destination-feature-empty"
+        id="destinationFeatureEmpty"
+      >
+        <span>✨</span>
+
+        <strong>Chưa có đặc điểm nổi bật</strong>
+
+        <p>
+          Sử dụng biểu mẫu bên cạnh để thêm đặc điểm
+          đầu tiên cho địa điểm.
+        </p>
+      </div>
+
+      <div
+        class="destination-feature-list"
+        id="destinationFeatureList"
+      ></div>
+    </div>
+  </div>
+</section>
+<section
+  class="editor-form-card editor-attractions-card"
+  id="destinationAttractionsSection"
+  hidden
+>
+  <div class="editor-card-heading">
+    <div>
+      <span class="editor-card-number">
+        08
+      </span>
+
+      <h2>Điểm nên khám phá</h2>
+    </div>
+
+    <p>
+      Quản lý các địa điểm tham quan và trải nghiệm
+      nổi bật nằm trong khu vực du lịch.
+    </p>
+  </div>
+
+  <div class="destination-attraction-management">
+    <div class="destination-attraction-form-panel">
+      <div class="destination-attraction-form-heading">
+        <div>
+          <h3 id="destinationAttractionFormTitle">
+            Thêm điểm khám phá
+          </h3>
+
+          <p id="destinationAttractionFormDescription">
+            Nhập thông tin địa điểm tham quan nổi bật.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="destination-attraction-cancel-btn"
+          id="cancelEditDestinationAttractionBtn"
+          hidden
+        >
+          Hủy chỉnh sửa
+        </button>
+      </div>
+
+      <div
+        class="editor-form-grid destination-attraction-form-grid"
+      >
+        <div class="editor-field editor-field-full">
+          <label for="destinationAttractionNameInput">
+            Tên điểm khám phá
+            <span>*</span>
+          </label>
+
+          <input
+            type="text"
+            id="destinationAttractionNameInput"
+            maxlength="180"
+            placeholder="Ví dụ: Hồ Xuân Hương"
+          />
+        </div>
+
+        <div class="editor-field editor-field-full">
+          <label for="destinationAttractionDescriptionInput">
+            Mô tả
+          </label>
+
+          <textarea
+            id="destinationAttractionDescriptionInput"
+            rows="6"
+            maxlength="5000"
+            placeholder="Giới thiệu điểm tham quan, hoạt động nổi bật..."
+          ></textarea>
+
+          <div class="editor-counter">
+            <span id="destinationAttractionDescriptionCounter">
+              0
+            </span>
+            / 5000
+          </div>
+        </div>
+
+        <div class="editor-field editor-field-full">
+          <label for="destinationAttractionAddressInput">
+            Địa chỉ
+          </label>
+
+          <input
+            type="text"
+            id="destinationAttractionAddressInput"
+            maxlength="500"
+            placeholder="Ví dụ: Phường 1, thành phố Đà Lạt"
+          />
+        </div>
+
+        <div class="editor-field editor-field-full">
+          <label for="destinationAttractionMapQueryInput">
+            Từ khóa tìm kiếm bản đồ
+          </label>
+
+          <input
+            type="text"
+            id="destinationAttractionMapQueryInput"
+            placeholder="Ví dụ: Hồ Xuân Hương, Đà Lạt"
+          />
+
+          <small>
+            Nội dung này được dùng để mở vị trí trên bản đồ.
+          </small>
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationAttractionLatitudeInput">
+            Vĩ độ
+          </label>
+
+          <input
+            type="number"
+            id="destinationAttractionLatitudeInput"
+            min="-90"
+            max="90"
+            step="0.000001"
+            placeholder="11.944419"
+          />
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationAttractionLongitudeInput">
+            Kinh độ
+          </label>
+
+          <input
+            type="number"
+            id="destinationAttractionLongitudeInput"
+            min="-180"
+            max="180"
+            step="0.000001"
+            placeholder="108.441933"
+          />
+        </div>
+
+        <div class="editor-field editor-field-full">
+          <label for="destinationAttractionImageUrlInput">
+            Đường dẫn ảnh
+          </label>
+
+          <input
+            type="text"
+            id="destinationAttractionImageUrlInput"
+            maxlength="2000"
+            placeholder="/assets/images/ho-xuan-huong.webp hoặc https://..."
+          />
+
+          <small>
+            Đường dẫn phải bắt đầu bằng
+            <strong>/</strong>,
+            <strong>http://</strong> hoặc
+            <strong>https://</strong>.
+          </small>
+        </div>
+
+        <div class="editor-field editor-field-full">
+          <label for="destinationAttractionImageAltInput">
+            Mô tả ảnh
+          </label>
+
+          <input
+            type="text"
+            id="destinationAttractionImageAltInput"
+            maxlength="500"
+            placeholder="Ví dụ: Hồ Xuân Hương nhìn từ trên cao"
+          />
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationAttractionSourceUrlInput">
+            URL nguồn ảnh
+          </label>
+
+          <input
+            type="text"
+            id="destinationAttractionSourceUrlInput"
+            maxlength="2000"
+            placeholder="https://website-nguon..."
+          />
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationAttractionImageCreditInput">
+            Nguồn hoặc bản quyền
+          </label>
+
+          <input
+            type="text"
+            id="destinationAttractionImageCreditInput"
+            maxlength="500"
+            placeholder="Ví dụ: Ảnh: Sở Du lịch Lâm Đồng"
+          />
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationAttractionSortOrderInput">
+            Thứ tự hiển thị
+          </label>
+
+          <input
+            type="number"
+            id="destinationAttractionSortOrderInput"
+            min="0"
+            step="1"
+            value="0"
+          />
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label>
+            Trạng thái
+          </label>
+
+          <label class="destination-attraction-active-option">
+            <input
+              type="checkbox"
+              id="destinationAttractionIsActiveInput"
+              checked
+            />
+
+            <span>
+              Cho phép hiển thị điểm khám phá
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="destination-attraction-form-actions">
+        <button
+          type="button"
+          class="destination-attraction-reset-btn"
+          id="resetDestinationAttractionBtn"
+        >
+          Làm trống
+        </button>
+
+        <button
+          type="button"
+          class="destination-attraction-save-btn"
+          id="saveDestinationAttractionBtn"
+        >
+          Thêm điểm khám phá
+        </button>
+      </div>
+    </div>
+
+    <div class="destination-attraction-list-panel">
+      <div class="destination-attraction-list-heading">
+        <div>
+          <h3>Điểm khám phá hiện có</h3>
+
+          <p id="destinationAttractionResultLine">
+            Chưa có điểm khám phá.
+          </p>
+        </div>
+      </div>
+
+      <div
+        class="destination-attraction-empty"
+        id="destinationAttractionEmpty"
+      >
+        <span>🏞️</span>
+
+        <strong>Chưa có điểm khám phá</strong>
+
+        <p>
+          Sử dụng biểu mẫu bên cạnh để thêm địa điểm
+          tham quan đầu tiên.
+        </p>
+      </div>
+
+      <div
+        class="destination-attraction-list"
+        id="destinationAttractionList"
+      ></div>
+    </div>
+  </div>
+</section>
+<section
+  class="editor-form-card editor-foods-card"
+  id="destinationFoodsSection"
+  hidden
+>
+  <div class="editor-card-heading">
+    <div>
+      <span class="editor-card-number">
+        09
+      </span>
+
+      <h2>Món ăn gợi ý</h2>
+    </div>
+
+    <p>
+      Quản lý các món ăn đặc trưng, giá tham khảo
+      và khu vực nên thưởng thức.
+    </p>
+  </div>
+
+  <div class="destination-food-management">
+    <div class="destination-food-form-panel">
+      <div class="destination-food-form-heading">
+        <div>
+          <h3 id="destinationFoodFormTitle">
+            Thêm món ăn
+          </h3>
+
+          <p id="destinationFoodFormDescription">
+            Nhập thông tin món ăn đặc trưng của địa điểm.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="destination-food-cancel-btn"
+          id="cancelEditDestinationFoodBtn"
+          hidden
+        >
+          Hủy chỉnh sửa
+        </button>
+      </div>
+
+      <div
+        class="editor-form-grid destination-food-form-grid"
+      >
+        <div class="editor-field editor-field-full">
+          <label for="destinationFoodNameInput">
+            Tên món ăn
+            <span>*</span>
+          </label>
+
+          <input
+            type="text"
+            id="destinationFoodNameInput"
+            maxlength="180"
+            placeholder="Ví dụ: Bánh căn Đà Lạt"
+          />
+        </div>
+
+        <div class="editor-field editor-field-full">
+          <label for="destinationFoodDescriptionInput">
+            Mô tả món ăn
+          </label>
+
+          <textarea
+            id="destinationFoodDescriptionInput"
+            rows="6"
+            maxlength="5000"
+            placeholder="Giới thiệu hương vị, nguyên liệu và đặc điểm của món ăn..."
+          ></textarea>
+
+          <div class="editor-counter">
+            <span id="destinationFoodDescriptionCounter">
+              0
+            </span>
+            / 5000
+          </div>
+        </div>
+
+        <div class="editor-field editor-field-full">
+          <label for="destinationFoodImageUrlInput">
+            Đường dẫn ảnh
+          </label>
+
+          <input
+            type="text"
+            id="destinationFoodImageUrlInput"
+            maxlength="2000"
+            placeholder="/assets/images/banh-can.webp hoặc https://..."
+          />
+
+          <small>
+            Đường dẫn phải bắt đầu bằng
+            <strong>/</strong>,
+            <strong>http://</strong> hoặc
+            <strong>https://</strong>.
+          </small>
+        </div>
+
+        <div class="editor-field editor-field-full">
+          <label for="destinationFoodImageAltInput">
+            Mô tả ảnh
+          </label>
+
+          <input
+            type="text"
+            id="destinationFoodImageAltInput"
+            maxlength="500"
+            placeholder="Ví dụ: Bánh căn nóng ăn cùng nước chấm"
+          />
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationFoodPriceMinInput">
+            Giá thấp nhất
+          </label>
+
+          <input
+            type="number"
+            id="destinationFoodPriceMinInput"
+            min="0"
+            step="1000"
+            placeholder="30000"
+          />
+
+          <small>
+            Nhập số tiền Việt Nam đồng, không nhập dấu chấm.
+          </small>
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationFoodPriceMaxInput">
+            Giá cao nhất
+          </label>
+
+          <input
+            type="number"
+            id="destinationFoodPriceMaxInput"
+            min="0"
+            step="1000"
+            placeholder="60000"
+          />
+
+          <small>
+            Giá cao nhất không được nhỏ hơn giá thấp nhất.
+          </small>
+        </div>
+
+        <div class="editor-field editor-field-full">
+          <label for="destinationFoodPriceNoteInput">
+            Ghi chú giá
+          </label>
+
+          <input
+            type="text"
+            id="destinationFoodPriceNoteInput"
+            maxlength="255"
+            placeholder="Ví dụ: Giá tùy phần ăn và quán phục vụ"
+          />
+        </div>
+
+        <div class="editor-field editor-field-full">
+          <label for="destinationFoodSuggestedAreaInput">
+            Khu vực gợi ý
+          </label>
+
+          <input
+            type="text"
+            id="destinationFoodSuggestedAreaInput"
+            maxlength="255"
+            placeholder="Ví dụ: Khu vực chợ đêm Đà Lạt"
+          />
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationFoodSourceUrlInput">
+            URL nguồn ảnh
+          </label>
+
+          <input
+            type="text"
+            id="destinationFoodSourceUrlInput"
+            maxlength="2000"
+            placeholder="https://website-nguon..."
+          />
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationFoodImageCreditInput">
+            Nguồn hoặc bản quyền
+          </label>
+
+          <input
+            type="text"
+            id="destinationFoodImageCreditInput"
+            maxlength="500"
+            placeholder="Ví dụ: Ảnh: Cổng thông tin du lịch"
+          />
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label for="destinationFoodSortOrderInput">
+            Thứ tự hiển thị
+          </label>
+
+          <input
+            type="number"
+            id="destinationFoodSortOrderInput"
+            min="0"
+            step="1"
+            value="0"
+          />
+        </div>
+
+        <div class="editor-field editor-field-wide">
+          <label>
+            Trạng thái
+          </label>
+
+          <label class="destination-food-active-option">
+            <input
+              type="checkbox"
+              id="destinationFoodIsActiveInput"
+              checked
+            />
+
+            <span>
+              Cho phép hiển thị món ăn
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="destination-food-form-actions">
+        <button
+          type="button"
+          class="destination-food-reset-btn"
+          id="resetDestinationFoodBtn"
+        >
+          Làm trống
+        </button>
+
+        <button
+          type="button"
+          class="destination-food-save-btn"
+          id="saveDestinationFoodBtn"
+        >
+          Thêm món ăn
+        </button>
+      </div>
+    </div>
+
+    <div class="destination-food-list-panel">
+      <div class="destination-food-list-heading">
+        <div>
+          <h3>Món ăn hiện có</h3>
+
+          <p id="destinationFoodResultLine">
+            Chưa có món ăn gợi ý.
+          </p>
+        </div>
+      </div>
+
+      <div
+        class="destination-food-empty"
+        id="destinationFoodEmpty"
+      >
+        <span>🍜</span>
+
+        <strong>Chưa có món ăn gợi ý</strong>
+
+        <p>
+          Sử dụng biểu mẫu bên cạnh để thêm món ăn
+          đầu tiên cho địa điểm.
+        </p>
+      </div>
+
+      <div
+        class="destination-food-list"
+        id="destinationFoodList"
+      ></div>
+    </div>
+  </div>
+</section>
+        <div class="editor-submit-bar">
+          <div>
+            <strong id="editorSubmitTitle">
+              Tạo địa điểm mới
+            </strong>
+
+            <span id="editorSubmitDescription">
+              Địa điểm mới sẽ được lưu dưới dạng bản nháp.
+            </span>
+            <span
+              class="editor-save-state editor-save-state-saved"
+              id="editorSaveState"
+              aria-live="polite"
+            >
+              Dữ liệu đã được đồng bộ
+            </span>
+          </div>
+
+          <div class="editor-submit-actions">
+            <a
+              href="/admin-destinations.html"
+              class="editor-cancel-link"
+            >
+              Hủy
+            </a>
+
+            <button
+              type="submit"
+              id="saveDestinationBtn"
+              class="editor-save-btn"
+            >
+              Lưu địa điểm
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script src="/js/auth-store.js"></script>
+  <script src="/js/auth-api.js"></script>
+  <script src="/js/auth-guard.js"></script>
+
+  <script src="/js/toast.js"></script>
+  <script src="/js/modal.js"></script>
+
+<script src="/js/image-utils.js"></script>
+<script src="/js/admin-destination-editor.js"></script>
+</body>
+</html>
