@@ -460,8 +460,11 @@ async findUserHistory(
    * lịch sử của tài khoản khác.
    */
   const where:
-    Prisma.TtsJobWhereInput = {
-      userId,
+  Prisma.TtsJobWhereInput = {
+    userId,
+
+    deletedAt:
+      null,
 
       ...(query.status
         ? {
@@ -831,11 +834,14 @@ private async findOwnedHistoryAudioJob(
   const executeQuery = () =>
     this.prisma.ttsJob.findFirst({
       where: {
-        id:
-          ttsJobId,
+      id:
+        ttsJobId,
 
-        userId,
-      },
+      userId,
+
+      deletedAt:
+        null,
+    },
 
       select: {
         id:
@@ -901,11 +907,125 @@ private async findOwnedHistoryAudioJob(
     return executeQuery();
   }
 }
+async softDeleteHistory(
+  userId: string,
+  ttsJobId: string,
+) {
+  const deletedAt =
+    new Date();
 
+  /*
+   * Xóa mềm TtsJob và AudioFile
+   * trong cùng một transaction.
+   *
+   * Không xóa object thật khỏi R2.
+   */
+  const result =
+    await this.prisma.$transaction(
+      async (transaction) => {
+        const databaseJob =
+          await transaction
+            .ttsJob
+            .findFirst({
+              where: {
+                id:
+                  ttsJobId,
 
+                userId,
+
+                deletedAt:
+                  null,
+              },
+
+              select: {
+                id:
+                  true,
+
+                audioFile: {
+                  select: {
+                    id:
+                      true,
+
+                    deletedAt:
+                      true,
+                  },
+                },
+              },
+            });
+
+        if (!databaseJob) {
+          throw new NotFoundException(
+            'Không tìm thấy lịch sử TTS của tài khoản này.',
+          );
+        }
+
+        await transaction
+          .ttsJob
+          .update({
+            where: {
+              id:
+                databaseJob.id,
+            },
+
+            data: {
+              deletedAt,
+            },
+          });
+
+        /*
+         * AudioFile có thể không tồn tại
+         * đối với job cũ hoặc job thất bại.
+         */
+        if (
+          databaseJob.audioFile &&
+          !databaseJob
+            .audioFile
+            .deletedAt
+        ) {
+          await transaction
+            .audioFile
+            .update({
+              where: {
+                id:
+                  databaseJob
+                    .audioFile
+                    .id,
+              },
+
+              data: {
+                deletedAt,
+              },
+            });
+        }
+
+        return {
+          id:
+            databaseJob.id,
+
+          deletedAt,
+        };
+      },
+    );
+
+  return {
+    message:
+      'Đã xóa lịch sử tạo giọng đọc.',
+
+    id:
+      result.id,
+
+    deletedAt:
+      result.deletedAt,
+  };
+}
 async getHistoryAudio(
   userId: string,
   ttsJobId: string,
+
+  options?: {
+    recordDownload?: boolean;
+    userAgent?: string | null;
+  },
 ): Promise<TtsAudioFile> {
   /*
    * Truy vấn bằng UUID nội bộ của TtsJob.
@@ -1001,19 +1121,76 @@ async getHistoryAudio(
       ? rawExtension
       : 'wav';
 
-  return {
-    buffer:
-      object.buffer,
+/*
+ * Chỉ ghi nhận khi frontend gọi route
+ * tải xuống riêng. Việc nghe trực tuyến
+ * không được tính là lượt tải.
+ */
+if (options?.recordDownload) {
+  const normalizedUserAgent =
+    typeof options.userAgent ===
+      'string'
+      ? options.userAgent
+          .trim()
+          .slice(0, 2000)
+      : '';
 
-    filename:
-      `tts-history-${databaseJob.id}.` +
-      fileExtension,
+  try {
+    await this.prisma.audioDownload.create({
+      data: {
+        audioFileId:
+          audioFile.id,
 
-    mimeType:
-      object.mimeType ||
-      audioFile.mimeType ||
-      'audio/wav',
-  };
+        userId,
+
+        /*
+         * Hiện chưa triển khai hash IP.
+         * Trường này trong schema cho phép null.
+         */
+        ipHash:
+          null,
+
+        userAgent:
+          normalizedUserAgent ||
+          null,
+      },
+    });
+  } catch (error: unknown) {
+    /*
+     * Lỗi thống kê không được làm người dùng
+     * mất khả năng tải file đã đọc thành công.
+     */
+    console.warn(
+      '[RunpodTtsService] Không thể ghi nhận lượt tải audio:',
+      {
+        ttsJobId:
+          databaseJob.id,
+
+        audioFileId:
+          audioFile.id,
+
+        error:
+          error instanceof Error
+            ? error.message
+            : 'UnknownError',
+      },
+    );
+  }
+}
+
+return {
+  buffer:
+    object.buffer,
+
+  filename:
+    `tts-history-${databaseJob.id}.` +
+    fileExtension,
+
+  mimeType:
+    object.mimeType ||
+    audioFile.mimeType ||
+    'audio/wav',
+};
 }
 
 private async getOwnedDatabaseJob(
@@ -1025,6 +1202,9 @@ private async getOwnedDatabaseJob(
       where: {
         userId,
         runpodJobId,
+
+        deletedAt:
+          null,
       },
 
       select: {

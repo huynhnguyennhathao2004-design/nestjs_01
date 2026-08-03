@@ -8,11 +8,16 @@ import {
   Param,
   Post,
   Query,
+  Req,
   Res,
   UnauthorizedException,
   UseGuards,
+  Delete,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type {
+  Request,
+  Response,
+} from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -199,6 +204,36 @@ export class TtsController {
       );
   }
 
+/**
+ * Xóa mềm một lịch sử tạo giọng đọc.
+ *
+ * DELETE /api/tts/history/:ttsJobId
+ */
+@Delete('history/:ttsJobId')
+@UseGuards(JwtAuthGuard)
+@HttpCode(HttpStatus.OK)
+deleteHistory(
+  @CurrentUser()
+  currentUser:
+    AuthenticatedUser | undefined,
+
+  @Param()
+  params:
+    TtsHistoryParamDto,
+) {
+  if (!currentUser) {
+    throw new UnauthorizedException(
+      'Không xác định được tài khoản đăng nhập.',
+    );
+  }
+
+  return this.runpodTtsService
+    .softDeleteHistory(
+      currentUser.id,
+      params.ttsJobId,
+    );
+}
+
     /**
    * Nghe hoặc tải file âm thanh lịch sử
    * trực tiếp từ Cloudflare R2.
@@ -281,6 +316,98 @@ export class TtsController {
       audio.buffer,
     );
   }
+
+  /**
+ * Tải file âm thanh lịch sử và
+ * ghi nhận lượt tải vào database.
+ *
+ * GET /api/tts/history/:ttsJobId/download
+ */
+@Get('history/:ttsJobId/download')
+@UseGuards(JwtAuthGuard)
+async downloadHistoryAudio(
+  @CurrentUser()
+  currentUser:
+    AuthenticatedUser | undefined,
+
+  @Param()
+  params:
+    TtsHistoryParamDto,
+
+  @Req()
+  req:
+    Request,
+
+  @Res()
+  res:
+    Response,
+) {
+  if (!currentUser) {
+    throw new UnauthorizedException(
+      'Không xác định được tài khoản đăng nhập.',
+    );
+  }
+
+  console.log(
+    '[TtsController] Tải audio lịch sử từ R2:',
+    {
+      userId:
+        currentUser.id,
+
+      ttsJobId:
+        params.ttsJobId,
+    },
+  );
+
+  const audio =
+    await this.runpodTtsService
+      .getHistoryAudio(
+        currentUser.id,
+        params.ttsJobId,
+        {
+          recordDownload:
+            true,
+
+          userAgent:
+            req.get(
+              'user-agent',
+            ) ?? null,
+        },
+      );
+
+  res.setHeader(
+    'Content-Type',
+    audio.mimeType,
+  );
+
+  /*
+   * attachment yêu cầu trình duyệt
+   * tải file thay vì chỉ phát trực tuyến.
+   */
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${audio.filename}"`,
+  );
+
+  res.setHeader(
+    'Content-Length',
+    audio.buffer.length.toString(),
+  );
+
+  res.setHeader(
+    'Cache-Control',
+    'private, no-store',
+  );
+
+  res.setHeader(
+    'X-Content-Type-Options',
+    'nosniff',
+  );
+
+  return res.send(
+    audio.buffer,
+  );
+}
 
   @Get('jobs/:jobId')
   @UseGuards(JwtAuthGuard)

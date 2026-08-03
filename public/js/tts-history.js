@@ -199,7 +199,8 @@
  * thông qua UUID nội bộ của TtsJob.
  */
 async function requestHistoryAudioBlob(
-  ttsJobId
+  ttsJobId,
+  action = 'listen'
 ) {
   const normalizedTtsJobId =
     String(
@@ -211,13 +212,18 @@ async function requestHistoryAudioBlob(
       'Không xác định được lịch sử TTS.'
     );
   }
+const endpoint =
+  action === 'download'
+    ? 'download'
+    : 'audio';
 
-  const url =
-    '/api/tts/history/' +
-    encodeURIComponent(
-      normalizedTtsJobId
-    ) +
-    '/audio';
+const url =
+  '/api/tts/history/' +
+  encodeURIComponent(
+    normalizedTtsJobId
+  ) +
+  '/' +
+  endpoint;
 
   /*
    * Không để giao diện chờ vô hạn nếu
@@ -736,18 +742,32 @@ const canRequestAudio =
           <div class="history-card-actions">
             ${audioButtons}
 
-            <button
-              type="button"
-              class="history-secondary-action"
-              data-history-action="reuse"
-              data-job-id="${escapeHtml(
-                item.id
-              )}"
-            >
-              ↻ Dùng lại nội dung
-            </button>
+            <<button
+                type="button"
+                class="history-secondary-action"
+                data-history-action="reuse"
+                data-job-id="${escapeHtml(
+                  item.id
+                )}"
+              >
+                ↻ Dùng lại nội dung
+              </button>
 
-            ${destinationButton}
+              <button
+                type="button"
+                class="
+                  history-secondary-action
+                  history-danger-action
+                "
+                data-history-action="delete"
+                data-job-id="${escapeHtml(
+                  item.id
+                )}"
+              >
+                Xóa lịch sử
+              </button>
+
+              ${destinationButton}
           </div>
 
           <audio
@@ -1080,10 +1100,11 @@ if (
       'Đang tải...';
 
     try {
-        const blob =
-          await requestHistoryAudioBlob(
-            jobId
-          );
+const blob =
+  await requestHistoryAudioBlob(
+    jobId,
+    'listen'
+  );
 
       revokeAudioUrl(
         jobId
@@ -1204,7 +1225,8 @@ if (!jobId) {
     try {
 const blob =
   await requestHistoryAudioBlob(
-    jobId
+    jobId,
+    'download'
   );
 
       const objectUrl =
@@ -1258,7 +1280,129 @@ const blob =
         originalText;
     }
   }
+async function requestDeleteHistory(
+  ttsJobId
+) {
+  const normalizedTtsJobId =
+    String(
+      ttsJobId || ''
+    ).trim();
 
+  if (!normalizedTtsJobId) {
+    throw new Error(
+      'Không xác định được lịch sử cần xóa.'
+    );
+  }
+
+  const response =
+    await AuthStore.authFetch(
+      '/api/tts/history/' +
+        encodeURIComponent(
+          normalizedTtsJobId
+        ),
+      {
+        method:
+          'DELETE',
+      }
+    );
+
+  let payload = null;
+
+  try {
+    payload =
+      await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      extractErrorMessage(
+        payload,
+        'Không thể xóa lịch sử giọng đọc.'
+      )
+    );
+  }
+
+  return payload;
+}
+
+async function handleDelete(
+  button
+) {
+  const jobId =
+    button.dataset.jobId;
+
+  if (!jobId) {
+    showToast(
+      'error',
+      'Không xác định được lịch sử cần xóa.'
+    );
+
+    return;
+  }
+
+  const confirmed =
+    window.confirm(
+      'Bạn có chắc muốn xóa lịch sử này không?\n\n' +
+      'Mục này sẽ không còn xuất hiện trong lịch sử.'
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const originalText =
+    button.textContent;
+
+  button.disabled =
+    true;
+
+  button.textContent =
+    'Đang xóa...';
+
+  try {
+    await requestDeleteHistory(
+      jobId
+    );
+
+    revokeAudioUrl(
+      jobId
+    );
+
+    /*
+     * Nếu xóa mục cuối cùng của một
+     * trang lớn hơn trang 1, quay lại
+     * trang liền trước.
+     */
+    if (
+      state.items.length === 1 &&
+      state.page > 1
+    ) {
+      state.page -= 1;
+    }
+
+    showToast(
+      'success',
+      'Đã xóa lịch sử tạo giọng đọc.'
+    );
+
+    await loadHistory();
+  } catch (error) {
+    showToast(
+      'error',
+      error instanceof Error
+        ? error.message
+        : 'Không thể xóa lịch sử giọng đọc.'
+    );
+
+    button.disabled =
+      false;
+
+    button.textContent =
+      originalText;
+  }
+}
   function handleReuse(
     button
   ) {
@@ -1425,6 +1569,14 @@ const blob =
 
         if (action === 'reuse') {
           handleReuse(
+            button
+          );
+
+          return;
+        }
+
+        if (action === 'delete') {
+          handleDelete(
             button
           );
         }

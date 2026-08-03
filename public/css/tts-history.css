@@ -1045,3 +1045,18 @@ a {
     text-align: center;
   }
 }
+.history-danger-action {
+  border-color: rgba(185, 28, 28, 0.35);
+  color: #b91c1c;
+}
+
+.history-danger-action:hover {
+  border-color: #b91c1c;
+  background: #fff1f2;
+  color: #991b1b;
+}
+
+.history-danger-action:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
