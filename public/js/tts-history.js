@@ -2,6 +2,11 @@
   'use strict';
 
   const elements = {
+    modeLink:
+      document.getElementById(
+        'historyModeLink'
+      ),
+
     filterForm:
       document.getElementById(
         'historyFilterForm'
@@ -87,13 +92,47 @@
         'historyPageInfo'
       ),
   };
+const initialParameters =
+  new URLSearchParams(
+    window.location.search
+  );
 
+const initialView =
+  initialParameters.get(
+    'view'
+  ) === 'trash'
+    ? 'trash'
+    : 'active';
   const state = {
+    view:
+    initialView,
     page: 1,
     limit: 10,
     items: [],
     pagination: null,
   };
+  function initializeHistoryMode() {
+  const isTrash =
+    state.view ===
+    'trash';
+
+  if (elements.modeLink) {
+    elements.modeLink.href =
+      isTrash
+        ? '/tts-history.html'
+        : '/tts-history.html?view=trash';
+
+    elements.modeLink.textContent =
+      isTrash
+        ? '← Quay lại lịch sử'
+        : 'Thùng rác';
+  }
+
+  if (isTrash) {
+    document.title =
+      'Thùng rác giọng đọc - Vietnam Travel TTS';
+  }
+}
 
   const audioObjectUrls =
     new Map();
@@ -611,6 +650,71 @@ const canRequestAudio =
         `
         : '';
 
+        const activeHistoryActions = `
+  ${audioButtons}
+
+  <button
+    type="button"
+    class="history-secondary-action"
+    data-history-action="reuse"
+    data-job-id="${escapeHtml(
+      item.id
+    )}"
+  >
+    ↻ Dùng lại nội dung
+  </button>
+
+  <button
+    type="button"
+    class="
+      history-secondary-action
+      history-danger-action
+    "
+    data-history-action="delete"
+    data-job-id="${escapeHtml(
+      item.id
+    )}"
+  >
+    Xóa lịch sử
+  </button>
+
+  ${destinationButton}
+`;
+
+const trashHistoryActions = `
+  <button
+    type="button"
+    class="
+      history-secondary-action
+      history-restore-action
+    "
+    data-history-action="restore"
+    data-job-id="${escapeHtml(
+      item.id
+    )}"
+  >
+    Khôi phục
+  </button>
+
+  <button
+    type="button"
+    class="
+      history-secondary-action
+      history-danger-action
+    "
+    data-history-action="permanent-delete"
+    data-job-id="${escapeHtml(
+      item.id
+    )}"
+  >
+    Xóa vĩnh viễn
+  </button>
+`;
+
+const historyActions =
+  state.view === 'trash'
+    ? trashHistoryActions
+    : activeHistoryActions;
     const errorMessage =
       item.error?.message
         ? `
@@ -740,34 +844,7 @@ const canRequestAudio =
           ${errorMessage}
 
           <div class="history-card-actions">
-            ${audioButtons}
-
-            <<button
-                type="button"
-                class="history-secondary-action"
-                data-history-action="reuse"
-                data-job-id="${escapeHtml(
-                  item.id
-                )}"
-              >
-                ↻ Dùng lại nội dung
-              </button>
-
-              <button
-                type="button"
-                class="
-                  history-secondary-action
-                  history-danger-action
-                "
-                data-history-action="delete"
-                data-job-id="${escapeHtml(
-                  item.id
-                )}"
-              >
-                Xóa lịch sử
-              </button>
-
-              ${destinationButton}
+            ${historyActions}
           </div>
 
           <audio
@@ -906,8 +983,10 @@ const canRequestAudio =
       true;
 
     elements.summary.textContent =
-      'Không tìm thấy lượt tạo giọng đọc nào.';
-  }
+      state.view === 'trash'
+        ? 'Thùng rác hiện đang trống.'
+        : 'Không tìm thấy lượt tạo giọng đọc nào.';
+      }
 
   function showContentState(
     payload
@@ -928,8 +1007,15 @@ const canRequestAudio =
       ) || 0;
 
     elements.summary.textContent =
-      `Đã tìm thấy ${total} ` +
-      'lượt tạo giọng đọc.';
+      state.view === 'trash'
+        ? (
+            `Có ${total} mục ` +
+            'trong thùng rác.'
+          )
+        : (
+            `Đã tìm thấy ${total} ` +
+            'lượt tạo giọng đọc.'
+          );
 
     renderHistoryList(
       payload.items
@@ -992,10 +1078,16 @@ const canRequestAudio =
       );
     }
 
-    return (
-      '/api/tts/history?' +
-      parameters.toString()
-    );
+      const baseUrl =
+        state.view === 'trash'
+          ? '/api/tts/history/trash'
+          : '/api/tts/history';
+
+      return (
+        baseUrl +
+        '?' +
+        parameters.toString()
+      );
   }
 
   async function loadHistory() {
@@ -1403,6 +1495,200 @@ async function handleDelete(
       originalText;
   }
 }
+async function requestRestoreHistory(
+  ttsJobId
+) {
+  const response =
+    await AuthStore.authFetch(
+      '/api/tts/history/' +
+        encodeURIComponent(
+          ttsJobId
+        ) +
+        '/restore',
+      {
+        method:
+          'PATCH',
+      }
+    );
+
+  let payload = null;
+
+  try {
+    payload =
+      await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      extractErrorMessage(
+        payload,
+        'Không thể khôi phục lịch sử.'
+      )
+    );
+  }
+
+  return payload;
+}
+
+async function requestPermanentDeleteHistory(
+  ttsJobId
+) {
+  const response =
+    await AuthStore.authFetch(
+      '/api/tts/history/' +
+        encodeURIComponent(
+          ttsJobId
+        ) +
+        '/permanent',
+      {
+        method:
+          'DELETE',
+      }
+    );
+
+  let payload = null;
+
+  try {
+    payload =
+      await response.json();
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      extractErrorMessage(
+        payload,
+        'Không thể xóa vĩnh viễn lịch sử.'
+      )
+    );
+  }
+
+  return payload;
+}
+
+async function handleRestore(
+  button
+) {
+  const jobId =
+    button.dataset.jobId;
+
+  if (!jobId) {
+    return;
+  }
+
+  const originalText =
+    button.textContent;
+
+  button.disabled =
+    true;
+
+  button.textContent =
+    'Đang khôi phục...';
+
+  try {
+    await requestRestoreHistory(
+      jobId
+    );
+
+    if (
+      state.items.length === 1 &&
+      state.page > 1
+    ) {
+      state.page -= 1;
+    }
+
+    showToast(
+      'success',
+      'Đã khôi phục lịch sử.'
+    );
+
+    await loadHistory();
+  } catch (error) {
+    showToast(
+      'error',
+      error instanceof Error
+        ? error.message
+        : 'Không thể khôi phục lịch sử.'
+    );
+
+    button.disabled =
+      false;
+
+    button.textContent =
+      originalText;
+  }
+}
+
+async function handlePermanentDelete(
+  button
+) {
+  const jobId =
+    button.dataset.jobId;
+
+  if (!jobId) {
+    return;
+  }
+
+  const confirmed =
+    window.confirm(
+      'Xóa vĩnh viễn lịch sử này?\n\n' +
+      'File WAV trên Cloudflare R2 và dữ liệu liên quan ' +
+      'sẽ bị xóa hoàn toàn. Thao tác này không thể khôi phục.'
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const originalText =
+    button.textContent;
+
+  button.disabled =
+    true;
+
+  button.textContent =
+    'Đang xóa...';
+
+  try {
+    await requestPermanentDeleteHistory(
+      jobId
+    );
+
+    revokeAudioUrl(
+      jobId
+    );
+
+    if (
+      state.items.length === 1 &&
+      state.page > 1
+    ) {
+      state.page -= 1;
+    }
+
+    showToast(
+      'success',
+      'Đã xóa vĩnh viễn lịch sử và file âm thanh.'
+    );
+
+    await loadHistory();
+  } catch (error) {
+    showToast(
+      'error',
+      error instanceof Error
+        ? error.message
+        : 'Không thể xóa vĩnh viễn lịch sử.'
+    );
+
+    button.disabled =
+      false;
+
+    button.textContent =
+      originalText;
+  }
+}
   function handleReuse(
     button
   ) {
@@ -1580,6 +1866,23 @@ async function handleDelete(
             button
           );
         }
+
+        if (action === 'restore') {
+          handleRestore(
+            button
+          );
+
+          return;
+        }
+
+        if (
+          action ===
+          'permanent-delete'
+        ) {
+          handlePermanentDelete(
+            button
+          );
+        }
       }
     );
 
@@ -1587,6 +1890,6 @@ async function handleDelete(
     'beforeunload',
     revokeAllAudioUrls
   );
-
+  initializeHistoryMode();
   loadHistory();
 })();

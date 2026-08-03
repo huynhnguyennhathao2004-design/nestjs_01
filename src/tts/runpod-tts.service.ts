@@ -444,6 +444,10 @@ async createJob(
 async findUserHistory(
   userId: string,
   query: ListTtsHistoryQueryDto,
+
+  options: {
+    deletedOnly?: boolean;
+  } = {},
 ) {
   const page =
     query.page ?? 1;
@@ -459,12 +463,17 @@ async findUserHistory(
    * Frontend không được tự chọn
    * lịch sử của tài khoản khác.
    */
-  const where:
+const where:
   Prisma.TtsJobWhereInput = {
     userId,
 
     deletedAt:
-      null,
+      options.deletedOnly
+        ? {
+            not:
+              null,
+          }
+        : null,
 
       ...(query.status
         ? {
@@ -494,6 +503,37 @@ async findUserHistory(
     };
 
   /*
+   * Lịch sử thường được sắp xếp theo
+   * ngày tạo mới nhất.
+   *
+   * Thùng rác được sắp xếp theo
+   * ngày xóa mới nhất.
+   */
+  const orderBy:
+    Prisma.TtsJobOrderByWithRelationInput[] =
+      options.deletedOnly
+        ? [
+            {
+              deletedAt:
+                'desc',
+            },
+            {
+              id:
+                'desc',
+            },
+          ]
+        : [
+            {
+              createdAt:
+                'desc',
+            },
+            {
+              id:
+                'desc',
+            },
+          ];
+
+  /*
    * Đếm tổng và lấy danh sách trong
    * cùng một transaction đọc.
    */
@@ -513,16 +553,7 @@ async findUserHistory(
         take:
           limit,
 
-        orderBy: [
-          {
-            createdAt:
-              'desc',
-          },
-          {
-            id:
-              'desc',
-          },
-        ],
+        orderBy,
 
         select: {
           id:
@@ -788,6 +819,19 @@ async findUserHistory(
     },
   };
 }
+findUserTrash(
+  userId: string,
+  query: ListTtsHistoryQueryDto,
+) {
+  return this.findUserHistory(
+    userId,
+    query,
+    {
+      deletedOnly:
+        true,
+    },
+  );
+}
 
 private isRetryableDatabaseError(
   error: unknown,
@@ -906,6 +950,183 @@ private async findOwnedHistoryAudioJob(
 
     return executeQuery();
   }
+}
+async restoreHistory(
+  userId: string,
+  ttsJobId: string,
+) {
+  const result =
+    await this.prisma.$transaction(
+      async (transaction) => {
+        const databaseJob =
+          await transaction
+            .ttsJob
+            .findFirst({
+              where: {
+                id:
+                  ttsJobId,
+
+                userId,
+
+                deletedAt: {
+                  not:
+                    null,
+                },
+              },
+
+              select: {
+                id:
+                  true,
+
+                audioFile: {
+                  select: {
+                    id:
+                      true,
+                  },
+                },
+              },
+            });
+
+        if (!databaseJob) {
+          throw new NotFoundException(
+            'Không tìm thấy lịch sử trong thùng rác.',
+          );
+        }
+
+        await transaction
+          .ttsJob
+          .update({
+            where: {
+              id:
+                databaseJob.id,
+            },
+
+            data: {
+              deletedAt:
+                null,
+            },
+          });
+
+        if (databaseJob.audioFile) {
+          await transaction
+            .audioFile
+            .update({
+              where: {
+                id:
+                  databaseJob
+                    .audioFile
+                    .id,
+              },
+
+              data: {
+                deletedAt:
+                  null,
+              },
+            });
+        }
+
+        return {
+          id:
+            databaseJob.id,
+        };
+      },
+    );
+
+  return {
+    message:
+      'Đã khôi phục lịch sử tạo giọng đọc.',
+
+    id:
+      result.id,
+  };
+}
+async permanentlyDeleteHistory(
+  userId: string,
+  ttsJobId: string,
+) {
+  /*
+   * Chỉ cho phép xóa cứng mục đã nằm
+   * trong thùng rác.
+   */
+  const databaseJob =
+    await this.prisma.ttsJob
+      .findFirst({
+        where: {
+          id:
+            ttsJobId,
+
+          userId,
+
+          deletedAt: {
+            not:
+              null,
+          },
+        },
+
+        select: {
+          id:
+            true,
+
+          audioFile: {
+            select: {
+              id:
+                true,
+
+              bucketName:
+                true,
+
+              objectKey:
+                true,
+            },
+          },
+        },
+      });
+
+  if (!databaseJob) {
+    throw new NotFoundException(
+      'Không tìm thấy lịch sử trong thùng rác.',
+    );
+  }
+
+  /*
+   * Xóa object thật trước.
+   *
+   * Nếu R2 lỗi, không xóa metadata trong
+   * PostgreSQL để người dùng có thể thử lại.
+   */
+  if (databaseJob.audioFile) {
+    await this.r2StorageService
+      .deleteAudioObject({
+        bucketName:
+          databaseJob
+            .audioFile
+            .bucketName,
+
+        objectKey:
+          databaseJob
+            .audioFile
+            .objectKey,
+      });
+  }
+
+  /*
+   * Quan hệ cascade sẽ xóa AudioFile
+   * và các AudioDownload liên quan.
+   */
+  await this.prisma.ttsJob.delete({
+    where: {
+      id:
+        databaseJob.id,
+    },
+  });
+
+  return {
+    message:
+      'Đã xóa vĩnh viễn lịch sử và file âm thanh.',
+
+    id:
+      databaseJob.id,
+  };
 }
 async softDeleteHistory(
   userId: string,

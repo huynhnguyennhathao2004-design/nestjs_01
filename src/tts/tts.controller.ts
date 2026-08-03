@@ -13,6 +13,7 @@ import {
   UnauthorizedException,
   UseGuards,
   Delete,
+  Patch,
 } from '@nestjs/common';
 import type {
   Request,
@@ -203,7 +204,92 @@ export class TtsController {
         query,
       );
   }
+/**
+ * Lấy các mục đã xóa mềm.
+ *
+ * GET /api/tts/history/trash
+ */
+@Get('history/trash')
+@UseGuards(JwtAuthGuard)
+getUserTtsTrash(
+  @CurrentUser()
+  currentUser:
+    AuthenticatedUser | undefined,
 
+  @Query()
+  query:
+    ListTtsHistoryQueryDto,
+) {
+  if (!currentUser) {
+    throw new UnauthorizedException(
+      'Không xác định được tài khoản đăng nhập.',
+    );
+  }
+
+  return this.runpodTtsService
+    .findUserTrash(
+      currentUser.id,
+      query,
+    );
+}
+
+/**
+ * Khôi phục một lịch sử từ thùng rác.
+ *
+ * PATCH /api/tts/history/:ttsJobId/restore
+ */
+@Patch('history/:ttsJobId/restore')
+@UseGuards(JwtAuthGuard)
+restoreHistory(
+  @CurrentUser()
+  currentUser:
+    AuthenticatedUser | undefined,
+
+  @Param()
+  params:
+    TtsHistoryParamDto,
+) {
+  if (!currentUser) {
+    throw new UnauthorizedException(
+      'Không xác định được tài khoản đăng nhập.',
+    );
+  }
+
+  return this.runpodTtsService
+    .restoreHistory(
+      currentUser.id,
+      params.ttsJobId,
+    );
+}
+/**
+ * Xóa vĩnh viễn lịch sử trong thùng rác.
+ *
+ * DELETE /api/tts/history/:ttsJobId/permanent
+ */
+@Delete('history/:ttsJobId/permanent')
+@UseGuards(JwtAuthGuard)
+@HttpCode(HttpStatus.OK)
+permanentlyDeleteHistory(
+  @CurrentUser()
+  currentUser:
+    AuthenticatedUser | undefined,
+
+  @Param()
+  params:
+    TtsHistoryParamDto,
+) {
+  if (!currentUser) {
+    throw new UnauthorizedException(
+      'Không xác định được tài khoản đăng nhập.',
+    );
+  }
+
+  return this.runpodTtsService
+    .permanentlyDeleteHistory(
+      currentUser.id,
+      params.ttsJobId,
+    );
+}
 /**
  * Xóa mềm một lịch sử tạo giọng đọc.
  *

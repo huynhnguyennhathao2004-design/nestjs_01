@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -23,6 +24,11 @@ export interface R2AudioObject {
   sizeBytes: number;
   etag: string | null;
   lastModified: Date | null;
+}
+
+interface DeleteR2AudioInput {
+  bucketName: string;
+  objectKey: string;
 }
 
 interface DownloadR2AudioInput {
@@ -144,6 +150,152 @@ export class R2StorageService
     this.client =
       null;
   }
+
+  async deleteAudioObject(
+  input: DeleteR2AudioInput,
+): Promise<void> {
+  if (!this.client) {
+    throw new InternalServerErrorException(
+      'Dịch vụ lưu trữ R2 chưa được khởi tạo.',
+    );
+  }
+
+  const requestedBucket =
+    String(
+      input.bucketName ?? '',
+    ).trim();
+
+  const objectKey =
+    String(
+      input.objectKey ?? '',
+    ).trim();
+
+  if (
+    requestedBucket !==
+    this.bucketName
+  ) {
+    throw new NotFoundException(
+      'Không tìm thấy file âm thanh trong bucket hiện tại.',
+    );
+  }
+
+  if (!objectKey) {
+    throw new NotFoundException(
+      'File âm thanh chưa có object key.',
+    );
+  }
+
+  if (
+    objectKey.length > 1024 ||
+    !objectKey.startsWith(
+      'tts/',
+    )
+  ) {
+    throw new BadGatewayException(
+      'Object key của file âm thanh không hợp lệ.',
+    );
+  }
+
+  try {
+    await this.client.send(
+      new DeleteObjectCommand({
+        Bucket:
+          this.bucketName,
+
+        Key:
+          objectKey,
+      }),
+    );
+
+    console.log(
+      '[R2StorageService] Đã xóa object khỏi R2:',
+      {
+        objectKey,
+      },
+    );
+  } catch (error: unknown) {
+    const errorRecord =
+      error &&
+      typeof error === 'object'
+        ? (
+            error as {
+              name?: unknown;
+              code?: unknown;
+
+              $metadata?: {
+                httpStatusCode?: number;
+              };
+            }
+          )
+        : null;
+
+    const errorName =
+      typeof errorRecord?.name ===
+        'string'
+        ? errorRecord.name
+        : '';
+
+    const errorCode =
+      typeof errorRecord?.code ===
+        'string'
+        ? errorRecord.code
+        : '';
+
+    const httpStatus =
+      errorRecord?.$metadata
+        ?.httpStatusCode;
+
+    /*
+     * Xóa object không còn tồn tại vẫn
+     * được xem là đã đạt kết quả mong muốn.
+     */
+    if (
+      httpStatus === 404 ||
+      errorName === 'NoSuchKey' ||
+      errorName === 'NotFound'
+    ) {
+      return;
+    }
+
+    if (
+      errorName === 'TimeoutError' ||
+      errorName === 'RequestTimeout' ||
+      errorCode === 'ETIMEDOUT'
+    ) {
+      throw new GatewayTimeoutException(
+        'Quá thời gian xóa file khỏi Cloudflare R2.',
+      );
+    }
+
+    if (
+      httpStatus === 401 ||
+      httpStatus === 403
+    ) {
+      throw new BadGatewayException(
+        'Credential Cloudflare R2 không có quyền xóa object.',
+      );
+    }
+
+    console.error(
+      '[R2StorageService] Không thể xóa object:',
+      {
+        objectKey,
+
+        errorName:
+          errorName ||
+          'UnknownError',
+
+        httpStatus:
+          httpStatus ??
+          null,
+      },
+    );
+
+    throw new BadGatewayException(
+      'Không thể xóa file âm thanh khỏi Cloudflare R2.',
+    );
+  }
+}
 
   async downloadAudioObject(
     input: DownloadR2AudioInput,
