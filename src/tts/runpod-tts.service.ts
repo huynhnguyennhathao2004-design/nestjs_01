@@ -32,6 +32,11 @@ import {
   ListTtsHistoryQueryDto,
 } from './dto/list-tts-history-query.dto';
 
+import {
+  R2StorageService,
+} from './r2-storage.service';
+
+
 @Injectable()
 export class RunpodTtsService implements OnModuleInit {
   private readonly apiKey: string;
@@ -54,6 +59,9 @@ export class RunpodTtsService implements OnModuleInit {
 
       private readonly prisma:
         PrismaService,
+
+      private readonly r2StorageService:
+        R2StorageService,
 
   ) {
     this.apiKey =
@@ -775,6 +783,236 @@ async findUserHistory(
       hasNextPage:
         page < totalPages,
     },
+  };
+}
+
+private isRetryableDatabaseError(
+  error: unknown,
+): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : String(
+          error ?? '',
+        );
+
+  const normalizedMessage =
+    message.toLowerCase();
+
+  return [
+    'connection terminated unexpectedly',
+    'econnreset',
+    'connection closed',
+    'server closed the connection unexpectedly',
+  ].some((keyword) =>
+    normalizedMessage.includes(
+      keyword,
+    ),
+  );
+}
+
+private async wait(
+  milliseconds: number,
+): Promise<void> {
+  await new Promise<void>(
+    (resolve) => {
+      setTimeout(
+        resolve,
+        milliseconds,
+      );
+    },
+  );
+}
+
+private async findOwnedHistoryAudioJob(
+  userId: string,
+  ttsJobId: string,
+) {
+  const executeQuery = () =>
+    this.prisma.ttsJob.findFirst({
+      where: {
+        id:
+          ttsJobId,
+
+        userId,
+      },
+
+      select: {
+        id:
+          true,
+
+        status:
+          true,
+
+        audioFile: {
+          select: {
+            id:
+              true,
+
+            bucketName:
+              true,
+
+            objectKey:
+              true,
+
+            mimeType:
+              true,
+
+            fileExtension:
+              true,
+
+            sizeBytes:
+              true,
+
+            deletedAt:
+              true,
+          },
+        },
+      },
+    });
+
+  try {
+    return await executeQuery();
+  } catch (error: unknown) {
+    if (
+      !this.isRetryableDatabaseError(
+        error,
+      )
+    ) {
+      throw error;
+    }
+
+    /*
+     * Neon hoặc kết nối pg-pool có thể
+     * ngắt một socket không hoạt động.
+     * Chờ ngắn rồi thử lại đúng một lần.
+     */
+    console.warn(
+      '[RunpodTtsService] Kết nối PostgreSQL bị ngắt, thử lại truy vấn lịch sử một lần.',
+      {
+        ttsJobId,
+      },
+    );
+
+    await this.wait(
+      300,
+    );
+
+    return executeQuery();
+  }
+}
+
+
+async getHistoryAudio(
+  userId: string,
+  ttsJobId: string,
+): Promise<TtsAudioFile> {
+  /*
+   * Truy vấn bằng UUID nội bộ của TtsJob.
+   *
+   * userId bắt buộc phải khớp tài khoản
+   * đang đăng nhập để ngăn đọc file
+   * của người dùng khác.
+   */
+  const databaseJob =
+  await this.findOwnedHistoryAudioJob(
+    userId,
+    ttsJobId,
+  );
+
+  if (!databaseJob) {
+    throw new NotFoundException(
+      'Không tìm thấy lịch sử TTS của tài khoản này.',
+    );
+  }
+
+  if (
+    databaseJob.status !==
+    TtsJobStatus.COMPLETED
+  ) {
+    throw new ConflictException(
+      'Giọng đọc này chưa hoàn thành.',
+    );
+  }
+
+  const audioFile =
+    databaseJob.audioFile;
+
+  if (
+    !audioFile ||
+    audioFile.deletedAt
+  ) {
+    throw new NotFoundException(
+      'Lịch sử này chưa có file âm thanh khả dụng.',
+    );
+  }
+
+  const bucketName =
+    audioFile.bucketName
+      .trim();
+
+  const objectKey =
+    audioFile.objectKey
+      .trim();
+
+  if (
+    !bucketName ||
+    !objectKey
+  ) {
+    throw new NotFoundException(
+      'Metadata lưu trữ của file âm thanh chưa đầy đủ.',
+    );
+  }
+
+  /*
+   * Đọc trực tiếp object từ Cloudflare R2.
+   * Không gọi RunPod và không sử dụng
+   * signed URL cũ trong publicUrl.
+   */
+  const object =
+    await this.r2StorageService
+      .downloadAudioObject({
+        bucketName,
+
+        objectKey,
+
+        fallbackMimeType:
+          audioFile.mimeType,
+
+        expectedSizeBytes:
+          audioFile.sizeBytes,
+      });
+
+  const rawExtension =
+    String(
+      audioFile.fileExtension ??
+      'wav',
+    )
+      .trim()
+      .toLowerCase();
+
+  /*
+   * Chỉ giữ ký tự an toàn cho tên file.
+   */
+  const fileExtension =
+    /^[a-z0-9]{1,20}$/.test(
+      rawExtension,
+    )
+      ? rawExtension
+      : 'wav';
+
+  return {
+    buffer:
+      object.buffer,
+
+    filename:
+      `tts-history-${databaseJob.id}.` +
+      fileExtension,
+
+    mimeType:
+      object.mimeType ||
+      audioFile.mimeType ||
+      'audio/wav',
   };
 }
 

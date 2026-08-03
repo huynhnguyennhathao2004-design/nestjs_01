@@ -194,23 +194,54 @@
     return payload;
   }
 
-  async function requestAudioBlob(
-    runpodJobId,
-    voice
-  ) {
-    const url =
-      '/api/tts/jobs/' +
-      encodeURIComponent(
-        runpodJobId
-      ) +
-      '/audio?voice=' +
-      encodeURIComponent(
-        voice || 'male'
-      );
+/**
+ * Tải file lịch sử trực tiếp từ Cloudflare R2
+ * thông qua UUID nội bộ của TtsJob.
+ */
+async function requestHistoryAudioBlob(
+  ttsJobId
+) {
+  const normalizedTtsJobId =
+    String(
+      ttsJobId || ''
+    ).trim();
 
+  if (!normalizedTtsJobId) {
+    throw new Error(
+      'Không xác định được lịch sử TTS.'
+    );
+  }
+
+  const url =
+    '/api/tts/history/' +
+    encodeURIComponent(
+      normalizedTtsJobId
+    ) +
+    '/audio';
+
+  /*
+   * Không để giao diện chờ vô hạn nếu
+   * kết nối PostgreSQL hoặc R2 gặp sự cố.
+   */
+  const controller =
+    new AbortController();
+
+  const timeoutId =
+    window.setTimeout(
+      function () {
+        controller.abort();
+      },
+      60_000
+    );
+
+  try {
     const response =
       await AuthStore.authFetch(
-        url
+        url,
+        {
+          signal:
+            controller.signal,
+        }
       );
 
     if (!response.ok) {
@@ -226,14 +257,42 @@
       throw new Error(
         extractErrorMessage(
           payload,
-          'Không thể tải file âm thanh.'
+          'Không thể tải file âm thanh từ Cloudflare R2.'
         )
       );
     }
 
-    return response.blob();
-  }
+    const blob =
+      await response.blob();
 
+    if (
+      !blob ||
+      blob.size <= 0
+    ) {
+      throw new Error(
+        'File âm thanh nhận được đang trống.'
+      );
+    }
+
+    return blob;
+  } catch (error) {
+    if (
+      error &&
+      error.name ===
+        'AbortError'
+    ) {
+      throw new Error(
+        'Quá thời gian tải file âm thanh. Hãy thử lại.'
+      );
+    }
+
+    throw error;
+  } finally {
+    window.clearTimeout(
+      timeoutId
+    );
+  }
+}
   function formatDate(value) {
     if (!value) {
       return 'Chưa có';
@@ -482,21 +541,23 @@
         sourceText
       );
 
-    /*
-    * Job cũ có thể đã hoàn thành nhưng chưa có
-    * bản ghi AudioFile vì được tạo trước 5.8.2F.
-    *
-    * Vẫn hiển thị nút để backend thử lấy kết quả
-    * từ RunPod và bổ sung metadata AudioFile.
-    */
-    const canRequestAudio =
-      item.status ===
-        'COMPLETED' &&
-      typeof item.runpodJobId ===
-        'string' &&
-      item.runpodJobId
-        .trim()
-        .length > 0;
+/*
+ * Route lịch sử đọc trực tiếp bằng
+ * AudioFile.objectKey trên Cloudflare R2.
+ *
+ * Vì vậy chỉ hiển thị nút khi database
+ * đã có AudioFile khả dụng.
+ */
+const canRequestAudio =
+  item.status ===
+    'COMPLETED' &&
+  item.audioAvailable ===
+    true &&
+  typeof item.id ===
+    'string' &&
+  item.id
+    .trim()
+    .length > 0;
 
     const destinationButton =
       destination?.slug
@@ -515,44 +576,32 @@
     const audioButtons =
       canRequestAudio
         ? `
-          <button
-            type="button"
-            class="history-primary-action"
-            data-history-action="listen"
-            data-job-id="${escapeHtml(
-              item.id
-            )}"
-            data-runpod-job-id="${escapeHtml(
-              item.runpodJobId
-            )}"
-            data-voice="${escapeHtml(
-              item.voice || 'male'
-            )}"
-          >
-            ▶ Nghe lại
-          </button>
+            <button
+              type="button"
+              class="history-primary-action"
+              data-history-action="listen"
+              data-job-id="${escapeHtml(
+                item.id
+              )}"
+            >
+              ▶ Nghe lại
+            </button>
 
-          <button
-            type="button"
-            class="history-secondary-action"
-            data-history-action="download"
-            data-job-id="${escapeHtml(
-              item.id
-            )}"
-            data-runpod-job-id="${escapeHtml(
-              item.runpodJobId
-            )}"
-            data-voice="${escapeHtml(
-              item.voice || 'male'
-            )}"
-            data-extension="${escapeHtml(
-              item.audio
-                ?.fileExtension ||
-              'wav'
-            )}"
-          >
-            ↓ Tải WAV
-          </button>
+                <button
+                  type="button"
+                  class="history-secondary-action"
+                  data-history-action="download"
+                  data-job-id="${escapeHtml(
+                    item.id
+                  )}"
+                  data-extension="${escapeHtml(
+                    item.audio
+                      ?.fileExtension ||
+                    'wav'
+                  )}"
+                >
+                  ↓ Tải WAV
+                </button>
         `
         : '';
 
@@ -999,32 +1048,22 @@
   async function handleListen(
     button
   ) {
-    const jobId =
-      button.dataset.jobId;
+const jobId =
+  button.dataset.jobId;
 
-    const runpodJobId =
-      button.dataset
-        .runpodJobId;
-
-    const voice =
-      button.dataset.voice ||
-      'male';
-
-    const card =
-      button.closest(
-        '[data-history-card-id]'
-      );
+const card =
+  button.closest(
+    '[data-history-card-id]'
+  );
 
     const player =
       card?.querySelector(
         '[data-history-audio-id]'
       );
-
-    if (
-      !jobId ||
-      !runpodJobId ||
-      !player
-    ) {
+if (
+  !jobId ||
+  !player
+) {
       showToast(
         'error',
         'Không xác định được file âm thanh.'
@@ -1041,11 +1080,10 @@
       'Đang tải...';
 
     try {
-      const blob =
-        await requestAudioBlob(
-          runpodJobId,
-          voice
-        );
+        const blob =
+          await requestHistoryAudioBlob(
+            jobId
+          );
 
       revokeAudioUrl(
         jobId
@@ -1138,25 +1176,14 @@ try {
   async function handleDownload(
     button
   ) {
-    const jobId =
-      button.dataset.jobId;
+const jobId =
+  button.dataset.jobId;
 
-    const runpodJobId =
-      button.dataset
-        .runpodJobId;
+const extension =
+  button.dataset.extension ||
+  'wav';
 
-    const voice =
-      button.dataset.voice ||
-      'male';
-
-    const extension =
-      button.dataset.extension ||
-      'wav';
-
-    if (
-      !jobId ||
-      !runpodJobId
-    ) {
+if (!jobId) {
       showToast(
         'error',
         'Không xác định được file cần tải.'
@@ -1175,11 +1202,10 @@ try {
       'Đang tải...';
 
     try {
-      const blob =
-        await requestAudioBlob(
-          runpodJobId,
-          voice
-        );
+const blob =
+  await requestHistoryAudioBlob(
+    jobId
+  );
 
       const objectUrl =
         URL.createObjectURL(

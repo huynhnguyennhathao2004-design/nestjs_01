@@ -9,6 +9,10 @@ import { TextNormalizerModule } from '../common/text-normalizer/text-normalizer.
 
 import { AuthModule } from '../auth/auth.module';
 
+import {
+  R2StorageService,
+} from './r2-storage.service';
+
 @Module({
   imports: [
     HttpModule.register({
@@ -30,6 +34,7 @@ import { AuthModule } from '../auth/auth.module';
   providers: [
     TtsService,
     RunpodTtsService,
+    R2StorageService,
   ],
 
   exports: [
