@@ -272,6 +272,7 @@ const destinations =
         ],
 
         select: {
+          id: true,
           slug: true,
           name: true,
           shortDescription: true,
@@ -323,10 +324,18 @@ const destinations =
 
     return destinations.map((destination) => ({
       /*
-       * Giữ trường id giống dữ liệu JavaScript cũ.
-       * id ở frontend cũ thực chất chính là slug.
-       */
+      * Giữ id là slug để tương thích
+      * với frontend cũ.
+      */
       id: destination.slug,
+
+      /*
+      * UUID thật trong PostgreSQL.
+      * Dùng cho các quan hệ database,
+      * ví dụ TtsJob.destinationId.
+      */
+      databaseId: destination.id,
+
       slug: destination.slug,
       name: destination.name,
 
@@ -373,6 +382,7 @@ const destinations =
         },
 
         select: {
+          id: true,
           slug: true,
           name: true,
           shortDescription: true,
@@ -493,6 +503,7 @@ const destinations =
 
     return {
       id: destination.slug,
+      databaseId: destination.id,
       slug: destination.slug,
       name: destination.name,
 

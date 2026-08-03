@@ -7,6 +7,8 @@ import { RunpodTtsService } from './runpod-tts.service';
 
 import { TextNormalizerModule } from '../common/text-normalizer/text-normalizer.module';
 
+import { AuthModule } from '../auth/auth.module';
+
 @Module({
   imports: [
     HttpModule.register({
@@ -16,6 +18,11 @@ import { TextNormalizerModule } from '../common/text-normalizer/text-normalizer.
 
     // Bắt buộc phải có dòng này
     TextNormalizerModule,
+        /*
+     * Cung cấp JwtAuthGuard cho
+     * các API F5-TTS cần đăng nhập.
+     */
+    AuthModule,
   ],
 
   controllers: [TtsController],

@@ -40,6 +40,16 @@ const MAX_WAIT_TIME_MS = 20 * 60 * 1000;
 
 let currentAudioUrl = null;
 let currentJobId = null;
+
+/*
+ * UUID địa điểm đang được dùng để
+ * tạo nội dung thuyết minh.
+ *
+ * Giá trị null nghĩa là người dùng
+ * đang tự soạn nội dung mới.
+ */
+let currentDestinationId = null;
+
 let isGenerating = false;
 
 /**
@@ -50,6 +60,33 @@ function sleep(milliseconds) {
     window.setTimeout(resolve, milliseconds);
   });
 }
+/**
+ * Gọi API có kèm access token.
+ *
+ * AuthStore.authFetch sẽ tự:
+ * - thêm Authorization Bearer;
+ * - refresh token nếu access token hết hạn;
+ * - thử lại request đúng một lần.
+ */
+async function authenticatedFetch(
+  input,
+  options = {},
+) {
+  if (
+    !window.AuthStore ||
+    typeof window.AuthStore.authFetch !==
+      'function'
+  ) {
+    throw new Error(
+      'Hệ thống xác thực chưa được tải.',
+    );
+  }
+
+  return window.AuthStore.authFetch(
+    input,
+    options,
+  );
+}
 
 /**
  * Chuẩn hóa văn bản trước khi gửi tới backend.
@@ -59,6 +96,16 @@ function normalizeText(value) {
     .normalize('NFC')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * Kiểm tra UUID phiên bản 4.
+ */
+function isUuidV4(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    .test(
+      String(value || '').trim(),
+    );
 }
 
 /**
@@ -284,10 +331,14 @@ async function requestJson(url, options = {}) {
   let response;
 
   try {
-    response = await fetch(url, {
-      cache: 'no-store',
-      ...options,
-    });
+    response =
+      await authenticatedFetch(
+        url,
+        {
+          cache: 'no-store',
+          ...options,
+        },
+      );
   } catch (error) {
     console.error(
       'Không thể kết nối backend:',
@@ -363,22 +414,42 @@ async function createTtsJob(
   text,
   speed,
   voice,
+  destinationId,
 ) {
-  return requestJson('/api/tts/jobs', {
-    method: 'POST',
+  const requestBody = {
+    text: text,
+    voice: voice,
+    speed: speed,
+    nfeStep: 32,
+  };
 
-    headers: {
-      'Content-Type':
-        'application/json; charset=utf-8',
+  /*
+   * Chỉ gửi destinationId khi TTS
+   * được mở từ một địa điểm cụ thể.
+   *
+   * Không gửi null hoặc chuỗi rỗng
+   * để tránh lỗi validation UUID.
+   */
+  if (isUuidV4(destinationId)) {
+    requestBody.destinationId =
+      destinationId.trim();
+  }
+
+  return requestJson(
+    '/api/tts/jobs',
+    {
+      method: 'POST',
+
+      headers: {
+        'Content-Type':
+          'application/json; charset=utf-8',
+      },
+
+      body: JSON.stringify(
+        requestBody,
+      ),
     },
-
-    body: JSON.stringify({
-      text: text,
-      voice: voice,
-      speed: speed,
-      nfeStep: 32,
-    }),
-  });
+  );
 }
 
 /**
@@ -466,16 +537,17 @@ async function fetchAudioBlob(audioUrl) {
   const separator =
     audioUrl.includes('?') ? '&' : '?';
 
-  const response = await fetch(
-    `${audioUrl}${separator}t=${Date.now()}`,
-    {
-      method: 'GET',
+const response =
+    await authenticatedFetch(
+      `${audioUrl}${separator}t=${Date.now()}`,
+      {
+        method: 'GET',
 
-      headers: {
-        Accept: 'audio/wav',
+        headers: {
+          Accept: 'audio/wav',
+        },
       },
-    },
-  );
+    );
 
   if (!response.ok) {
     let errorMessage =
@@ -640,6 +712,31 @@ if (resetBtn) {
       }
 
       currentJobId = null;
+      currentDestinationId = null;
+
+      /*
+       * Reset toàn bộ form về chế độ
+       * tự soạn nội dung mới.
+       */
+      if (ttsSourceNotice) {
+        ttsSourceNotice.classList.add(
+          'hidden',
+        );
+      }
+
+      localStorage.removeItem(
+        'ttsDraftText',
+      );
+
+      localStorage.removeItem(
+        'ttsSourceName',
+      );
+
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname,
+      );
 
       updateCharCount();
       resetAudioResult();
@@ -723,11 +820,12 @@ if (generateBtn) {
           'loading',
         );
 
-        const jobResponse =
+          const jobResponse =
             await createTtsJob(
               text,
               speed,
               voice,
+              currentDestinationId,
             );
 
           console.log(
@@ -1034,6 +1132,25 @@ function applyPlaceContent(place) {
   const reviewContent =
     createReviewContent(place);
 
+  /*
+   * API địa điểm trả UUID thật trong place.id.
+   * UUID này sẽ được gửi cùng yêu cầu tạo TTS.
+   */
+  /*
+  * API giữ place.id là slug để tương thích
+  * frontend cũ. UUID thật nằm trong
+  * place.databaseId.
+  */
+  const databaseId =
+    typeof place.databaseId === 'string'
+      ? place.databaseId.trim()
+      : '';
+
+  currentDestinationId =
+    isUuidV4(databaseId)
+      ? databaseId
+      : null;
+
   ttsText.value = reviewContent;
 
   if (
@@ -1171,6 +1288,7 @@ if (clearSourceBtn) {
   clearSourceBtn.addEventListener(
     'click',
     function () {
+      currentDestinationId = null;
       if (ttsText) {
         ttsText.value = '';
       }

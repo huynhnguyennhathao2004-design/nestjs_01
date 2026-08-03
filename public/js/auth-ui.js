@@ -161,7 +161,7 @@ function renderUserMenu(user) {
           </span>
         </div>
 
-        <a
+                <a
           href="/account.html"
           class="account-menu-item"
         >
@@ -171,6 +171,19 @@ function renderUserMenu(user) {
 
           <span>
             Thông tin tài khoản
+          </span>
+        </a>
+
+        <a
+          href="/tts-history.html"
+          class="account-menu-item"
+        >
+          <span class="account-menu-icon">
+            ◷
+          </span>
+
+          <span>
+            Lịch sử giọng đọc
           </span>
         </a>
 

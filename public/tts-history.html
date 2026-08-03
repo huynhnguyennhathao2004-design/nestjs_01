@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>
+    Lịch sử giọng đọc - Vietnam Travel TTS
+  </title>
+
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  />
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/css/components.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/css/navbar.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/css/responsive.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="/css/tts-history.css"
+  />
+</head>
+
+<body data-auth="required">
+  <div id="siteNavbar"></div>
+
+  <main class="history-page">
+    <section class="history-hero">
+      <div class="history-container history-hero-content">
+        <div>
+          <span class="history-eyebrow">
+            AI Text-to-Speech
+          </span>
+
+          <h1>
+            Lịch sử tạo giọng đọc
+          </h1>
+
+          <p>
+            Xem lại nội dung, trạng thái và file âm thanh
+            mà bạn đã tạo bằng hệ thống AI.
+          </p>
+        </div>
+
+        <a
+          href="/tts.html"
+          class="history-create-btn"
+        >
+          <span aria-hidden="true">＋</span>
+          Tạo giọng đọc mới
+        </a>
+      </div>
+    </section>
+
+    <section class="history-section">
+      <div class="history-container">
+        <form
+          class="history-filters"
+          id="historyFilterForm"
+        >
+          <div class="history-filter-group history-search-group">
+            <label for="historySearch">
+              Tìm theo nội dung
+            </label>
+
+            <input
+              id="historySearch"
+              name="q"
+              type="search"
+              maxlength="200"
+              placeholder="Ví dụ: Đà Lạt, Buôn Ma Thuột..."
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="history-filter-group">
+            <label for="historyStatus">
+              Trạng thái
+            </label>
+
+            <select
+              id="historyStatus"
+              name="status"
+            >
+              <option value="">
+                Tất cả trạng thái
+              </option>
+
+              <option value="queued">
+                Đang chờ
+              </option>
+
+              <option value="processing">
+                Đang xử lý
+              </option>
+
+              <option value="completed">
+                Hoàn thành
+              </option>
+
+              <option value="failed">
+                Thất bại
+              </option>
+
+              <option value="cancelled">
+                Đã hủy
+              </option>
+            </select>
+          </div>
+
+          <div class="history-filter-group">
+            <label for="historyVoice">
+              Giọng đọc
+            </label>
+
+            <select
+              id="historyVoice"
+              name="voice"
+            >
+              <option value="">
+                Tất cả giọng đọc
+              </option>
+
+              <option value="male">
+                Giọng nam
+              </option>
+
+              <option value="female">
+                Giọng nữ
+              </option>
+            </select>
+          </div>
+
+          <div class="history-filter-actions">
+            <button
+              type="submit"
+              class="history-filter-submit"
+            >
+              Tìm kiếm
+            </button>
+
+            <button
+              type="button"
+              class="history-filter-reset"
+              id="historyResetBtn"
+            >
+              Đặt lại
+            </button>
+          </div>
+        </form>
+
+        <div class="history-toolbar">
+          <div>
+            <h2>
+              Các lần tạo giọng đọc
+            </h2>
+
+            <p id="historySummary">
+              Đang tải lịch sử...
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="history-refresh-btn"
+            id="historyRefreshBtn"
+          >
+            ↻ Làm mới
+          </button>
+        </div>
+
+        <div
+          class="history-state"
+          id="historyLoading"
+        >
+          <span class="history-spinner"></span>
+
+          <p>
+            Đang tải lịch sử giọng đọc...
+          </p>
+        </div>
+
+        <div
+          class="history-state history-error-state"
+          id="historyError"
+          hidden
+        >
+          <div class="history-state-icon">
+            !
+          </div>
+
+          <h3>
+            Không thể tải lịch sử
+          </h3>
+
+          <p id="historyErrorMessage">
+            Đã xảy ra lỗi khi tải dữ liệu.
+          </p>
+
+          <button
+            type="button"
+            id="historyRetryBtn"
+          >
+            Thử lại
+          </button>
+        </div>
+
+        <div
+          class="history-state"
+          id="historyEmpty"
+          hidden
+        >
+          <div class="history-state-icon">
+            ♪
+          </div>
+
+          <h3>
+            Chưa có lịch sử phù hợp
+          </h3>
+
+          <p>
+            Hãy tạo một giọng đọc mới hoặc thay đổi
+            điều kiện tìm kiếm.
+          </p>
+
+          <a href="/tts.html">
+            Tạo giọng đọc đầu tiên
+          </a>
+        </div>
+
+        <div
+          class="history-list"
+          id="historyList"
+          aria-live="polite"
+        ></div>
+
+        <nav
+          class="history-pagination"
+          id="historyPagination"
+          aria-label="Phân trang lịch sử"
+          hidden
+        >
+          <button
+            type="button"
+            id="historyPreviousBtn"
+          >
+            ← Trang trước
+          </button>
+
+          <span id="historyPageInfo">
+            Trang 1 / 1
+          </span>
+
+          <button
+            type="button"
+            id="historyNextBtn"
+          >
+            Trang sau →
+          </button>
+        </nav>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <h2>
+        Vietnam Travel TTS
+      </h2>
+
+      <p>
+        Website giới thiệu địa điểm du lịch Việt Nam
+        tích hợp AI Text-to-Speech.
+      </p>
+
+      <span>
+        © 2026 Vietnam Travel TTS.
+        All rights reserved.
+      </span>
+
+      <a
+        href="#"
+        class="back-to-top"
+      >
+        ↑ Trở lại đầu trang
+      </a>
+    </div>
+  </footer>
+
+  <script src="/js/auth-store.js"></script>
+  <script src="/js/auth-api.js"></script>
+  <script src="/js/auth-guard.js"></script>
+
+  <script src="/js/toast.js"></script>
+  <script src="/js/modal.js"></script>
+
+  <script src="/js/site-navbar.js"></script>
+  <script src="/js/navbar-scroll.js"></script>
+  <script src="/js/auth-ui.js"></script>
+
+  <script src="/js/image-utils.js"></script>
+  <script src="/js/tts-history.js"></script>
+</body>
+</html>

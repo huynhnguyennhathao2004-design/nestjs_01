@@ -1,14 +1,15 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  IsEnum,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
   MinLength,
-  IsEnum,
 } from 'class-validator';
 
 export enum TtsVoice {
@@ -40,6 +41,13 @@ export class CreateTtsJobDto {
       'voice chỉ được phép là male hoặc female',
   })
   voice?: TtsVoice;
+
+  @IsOptional()
+  @IsUUID('4', {
+    message:
+      'destinationId phải là UUID hợp lệ.',
+  })
+  destinationId?: string;
   
   @IsOptional()
   @Type(() => Number)

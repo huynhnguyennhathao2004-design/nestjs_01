@@ -11,14 +11,26 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosRequestConfig } from 'axios';
 import { firstValueFrom } from 'rxjs';
-import { CreateTtsJobDto, TtsVoice } from './dto/create-tts-job.dto';
 
+import { StorageProvider,TtsJobStatus } from '../generated/prisma/enums';
+import { PrismaService } from '../prisma/prisma.service';
+
+import { CreateTtsJobDto, TtsVoice } from './dto/create-tts-job.dto';
+import { createHash } from 'node:crypto';
 import {
   PublicTtsJobStatus,
   RunpodStatusResponse,
   RunpodSubmitResponse,
   TtsAudioFile,
 } from './interfaces/runpod.interface';
+
+import type {
+  Prisma,
+} from '../generated/prisma/client';
+
+import {
+  ListTtsHistoryQueryDto,
+} from './dto/list-tts-history-query.dto';
 
 @Injectable()
 export class RunpodTtsService implements OnModuleInit {
@@ -30,11 +42,18 @@ export class RunpodTtsService implements OnModuleInit {
   private readonly maxTextCharacters: number;
   private readonly maxOutputBytes: number;
   private readonly audioDownloadTimeoutMs: number;
+  private readonly storageBucketName: string;
 
 
   constructor(
-    private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
+      private readonly httpService:
+        HttpService,
+
+      private readonly configService:
+        ConfigService,
+
+      private readonly prisma:
+        PrismaService,
 
   ) {
     this.apiKey =
@@ -73,12 +92,31 @@ export class RunpodTtsService implements OnModuleInit {
       'TTS_AUDIO_DOWNLOAD_TIMEOUT_MS',
       180_000,
     );
+    this.storageBucketName =
+    this.configService
+      .get<string>(
+        'OBJECT_STORAGE_BUCKET',
+      )
+      ?.trim() ?? '';
   }
 
 onModuleInit(): void {
   if (!this.apiKey) {
     throw new Error(
       'Thiếu biến môi trường RUNPOD_API_KEY.',
+    );
+  }
+  if (!this.storageBucketName) {
+    throw new Error(
+      'Thiếu biến môi trường OBJECT_STORAGE_BUCKET.',
+    );
+  }
+
+  if (
+    this.storageBucketName.length > 255
+  ) {
+    throw new Error(
+      'OBJECT_STORAGE_BUCKET vượt quá 255 ký tự.',
     );
   }
 
@@ -120,19 +158,31 @@ private getEndpointId(
 
   return this.maleEndpointId;
 }
-async createJob(dto: CreateTtsJobDto) {
+async createJob(
+  userId: string,
+  dto: CreateTtsJobDto,
+) {
   /*
    * NestJS chỉ làm sạch Unicode và khoảng trắng.
    * Toàn bộ chuẩn hóa số, ngày, giờ, tiền và đơn vị
    * được thực hiện tại RunPod worker Python.
    */
   const voice =
-  dto.voice ?? TtsVoice.MALE;
+    dto.voice ?? TtsVoice.MALE;
 
-const endpointId =
-  this.getEndpointId(voice);
+  const endpointId =
+    this.getEndpointId(voice);
+
   const requestText =
-    this.normalizeWhitespace(dto.text);
+    this.normalizeWhitespace(
+      dto.text,
+    );
+
+  const speed =
+    dto.speed ?? 1.0;
+
+  const nfeStep =
+    dto.nfeStep ?? 32;
 
   if (!requestText) {
     throw new ConflictException(
@@ -145,9 +195,76 @@ const endpointId =
     this.maxTextCharacters
   ) {
     throw new ConflictException(
-      `Nội dung không được vượt quá ${this.maxTextCharacters} ký tự.`,
+      `Nội dung không được vượt quá ` +
+      `${this.maxTextCharacters} ký tự.`,
     );
   }
+
+  /*
+   * Khi frontend gửi destinationId,
+   * backend phải tự kiểm tra địa điểm
+   * có tồn tại và chưa bị xóa mềm.
+   */
+  if (dto.destinationId) {
+    const destination =
+      await this.prisma.destination.findFirst({
+        where: {
+          id: dto.destinationId,
+          deletedAt: null,
+        },
+
+        select: {
+          id: true,
+        },
+      });
+
+    if (!destination) {
+      throw new NotFoundException(
+        'Không tìm thấy địa điểm được chọn.',
+      );
+    }
+  }
+
+  /*
+   * Hash gồm toàn bộ dữ liệu có thể
+   * ảnh hưởng tới kết quả âm thanh.
+   */
+  const inputHash =
+    this.createInputHash({
+      text: requestText,
+      voice,
+      speed,
+      nfeStep,
+    });
+
+  /*
+   * Tạo lịch sử trong database trước
+   * khi gửi yêu cầu sang RunPod.
+   */
+  const databaseJob =
+    await this.prisma.ttsJob.create({
+      data: {
+        userId,
+
+        destinationId:
+          dto.destinationId ?? null,
+
+        sourceText:
+          requestText,
+
+        inputHash,
+
+        voiceCode:
+          voice,
+
+        status:
+          TtsJobStatus.QUEUED,
+      },
+
+      select: {
+        id: true,
+      },
+    });
 
   console.log(
     '\n========== TEXT GỬI RUNPOD ==========',
@@ -165,9 +282,13 @@ const endpointId =
 
   const requestBody = {
     input: {
-      text: requestText,
-      speed: dto.speed ?? 1.0,
-      nfe_step: dto.nfeStep ?? 32,
+      text:
+        requestText,
+
+      speed,
+
+      nfe_step:
+        nfeStep,
     },
   };
 
@@ -175,19 +296,27 @@ const endpointId =
    * Chuyển JSON thành UTF-8 bytes để giữ đúng
    * nội dung tiếng Việt khi gửi sang RunPod.
    */
-  const utf8Body = Buffer.from(
-    JSON.stringify(requestBody),
-    'utf8',
-  );
+  const utf8Body =
+    Buffer.from(
+      JSON.stringify(
+        requestBody,
+      ),
+      'utf8',
+    );
 
   try {
-    const response = await firstValueFrom(
-      this.httpService.post<RunpodSubmitResponse>(
-        this.getRunUrl(endpointId),
-        utf8Body,
-        this.getRequestConfig(),
-      ),
-    );
+    const response =
+      await firstValueFrom(
+        this.httpService.post<RunpodSubmitResponse>(
+          this.getRunUrl(
+            endpointId,
+          ),
+
+          utf8Body,
+
+          this.getRequestConfig(),
+        ),
+      );
 
     console.log(
       '[RunpodTtsService] Response từ RunPod:',
@@ -203,22 +332,58 @@ const endpointId =
       );
     }
 
+    /*
+     * Liên kết bản ghi nội bộ với
+     * Job ID thật do RunPod trả về.
+     */
+    await this.prisma.ttsJob.update({
+      where: {
+        id: databaseJob.id,
+      },
+
+      data: {
+        runpodJobId:
+          jobId,
+      },
+    });
+
     const result = {
+      /*
+       * ID trong PostgreSQL, dùng cho
+       * lịch sử TTS ở các bước sau.
+       */
+      ttsJobId:
+        databaseJob.id,
+
+      /*
+       * ID của RunPod, tiếp tục dùng cho
+       * polling hiện tại để không phá frontend.
+       */
       jobId,
-      status: 'queued' as const,
+
+      status:
+        'queued' as const,
+
       runpodStatus:
-        response.data.status ?? 'IN_QUEUE',
+        response.data.status ??
+        'IN_QUEUE',
+
       message:
         'Đang khởi động mô hình AI.',
+
       voice,
 
       statusUrl:
         `/api/tts/jobs/${jobId}` +
-        `?voice=${encodeURIComponent(voice)}`,
+        `?voice=${encodeURIComponent(
+          voice,
+        )}`,
 
       audioUrl:
         `/api/tts/jobs/${jobId}/audio` +
-        `?voice=${encodeURIComponent(voice)}`,
+        `?voice=${encodeURIComponent(
+          voice,
+        )}`,
     };
 
     console.log(
@@ -228,80 +393,889 @@ const endpointId =
 
     return result;
   } catch (error: unknown) {
+    /*
+     * Nếu gửi RunPod thất bại,
+     * giữ lại bản ghi để người dùng
+     * và ADMIN có thể biết lần tạo đã lỗi.
+     */
+    try {
+      await this.prisma.ttsJob.update({
+        where: {
+          id:
+            databaseJob.id,
+        },
+
+        data: {
+          status:
+            TtsJobStatus.FAILED,
+
+          errorCode:
+            'RUNPOD_SUBMIT_FAILED',
+
+          errorMessage:
+            'Không thể gửi yêu cầu đến dịch vụ AI.',
+
+          completedAt:
+            new Date(),
+        },
+      });
+    } catch (databaseError: unknown) {
+      console.error(
+        '[RunpodTtsService] Không thể cập nhật job thất bại:',
+        databaseError,
+      );
+    }
+
     this.rethrowRunpodError(
       error,
       'submit',
     );
   }
 }
+
+async findUserHistory(
+  userId: string,
+  query: ListTtsHistoryQueryDto,
+) {
+  const page =
+    query.page ?? 1;
+
+  const limit =
+    query.limit ?? 10;
+
+  const skip =
+    (page - 1) * limit;
+
+  /*
+   * userId luôn lấy từ access token.
+   * Frontend không được tự chọn
+   * lịch sử của tài khoản khác.
+   */
+  const where:
+    Prisma.TtsJobWhereInput = {
+      userId,
+
+      ...(query.status
+        ? {
+            status:
+              query.status,
+          }
+        : {}),
+
+      ...(query.voice
+        ? {
+            voiceCode:
+              query.voice,
+          }
+        : {}),
+
+      ...(query.q
+        ? {
+            sourceText: {
+              contains:
+                query.q,
+
+              mode:
+                'insensitive',
+            },
+          }
+        : {}),
+    };
+
+  /*
+   * Đếm tổng và lấy danh sách trong
+   * cùng một transaction đọc.
+   */
+  const [
+    total,
+    jobs,
+  ] =
+    await this.prisma.$transaction([
+      this.prisma.ttsJob.count({
+        where,
+      }),
+
+      this.prisma.ttsJob.findMany({
+        where,
+
+        skip,
+        take:
+          limit,
+
+        orderBy: [
+          {
+            createdAt:
+              'desc',
+          },
+          {
+            id:
+              'desc',
+          },
+        ],
+
+        select: {
+          id:
+            true,
+
+          runpodJobId:
+            true,
+
+          sourceText:
+            true,
+
+          voiceCode:
+            true,
+
+          modelName:
+            true,
+
+          status:
+            true,
+
+          errorCode:
+            true,
+
+          errorMessage:
+            true,
+
+          queuedAt:
+            true,
+
+          startedAt:
+            true,
+
+          completedAt:
+            true,
+
+          createdAt:
+            true,
+
+          updatedAt:
+            true,
+
+          destination: {
+            select: {
+              id:
+                true,
+
+              slug:
+                true,
+
+              name:
+                true,
+
+              images: {
+                where: {
+                  isActive:
+                    true,
+                },
+
+                orderBy: {
+                  sortOrder:
+                    'asc',
+                },
+
+                take:
+                  1,
+
+                select: {
+                  url:
+                    true,
+
+                  altText:
+                    true,
+                },
+              },
+            },
+          },
+
+          audioFile: {
+            select: {
+              id:
+                true,
+
+              mimeType:
+                true,
+
+              fileExtension:
+                true,
+
+              sizeBytes:
+                true,
+
+              durationSeconds:
+                true,
+
+              deletedAt:
+                true,
+
+              createdAt:
+                true,
+            },
+          },
+        },
+      }),
+    ]);
+
+  const totalPages =
+    total === 0
+      ? 0
+      : Math.ceil(
+          total / limit,
+        );
+
+  const items =
+    jobs.map((job) => {
+      /*
+       * Audio bị xóa mềm không còn được
+       * xem là file có thể sử dụng.
+       */
+      const activeAudio =
+        job.audioFile &&
+        !job.audioFile.deletedAt
+          ? job.audioFile
+          : null;
+
+      const destination =
+        job.destination
+          ? {
+              /*
+               * Giữ id dạng slug để tương thích
+               * với frontend địa điểm hiện tại.
+               */
+              id:
+                job.destination.slug,
+
+              databaseId:
+                job.destination.id,
+
+              slug:
+                job.destination.slug,
+
+              name:
+                job.destination.name,
+
+              coverImage:
+                job.destination
+                  .images[0]
+                  ? {
+                      url:
+                        job.destination
+                          .images[0]
+                          .url,
+
+                      altText:
+                        job.destination
+                          .images[0]
+                          .altText,
+                    }
+                  : null,
+            }
+          : null;
+
+      const audio =
+        activeAudio
+          ? {
+              id:
+                activeAudio.id,
+
+              mimeType:
+                activeAudio.mimeType,
+
+              fileExtension:
+                activeAudio.fileExtension,
+
+              sizeBytes:
+                activeAudio.sizeBytes,
+
+              durationSeconds:
+                activeAudio
+                  .durationSeconds !==
+                null
+                  ? Number(
+                      activeAudio
+                        .durationSeconds,
+                    )
+                  : null,
+
+              createdAt:
+                activeAudio.createdAt,
+            }
+          : null;
+
+      return {
+        id:
+          job.id,
+
+        runpodJobId:
+          job.runpodJobId,
+
+        sourceText:
+          job.sourceText,
+
+        voice:
+          job.voiceCode,
+
+        modelName:
+          job.modelName,
+
+        status:
+          job.status,
+
+        error:
+          job.status ===
+            TtsJobStatus.FAILED ||
+          job.status ===
+            TtsJobStatus.CANCELLED
+            ? {
+                code:
+                  job.errorCode,
+
+                message:
+                  job.errorMessage,
+              }
+            : null,
+
+        destination,
+
+        audio,
+
+        audioAvailable:
+          Boolean(audio),
+
+        queuedAt:
+          job.queuedAt,
+
+        startedAt:
+          job.startedAt,
+
+        completedAt:
+          job.completedAt,
+
+        createdAt:
+          job.createdAt,
+
+        updatedAt:
+          job.updatedAt,
+      };
+    });
+
+  return {
+    items,
+
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+
+      hasPreviousPage:
+        page > 1,
+
+      hasNextPage:
+        page < totalPages,
+    },
+  };
+}
+
+private async getOwnedDatabaseJob(
+  userId: string,
+  runpodJobId: string,
+) {
+  const databaseJob =
+    await this.prisma.ttsJob.findFirst({
+      where: {
+        userId,
+        runpodJobId,
+      },
+
+      select: {
+        id: true,
+        status: true,
+        startedAt: true,
+        completedAt: true,
+      },
+    });
+
+  if (!databaseJob) {
+    throw new NotFoundException(
+      'Không tìm thấy job TTS của tài khoản này.',
+    );
+  }
+
+  return databaseJob;
+}
+private async upsertAudioFile(
+  ttsJobId: string,
+  result: RunpodStatusResponse,
+): Promise<void> {
+  const output =
+    result.output;
+
+  const audio =
+    output?.audio;
+
+  /*
+   * Worker hiện trả URL ký có thời hạn
+   * ở cả output.audioUrl và audio.url.
+   */
+  const audioUrl =
+    (
+      output?.audioUrl ??
+      audio?.url ??
+      ''
+    ).trim();
+
+  /*
+   * storage_key là dữ liệu ổn định
+   * dùng để tìm object trên Cloudflare R2
+   * sau khi signed URL hết hạn.
+   */
+  const storageKey =
+    (
+      audio?.storage_key ??
+      ''
+    ).trim();
+
+  /*
+   * Job Base64 cũ không có object key,
+   * vì vậy không tạo AudioFile cho job cũ.
+   */
+  if (
+    !audioUrl ||
+    !storageKey
+  ) {
+    console.warn(
+      '[RunpodTtsService] Không lưu AudioFile vì thiếu audioUrl hoặc storage_key.',
+      {
+        ttsJobId,
+        hasAudioUrl:
+          Boolean(audioUrl),
+        hasStorageKey:
+          Boolean(storageKey),
+      },
+    );
+
+    return;
+  }
+
+  if (storageKey.length > 500) {
+    throw new BadGatewayException(
+      'storage_key do worker trả về vượt quá giới hạn.',
+    );
+  }
+
+  const filename =
+    this.sanitizeFilename(
+      audio?.filename ??
+      `tts-audio-${ttsJobId}.wav`,
+    );
+
+  const extensionMatch =
+    filename.match(
+      /\.([a-zA-Z0-9]{1,20})$/,
+    );
+
+  const fileExtension =
+    extensionMatch?.[1]
+      ?.toLowerCase() ??
+    'wav';
+
+  const mimeType =
+    (
+      audio?.mime_type ??
+      'audio/wav'
+    )
+      .trim()
+      .slice(0, 100) ||
+    'audio/wav';
+
+  const sizeBytes =
+    typeof audio?.size_bytes ===
+      'number' &&
+    Number.isInteger(
+      audio.size_bytes,
+    ) &&
+    audio.size_bytes > 0
+      ? audio.size_bytes
+      : null;
+
+  /*
+   * Mỗi TtsJob chỉ có một AudioFile.
+   * Upsert giúp việc polling nhiều lần
+   * không tạo dữ liệu trùng lặp.
+   */
+  await this.prisma.audioFile.upsert({
+    where: {
+      ttsJobId,
+    },
+
+    create: {
+      ttsJobId,
+
+      storageProvider:
+        StorageProvider.CLOUDFLARE_R2,
+
+      bucketName:
+        this.storageBucketName,
+
+      objectKey:
+        storageKey,
+
+      /*
+       * Đây là signed URL hiện tại.
+       * Nó sẽ được cập nhật/cấp lại
+       * ở bước API lịch sử sau.
+       */
+      publicUrl:
+        audioUrl,
+
+      mimeType,
+
+      fileExtension,
+
+      sizeBytes,
+    },
+
+    update: {
+      storageProvider:
+        StorageProvider.CLOUDFLARE_R2,
+
+      bucketName:
+        this.storageBucketName,
+
+      objectKey:
+        storageKey,
+
+      publicUrl:
+        audioUrl,
+
+      mimeType,
+
+      fileExtension,
+
+      sizeBytes,
+
+      /*
+       * Nếu bản ghi từng bị xóa mềm,
+       * việc xử lý lại job sẽ khôi phục nó.
+       */
+      deletedAt:
+        null,
+    },
+  });
+}
+
+private async syncDatabaseJobStatus(
+  databaseJob: {
+    id: string;
+    status: TtsJobStatus;
+    startedAt: Date | null;
+    completedAt: Date | null;
+  },
+
+  result: RunpodStatusResponse,
+
+  publicStatus: PublicTtsJobStatus,
+): Promise<void> {
+  const now =
+    new Date();
+
+  const modelName =
+    result.output?.worker?.model
+      ?.trim() || undefined;
+
+  /*
+   * RunPod vẫn đang xếp hàng.
+   * Bản ghi đã được tạo với trạng thái
+   * QUEUED nên không cần ghi database
+   * lại sau mỗi lần polling.
+   */
+  if (publicStatus === 'queued') {
+    return;
+  }
+
+  if (publicStatus === 'processing') {
+    if (
+      databaseJob.status ===
+        TtsJobStatus.PROCESSING &&
+      databaseJob.startedAt
+    ) {
+      return;
+    }
+
+    await this.prisma.ttsJob.update({
+      where: {
+        id: databaseJob.id,
+      },
+
+      data: {
+        status:
+          TtsJobStatus.PROCESSING,
+
+        startedAt:
+          databaseJob.startedAt ??
+          now,
+
+        modelName,
+      },
+    });
+
+    return;
+  }
+
+    if (publicStatus === 'completed') {
+      /*
+      * Luôn upsert metadata trước khi return.
+      * Nhờ đó job đã COMPLETED nhưng chưa có
+      * AudioFile vẫn có thể được bổ sung.
+      */
+      await this.upsertAudioFile(
+        databaseJob.id,
+        result,
+      );
+
+      if (
+        databaseJob.status ===
+          TtsJobStatus.COMPLETED &&
+        databaseJob.completedAt
+      ) {
+        return;
+      }
+
+    await this.prisma.ttsJob.update({
+      where: {
+        id: databaseJob.id,
+      },
+
+      data: {
+        status:
+          TtsJobStatus.COMPLETED,
+
+        startedAt:
+          databaseJob.startedAt ??
+          now,
+
+        completedAt:
+          databaseJob.completedAt ??
+          now,
+
+        modelName,
+
+        errorCode:
+          null,
+
+        errorMessage:
+          null,
+      },
+    });
+
+    return;
+  }
+
+  if (publicStatus === 'failed') {
+    const databaseStatus =
+      result.status === 'CANCELLED'
+        ? TtsJobStatus.CANCELLED
+        : TtsJobStatus.FAILED;
+
+    if (
+      databaseJob.status ===
+        databaseStatus &&
+      databaseJob.completedAt
+    ) {
+      return;
+    }
+
+    const workerError =
+      this.getSafeWorkerError(
+        result,
+      );
+
+    const errorMessage =
+      workerError ||
+      this.getStatusMessage(
+        'failed',
+        result.status,
+      );
+
+    await this.prisma.ttsJob.update({
+      where: {
+        id: databaseJob.id,
+      },
+
+      data: {
+        status:
+          databaseStatus,
+
+        startedAt:
+          databaseJob.startedAt ??
+          now,
+
+        completedAt:
+          databaseJob.completedAt ??
+          now,
+
+        modelName,
+
+        errorCode:
+          String(
+            result.status,
+          ).slice(0, 100),
+
+        errorMessage:
+          errorMessage.slice(
+            0,
+            2000,
+          ),
+      },
+    });
+  }
+}
 async getPublicJobStatus(
+  userId: string,
   jobId: string,
   voice: TtsVoice = TtsVoice.MALE,
 ) {
+  /*
+   * Không cho tài khoản khác kiểm tra
+   * trạng thái bằng RunPod Job ID.
+   */
+  const databaseJob =
+    await this.getOwnedDatabaseJob(
+      userId,
+      jobId,
+    );
+
   const result =
     await this.getRawJobStatus(
       jobId,
       voice,
     );
-    const publicStatus = this.mapPublicStatus(result);
 
-    const workerAudioUrl =
+  const publicStatus =
+    this.mapPublicStatus(
+      result,
+    );
+
+  /*
+   * Đồng bộ trạng thái RunPod
+   * vào PostgreSQL.
+   */
+  await this.syncDatabaseJobStatus(
+    databaseJob,
+    result,
+    publicStatus,
+  );
+
+  const workerAudioUrl =
     result.output?.audioUrl ??
     result.output?.audio?.url;
 
-    const audioReady =
+  const audioReady =
     publicStatus === 'completed' &&
     result.output?.success === true &&
+    Boolean(
+      workerAudioUrl ||
+      result.output?.audio?.base64,
+    );
 
-  Boolean(
-    workerAudioUrl ||
-    result.output?.audio?.base64,
-  );
+  return {
+    /*
+     * UUID nội bộ trong PostgreSQL.
+     */
+    ttsJobId:
+      databaseJob.id,
 
-    return {
-      jobId: result.id ?? jobId,
-      status: publicStatus,
-      runpodStatus: result.status,
-      message: this.getStatusMessage(
+    /*
+     * ID do RunPod cấp.
+     */
+    jobId:
+      result.id ?? jobId,
+
+    status:
+      publicStatus,
+
+    runpodStatus:
+      result.status,
+
+    message:
+      this.getStatusMessage(
         publicStatus,
         result.status,
       ),
-      audioReady,
-      audioUrl: audioReady
+
+    audioReady,
+
+    audioUrl:
+      audioReady
         ? (
             `/api/tts/jobs/${jobId}/audio` +
-            `?voice=${encodeURIComponent(voice)}`
+            `?voice=${encodeURIComponent(
+              voice,
+            )}`
           )
         : null,
-      metrics: {
-        delayTimeMs: result.delayTime ?? null,
-        executionTimeMs: result.executionTime ?? null,
-        sampleRate:
-          result.output?.audio?.sample_rate ?? null,
-        sizeBytes:
-          result.output?.audio?.size_bytes ?? null,
-        modelReadySeconds:
-          result.output?.timing
-            ?.worker_model_ready_seconds ?? null,
-        inferenceSeconds:
-          result.output?.timing?.inference_seconds ??
-          null,
-        requestTotalSeconds:
-          result.output?.timing
-            ?.request_total_seconds ?? null,
-        gpu: result.output?.worker?.gpu ?? null,
-      },
-      error:
-        publicStatus === 'failed'
-          ? this.getSafeWorkerError(result)
-          : null,
-    };
-  }
+
+    metrics: {
+      delayTimeMs:
+        result.delayTime ?? null,
+
+      executionTimeMs:
+        result.executionTime ?? null,
+
+      sampleRate:
+        result.output?.audio
+          ?.sample_rate ?? null,
+
+      sizeBytes:
+        result.output?.audio
+          ?.size_bytes ?? null,
+
+      modelReadySeconds:
+        result.output?.timing
+          ?.worker_model_ready_seconds ??
+        null,
+
+      inferenceSeconds:
+        result.output?.timing
+          ?.inference_seconds ??
+        null,
+
+      requestTotalSeconds:
+        result.output?.timing
+          ?.request_total_seconds ??
+        null,
+
+      gpu:
+        result.output?.worker?.gpu ??
+        null,
+    },
+
+    error:
+      publicStatus === 'failed'
+        ? this.getSafeWorkerError(
+            result,
+          )
+        : null,
+  };
+}
 
 async getAudio(
+  userId: string,
   jobId: string,
   voice: TtsVoice = TtsVoice.MALE,
 ): Promise<TtsAudioFile> {
+  /*
+   * Chỉ chủ sở hữu mới được tải
+   * kết quả âm thanh của job.
+   */
+  const databaseJob =
+  await this.getOwnedDatabaseJob(
+    userId,
+    jobId,
+  );
+
   const result =
     await this.getRawJobStatus(
       jobId,
@@ -342,9 +1316,21 @@ async getAudio(
       });
     }
 
-    const output = result.output;
+    const output =
+      result.output;
 
-    const filename = this.sanitizeFilename(
+    /*
+    * Đây là lớp dự phòng:
+    * nếu polling chưa lưu được AudioFile,
+    * lần nghe hoặc tải sẽ thử lưu lại.
+    */
+    await this.upsertAudioFile(
+      databaseJob.id,
+      result,
+    );
+
+    const filename =
+      this.sanitizeFilename(
       output.audio?.filename ??
         `f5tts-${jobId}.wav`,
     );
@@ -696,7 +1682,23 @@ async getAudio(
         return 'Đang kiểm tra trạng thái giọng đọc.';
     }
   }
-
+  private createInputHash(
+  input: {
+    text: string;
+    voice: TtsVoice;
+    speed: number;
+    nfeStep: number;
+  },
+): string {
+  return createHash(
+    'sha256',
+  )
+    .update(
+      JSON.stringify(input),
+      'utf8',
+    )
+    .digest('hex');
+}
   private normalizeWhitespace(text: string): string {
     return text
       .normalize('NFC')

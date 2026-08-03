@@ -1,16 +1,22 @@
 import {
-  Query,
   Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
+  InternalServerErrorException,
   Param,
   Post,
+  Query,
   Res,
-  InternalServerErrorException,
+  UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import {
   TtsVoice,
 } from './dto/create-tts-job.dto';
@@ -18,6 +24,10 @@ import { CreateTtsJobDto } from './dto/create-tts-job.dto';
 import { TtsJobParamDto } from './dto/tts-job-param.dto';
 import { RunpodTtsService } from './runpod-tts.service';
 import { TtsService } from './tts.service';
+
+import {
+  ListTtsHistoryQueryDto,
+} from './dto/list-tts-history-query.dto';
 
 @Controller('tts')
 export class TtsController {
@@ -75,23 +85,55 @@ export class TtsController {
     response.status(HttpStatus.OK).send(audioBuffer);
   }
 
-  /**
+    /**
    * Tạo một job F5-TTS mới trên RunPod.
    *
    * POST /api/tts/jobs
    */
   @Post('jobs')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.ACCEPTED)
   async createJob(
-    @Body() dto: CreateTtsJobDto,
+    @CurrentUser()
+    currentUser:
+      AuthenticatedUser | undefined,
+
+    @Body()
+    dto: CreateTtsJobDto,
   ) {
+    /*
+     * JwtAuthGuard phải gắn người dùng
+     * đã xác thực vào request.user.
+     *
+     * Kiểm tra lại để không phát sinh
+     * lỗi currentUser.id khi dữ liệu thiếu.
+     */
+    if (!currentUser) {
+      throw new UnauthorizedException(
+        'Không xác định được tài khoản đăng nhập.',
+      );
+    }
+
     console.log(
       '[TtsController] Đã nhận yêu cầu tạo job:',
-      dto,
+      {
+        userId:
+          currentUser.id,
+
+        destinationId:
+          dto.destinationId ?? null,
+
+        voice:
+          dto.voice ??
+          TtsVoice.MALE,
+      },
     );
 
     const result =
-      await this.runpodTtsService.createJob(dto);
+      await this.runpodTtsService.createJob(
+        currentUser.id,
+        dto,
+      );
 
     console.log(
       '[TtsController] Kết quả từ RunpodTtsService:',
@@ -116,73 +158,146 @@ export class TtsController {
    *
    * GET /api/tts/jobs/:jobId
    */
- @Get('jobs/:jobId')
- getRunpodJobStatus(
-  @Param() params: TtsJobParamDto,
+  /**
+   * Kiểm tra trạng thái job RunPod.
+   *
+   * GET /api/tts/jobs/:jobId
+   */
 
-  @Query('voice')
-  voice: TtsVoice = TtsVoice.MALE,
-) {
-  const selectedVoice =
-    voice === TtsVoice.FEMALE
-      ? TtsVoice.FEMALE
-      : TtsVoice.MALE;
+    /**
+   * Lấy lịch sử tạo giọng đọc của
+   * tài khoản đang đăng nhập.
+   *
+   * GET /api/tts/history
+   */
+  @Get('history')
+  @UseGuards(JwtAuthGuard)
+  getUserTtsHistory(
+    @CurrentUser()
+    currentUser:
+      AuthenticatedUser | undefined,
 
-  return this.runpodTtsService.getPublicJobStatus(
-    params.jobId,
-    selectedVoice,
-  );
-}
+    @Query()
+    query:
+      ListTtsHistoryQueryDto,
+  ) {
+    if (!currentUser) {
+      throw new UnauthorizedException(
+        'Không xác định được tài khoản đăng nhập.',
+      );
+    }
+
+    return this.runpodTtsService
+      .findUserHistory(
+        currentUser.id,
+        query,
+      );
+  }
+  @Get('jobs/:jobId')
+  @UseGuards(JwtAuthGuard)
+  getRunpodJobStatus(
+    @CurrentUser()
+    currentUser:
+      AuthenticatedUser | undefined,
+
+    @Param()
+    params: TtsJobParamDto,
+
+    @Query('voice')
+    voice: TtsVoice =
+      TtsVoice.MALE,
+  ) {
+    if (!currentUser) {
+      throw new UnauthorizedException(
+        'Không xác định được tài khoản đăng nhập.',
+      );
+    }
+
+    const selectedVoice =
+      voice === TtsVoice.FEMALE
+        ? TtsVoice.FEMALE
+        : TtsVoice.MALE;
+
+    return this.runpodTtsService
+      .getPublicJobStatus(
+        currentUser.id,
+        params.jobId,
+        selectedVoice,
+      );
+  }
 
   /**
-   * Lấy file WAV khi RunPod đã hoàn thành job.
+   * Lấy file WAV khi RunPod hoàn thành job.
    *
    * GET /api/tts/jobs/:jobId/audio
    */
-@Get('jobs/:jobId/audio')
-async getJobAudio(
-  @Param() params: TtsJobParamDto,
+  @Get('jobs/:jobId/audio')
+  @UseGuards(JwtAuthGuard)
+  async getJobAudio(
+    @CurrentUser()
+    currentUser:
+      AuthenticatedUser | undefined,
 
-  @Query('voice')
-  voice: TtsVoice = TtsVoice.MALE,
+    @Param()
+    params: TtsJobParamDto,
 
-  @Res()
-  res: Response,
-) {
-  const selectedVoice =
-    voice === TtsVoice.FEMALE
-      ? TtsVoice.FEMALE
-      : TtsVoice.MALE;
+    @Query('voice')
+    voice: TtsVoice =
+      TtsVoice.MALE,
 
-  console.log(
-    '[TtsController] Tải audio:',
-    {
-      jobId: params.jobId,
-      voice: selectedVoice,
-    },
-  );
+    @Res()
+    res: Response,
+  ) {
+    if (!currentUser) {
+      throw new UnauthorizedException(
+        'Không xác định được tài khoản đăng nhập.',
+      );
+    }
 
-  const audio =
-    await this.runpodTtsService.getAudio(
-      params.jobId,
-      selectedVoice,
+    const selectedVoice =
+      voice === TtsVoice.FEMALE
+        ? TtsVoice.FEMALE
+        : TtsVoice.MALE;
+
+    console.log(
+      '[TtsController] Tải audio:',
+      {
+        userId:
+          currentUser.id,
+
+        jobId:
+          params.jobId,
+
+        voice:
+          selectedVoice,
+      },
     );
 
-  res.setHeader(
-    'Content-Type',
-    audio.mimeType,
-  );
+    const audio =
+      await this.runpodTtsService
+        .getAudio(
+          currentUser.id,
+          params.jobId,
+          selectedVoice,
+        );
 
-  res.setHeader(
-    'Content-Disposition',
-    `attachment; filename="${audio.filename}"`,
-  );
+    res.setHeader(
+      'Content-Type',
+      audio.mimeType,
+    );
 
-  res.setHeader(
-    'Content-Length',
-    audio.buffer.length.toString(),
-  );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${audio.filename}"`,
+    );
 
-  return res.send(audio.buffer);
-}
+    res.setHeader(
+      'Content-Length',
+      audio.buffer.length.toString(),
+    );
+
+    return res.send(
+      audio.buffer,
+    );
+  }
 }
