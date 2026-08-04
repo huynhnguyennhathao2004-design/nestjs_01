@@ -894,6 +894,12 @@ private async findOwnedHistoryAudioJob(
         status:
           true,
 
+        runpodJobId:
+          true,
+
+        voiceCode:
+          true,
+
         audioFile: {
           select: {
             id:
@@ -1255,11 +1261,11 @@ async getHistoryAudio(
    * đang đăng nhập để ngăn đọc file
    * của người dùng khác.
    */
-  const databaseJob =
-  await this.findOwnedHistoryAudioJob(
-    userId,
-    ttsJobId,
-  );
+let databaseJob =
+    await this.findOwnedHistoryAudioJob(
+      userId,
+      ttsJobId,
+    );
 
   if (!databaseJob) {
     throw new NotFoundException(
@@ -1276,6 +1282,56 @@ async getHistoryAudio(
     );
   }
 
+  /*
+   * Một số job nữ cũ đã COMPLETED nhưng chưa
+   * có AudioFile do worker không trả storage_key.
+   *
+   * Thử lấy lại output RunPod đúng một lần,
+   * sau đó bổ sung metadata R2.
+   */
+  if (
+    (
+      !databaseJob.audioFile ||
+      databaseJob.audioFile.deletedAt
+    ) &&
+    databaseJob.runpodJobId
+  ) {
+    const selectedVoice =
+      databaseJob.voiceCode ===
+        TtsVoice.FEMALE
+        ? TtsVoice.FEMALE
+        : TtsVoice.MALE;
+
+    const runpodResult =
+      await this.getRawJobStatus(
+        databaseJob.runpodJobId,
+        selectedVoice,
+      );
+
+    if (
+      runpodResult.status ===
+        'COMPLETED' &&
+      runpodResult.output?.success ===
+        true
+    ) {
+      await this.upsertAudioFile(
+        databaseJob.id,
+        runpodResult,
+      );
+
+      const refreshedJob =
+        await this.findOwnedHistoryAudioJob(
+          userId,
+          ttsJobId,
+        );
+
+      if (refreshedJob) {
+        databaseJob =
+          refreshedJob;
+      }
+    }
+  }
+
   const audioFile =
     databaseJob.audioFile;
 
@@ -1284,7 +1340,7 @@ async getHistoryAudio(
     audioFile.deletedAt
   ) {
     throw new NotFoundException(
-      'Lịch sử này chưa có file âm thanh khả dụng.',
+      'Lịch sử này chưa có metadata file âm thanh. Kết quả RunPod có thể đã hết hạn.',
     );
   }
 
@@ -1444,6 +1500,75 @@ private async getOwnedDatabaseJob(
 
   return databaseJob;
 }
+private extractStorageKeyFromAudioUrl(
+  audioUrl: string,
+): string {
+  const normalizedUrl =
+    String(
+      audioUrl ?? '',
+    ).trim();
+
+  if (!normalizedUrl) {
+    return '';
+  }
+
+  try {
+    const parsedUrl =
+      new URL(
+        normalizedUrl,
+      );
+
+    /*
+     * Signed URL của R2 thường có một
+     * trong hai dạng:
+     *
+     * /tts/.../file.wav
+     *
+     * hoặc:
+     *
+     * /bucket-name/tts/.../file.wav
+     */
+    let pathname =
+      decodeURIComponent(
+        parsedUrl.pathname,
+      ).replace(
+        /^\/+/,
+        '',
+      );
+
+    const bucketPrefix =
+      `${this.storageBucketName}/`;
+
+    if (
+      pathname.startsWith(
+        bucketPrefix,
+      )
+    ) {
+      pathname =
+        pathname.slice(
+          bucketPrefix.length,
+        );
+    }
+
+    if (
+      !pathname.startsWith(
+        'tts/',
+      )
+    ) {
+      return '';
+    }
+
+    if (
+      pathname.length > 500
+    ) {
+      return '';
+    }
+
+    return pathname;
+  } catch {
+    return '';
+  }
+}
 private async upsertAudioFile(
   ttsJobId: string,
   result: RunpodStatusResponse,
@@ -1461,7 +1586,9 @@ private async upsertAudioFile(
   const audioUrl =
     (
       output?.audioUrl ??
+      output?.audio_url ??
       audio?.url ??
+      audio?.audioUrl ??
       ''
     ).trim();
 
@@ -1470,12 +1597,70 @@ private async upsertAudioFile(
    * dùng để tìm object trên Cloudflare R2
    * sau khi signed URL hết hạn.
    */
-  const storageKey =
+  const returnedStorageKey =
     (
       audio?.storage_key ??
+      audio?.storageKey ??
+      output?.storage_key ??
+      output?.storageKey ??
       ''
     ).trim();
 
+  /*
+   * Worker nữ cũ có thể chỉ trả audioUrl.
+   * Khi đó lấy object key trực tiếp từ
+   * đường dẫn signed URL.
+   */
+  const storageKey =
+    returnedStorageKey ||
+    this.extractStorageKeyFromAudioUrl(
+      audioUrl,
+    );
+    console.log(
+  '[RunpodTtsService] Kiểm tra metadata output:',
+  {
+    ttsJobId,
+
+    hasOutput:
+      Boolean(output),
+
+    hasAudioObject:
+      Boolean(audio),
+
+    hasAudioUrl:
+      Boolean(audioUrl),
+
+    hasStorageKey:
+      Boolean(storageKey),
+
+    hasBase64:
+      Boolean(
+        audio?.base64,
+      ),
+
+    outputKeys:
+      output
+        ? Object.keys(output)
+            .filter(
+              (key) =>
+                key !==
+                  'audioUrl',
+            )
+        : [],
+
+    audioKeys:
+      audio
+        ? Object.keys(audio)
+            .filter(
+              (key) =>
+                key !==
+                  'base64' &&
+                key !==
+                  'url',
+            )
+        : [],
+  },
+);
   /*
    * Job Base64 cũ không có object key,
    * vì vậy không tạo AudioFile cho job cũ.
@@ -1507,6 +1692,7 @@ private async upsertAudioFile(
   const filename =
     this.sanitizeFilename(
       audio?.filename ??
+      audio?.fileName ??
       `tts-audio-${ttsJobId}.wav`,
     );
 
@@ -1523,20 +1709,25 @@ private async upsertAudioFile(
   const mimeType =
     (
       audio?.mime_type ??
+      audio?.mimeType ??
       'audio/wav'
     )
       .trim()
       .slice(0, 100) ||
     'audio/wav';
 
+  const returnedSizeBytes =
+    audio?.size_bytes ??
+    audio?.sizeBytes;
+
   const sizeBytes =
-    typeof audio?.size_bytes ===
+    typeof returnedSizeBytes ===
       'number' &&
     Number.isInteger(
-      audio.size_bytes,
+      returnedSizeBytes,
     ) &&
-    audio.size_bytes > 0
-      ? audio.size_bytes
+    returnedSizeBytes > 0
+      ? returnedSizeBytes
       : null;
 
   /*

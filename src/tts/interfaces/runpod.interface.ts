@@ -45,12 +45,22 @@ export interface RunpodWorkerError {
  * - Job mới trả URL object storage.
  */
 export interface RunpodAudioResult {
+  /*
+   * Snake case từ worker mới.
+   */
   filename?: string;
   mime_type?: string;
-  sample_rate?: number;
-  trailing_silence_ms?: number;
   size_bytes?: number;
 
+  /*
+   * Camel case từ một số worker cũ.
+   */
+  fileName?: string;
+  mimeType?: string;
+  sizeBytes?: number;
+
+  sample_rate?: number;
+  trailing_silence_ms?: number;
   /**
    * Dữ liệu của job cũ.
    */
@@ -60,7 +70,11 @@ export interface RunpodAudioResult {
    * Dữ liệu của job mới dùng object storage.
    */
   url?: string;
+  audioUrl?: string;
+
   storage_key?: string;
+  storageKey?: string;
+
   expires_in?: number;
 }
 
@@ -106,6 +120,12 @@ export interface RunpodWorkerOutput {
    * }
    */
   audioUrl?: string;
+    /*
+   * Hỗ trợ output từ worker cũ.
+   */
+  audio_url?: string;
+  storage_key?: string;
+  storageKey?: string;
 
   /**
    * Đồng thời handler cũng có thể trả:

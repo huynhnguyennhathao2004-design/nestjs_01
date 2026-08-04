@@ -593,16 +593,32 @@ const url =
  * Vì vậy chỉ hiển thị nút khi database
  * đã có AudioFile khả dụng.
  */
+/*
+ * Job mới có AudioFile sẽ đọc trực tiếp từ R2.
+ *
+ * Job cũ chưa có AudioFile nhưng còn RunPod Job ID
+ * vẫn được hiển thị nút để backend thử phục hồi
+ * metadata trong lần nghe hoặc tải đầu tiên.
+ */
 const canRequestAudio =
   item.status ===
     'COMPLETED' &&
-  item.audioAvailable ===
-    true &&
   typeof item.id ===
     'string' &&
   item.id
     .trim()
-    .length > 0;
+    .length > 0 &&
+  (
+    item.audioAvailable ===
+      true ||
+    (
+      typeof item.runpodJobId ===
+        'string' &&
+      item.runpodJobId
+        .trim()
+        .length > 0
+    )
+  );
 
     const destinationButton =
       destination?.slug
