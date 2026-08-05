@@ -31,6 +31,15 @@ export interface UploadDestinationImageInput {
   buffer: Buffer;
   mimeType?: string;
   originalName?: string;
+
+  /*
+   * Có thể truyền objectKey cố định cho ảnh
+   * thuộc nội dung con, ví dụ ảnh món ăn.
+   *
+   * Ảnh địa điểm thông thường vẫn để trống
+   * để hệ thống tự sinh UUID.
+   */
+  objectKey?: string;
 }
 
 export interface UploadedDestinationImage {
@@ -388,12 +397,36 @@ export class DestinationImageStorageService
       );
     }
 
+    const requestedObjectKey =
+      String(
+        input.objectKey ??
+        '',
+      ).trim();
+
     const objectKey =
-      [
-        'destinations',
-        destinationId,
-        `${randomUUID()}.webp`,
-      ].join('/');
+      requestedObjectKey
+        ? this.normalizeObjectKey(
+            requestedObjectKey,
+          )
+        : [
+            'destinations',
+            destinationId,
+            `${randomUUID()}.webp`,
+          ].join('/');
+
+    /*
+     * Object do caller chỉ định vẫn phải nằm
+     * trong thư mục của đúng địa điểm.
+     */
+    if (
+      !objectKey.startsWith(
+        `destinations/${destinationId}/`,
+      )
+    ) {
+      throw new BadRequestException(
+        'Storage key không thuộc địa điểm hiện tại.',
+      );
+    }
 
     try {
       const response =

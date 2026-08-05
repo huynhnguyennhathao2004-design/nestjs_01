@@ -168,7 +168,7 @@ body {
 .destination-editor-summary {
   display: grid;
   grid-template-columns:
-    repeat(4, minmax(0, 1fr));
+    repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 20px;
 }
@@ -1295,350 +1295,6 @@ body {
     width: 100%;
   }
 }
-.destination-attraction-management {
-  display: grid;
-  grid-template-columns:
-    minmax(390px, 0.95fr)
-    minmax(0, 1.05fr);
-  gap: 22px;
-  padding-top: 22px;
-}
-
-.destination-attraction-form-panel,
-.destination-attraction-list-panel {
-  min-width: 0;
-  padding: 20px;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  background: #f8fafc;
-}
-
-.destination-attraction-form-heading,
-.destination-attraction-list-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 15px;
-  margin-bottom: 18px;
-}
-
-.destination-attraction-form-heading h3,
-.destination-attraction-list-heading h3 {
-  margin: 0;
-  color: #0f172a;
-  font-size: 15px;
-}
-
-.destination-attraction-form-heading p,
-.destination-attraction-list-heading p {
-  margin: 7px 0 0;
-  color: #64748b;
-  font-size: 11px;
-  line-height: 1.6;
-}
-
-.destination-attraction-form-grid {
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-  padding-top: 0;
-}
-
-.destination-attraction-active-option {
-  display: flex !important;
-  align-items: center;
-  gap: 10px;
-  min-height: 46px;
-  margin: 0 !important;
-  padding: 10px 13px;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  background: #ffffff;
-  cursor: pointer;
-}
-
-.destination-attraction-active-option input {
-  width: 18px;
-  height: 18px;
-  min-height: auto;
-  margin: 0;
-  padding: 0;
-  accent-color: #0f766e;
-}
-
-.destination-attraction-active-option span {
-  color: #334155;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.destination-attraction-form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.destination-attraction-reset-btn,
-.destination-attraction-save-btn,
-.destination-attraction-cancel-btn {
-  min-height: 40px;
-  padding: 9px 15px;
-  border-radius: 11px;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.destination-attraction-reset-btn,
-.destination-attraction-cancel-btn {
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #475569;
-}
-
-.destination-attraction-save-btn {
-  border: 0;
-  background:
-    linear-gradient(
-      135deg,
-      #0284c7,
-      #0ea5e9
-    );
-  color: #ffffff;
-  box-shadow:
-    0 8px 20px
-    rgba(2, 132, 199, 0.2);
-}
-
-.destination-attraction-save-btn:disabled,
-.destination-attraction-reset-btn:disabled,
-.destination-attraction-cancel-btn:disabled {
-  cursor: wait;
-  opacity: 0.58;
-}
-
-.destination-attraction-list {
-  display: grid;
-  gap: 14px;
-}
-
-.destination-attraction-item {
-  overflow: hidden;
-  border: 1px solid #dbe4e8;
-  border-radius: 16px;
-  background: #ffffff;
-}
-
-.destination-attraction-preview {
-  position: relative;
-  min-height: 185px;
-  overflow: hidden;
-  background:
-    linear-gradient(
-      135deg,
-      #dbeafe,
-      #f0f9ff
-    );
-}
-
-.destination-attraction-preview img {
-  width: 100%;
-  height: 185px;
-  display: block;
-  object-fit: cover;
-}
-
-.destination-attraction-placeholder {
-  display: grid;
-  width: 100%;
-  min-height: 185px;
-  place-items: center;
-  color: #0369a1;
-  font-size: 42px;
-}
-
-.destination-attraction-status {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 5px 9px;
-  border-radius: 999px;
-  background: rgba(220, 252, 231, 0.94);
-  color: #15803d;
-  font-size: 9px;
-  font-weight: 900;
-  backdrop-filter: blur(8px);
-}
-
-.destination-attraction-status.inactive {
-  background: rgba(254, 226, 226, 0.94);
-  color: #b91c1c;
-}
-
-.destination-attraction-information {
-  padding: 16px;
-}
-
-.destination-attraction-information h4 {
-  margin: 0;
-  color: #1e293b;
-  font-size: 15px;
-  line-height: 1.5;
-}
-
-.destination-attraction-description {
-  display: -webkit-box;
-  margin: 8px 0 0;
-  overflow: hidden;
-  color: #64748b;
-  font-size: 11px;
-  line-height: 1.65;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-}
-
-.destination-attraction-address {
-  display: flex;
-  align-items: flex-start;
-  gap: 7px;
-  margin-top: 11px;
-  color: #475569;
-  font-size: 10px;
-  line-height: 1.55;
-}
-
-.destination-attraction-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 11px;
-}
-
-.destination-attraction-meta span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: #f1f5f9;
-  color: #475569;
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.destination-attraction-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 14px;
-}
-
-.destination-attraction-action-btn,
-.destination-attraction-map-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 31px;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 9px;
-  font-weight: 800;
-  line-height: 1;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.destination-attraction-action-btn:disabled {
-  cursor: wait;
-  opacity: 0.55;
-}
-
-.destination-attraction-edit-btn {
-  background: #e0f2fe;
-  color: #0369a1;
-}
-
-.destination-attraction-active-btn {
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.destination-attraction-inactive-btn {
-  background: #fef3c7;
-  color: #b45309;
-}
-
-.destination-attraction-delete-btn {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.destination-attraction-map-link {
-  background: #ede9fe;
-  color: #6d28d9;
-}
-
-.destination-attraction-empty {
-  display: grid;
-  min-height: 280px;
-  place-items: center;
-  align-content: center;
-  padding: 20px;
-  border: 1px dashed #cbd5e1;
-  border-radius: 15px;
-  color: #64748b;
-  text-align: center;
-}
-
-.destination-attraction-empty[hidden] {
-  display: none;
-}
-
-.destination-attraction-empty > span {
-  margin-bottom: 10px;
-  font-size: 38px;
-}
-
-.destination-attraction-empty strong {
-  color: #334155;
-  font-size: 13px;
-}
-
-.destination-attraction-empty p {
-  max-width: 330px;
-  margin: 8px 0 0;
-  font-size: 10px;
-  line-height: 1.6;
-}
-
-@media (max-width: 960px) {
-  .destination-attraction-management {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .destination-attraction-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .destination-attraction-form-actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .destination-attraction-reset-btn,
-  .destination-attraction-save-btn {
-    width: 100%;
-  }
-}
-
 .destination-food-management {
   display: grid;
   grid-template-columns:
@@ -2274,7 +1930,8 @@ body {
   font-size: 9px;
 }
 
-#destinationImageUrlInput[readonly] {
+#destinationImageUrlInput[readonly],
+#destinationFoodImageUrlInput[readonly] {
   cursor: default;
   background: #f8fafc;
   color: #64748b;
@@ -2298,4 +1955,32 @@ body {
   .destination-image-upload-preview img {
     height: 210px;
   }
+}
+
+/* =====================================
+   UPLOAD ẢNH MÓN ĂN
+===================================== */
+
+#destinationFoodsSection
+.destination-image-upload-icon {
+  background: #ffedd5;
+  color: #c2410c !important;
+}
+
+#destinationFoodsSection
+.destination-image-upload-button {
+  background: #ea580c;
+}
+
+#destinationFoodsSection
+.destination-image-upload-box:hover,
+#destinationFoodsSection
+.destination-image-upload-box:has(
+  input:focus-visible
+) {
+  border-color: #f97316;
+  background: #fff7ed;
+  box-shadow:
+    0 0 0 4px
+    rgba(249, 115, 22, 0.1);
 }

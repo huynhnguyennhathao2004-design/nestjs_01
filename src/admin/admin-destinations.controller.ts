@@ -635,6 +635,129 @@ uploadImage(
     );
   }
 
+  /**
+   * Upload hoặc thay ảnh món ăn trên Cloudflare R2.
+   *
+   * POST /api/admin/destinations/:id/foods/:foodId/image/upload
+   */
+  @Post(':id/foods/:foodId/image/upload')
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(
+    FileInterceptor(
+      'file',
+      {
+        limits: {
+          files:
+            1,
+
+          fileSize:
+            10_485_760,
+        },
+
+        fileFilter: (
+          _request:
+            Request,
+
+          file:
+            Express.Multer.File,
+
+          callback: (
+            error:
+              Error | null,
+
+            acceptFile:
+              boolean,
+          ) => void,
+        ) => {
+          const allowedMimeTypes =
+            new Set([
+              'image/jpeg',
+              'image/jpg',
+              'image/png',
+              'image/webp',
+            ]);
+
+          if (
+            !allowedMimeTypes.has(
+              String(
+                file.mimetype ??
+                '',
+              )
+                .trim()
+                .toLowerCase(),
+            )
+          ) {
+            callback(
+              new BadRequestException(
+                'Chỉ hỗ trợ ảnh JPG, PNG hoặc WebP.',
+              ),
+              false,
+            );
+
+            return;
+          }
+
+          callback(
+            null,
+            true,
+          );
+        },
+      },
+    ),
+  )
+  uploadFoodImage(
+    @CurrentUser()
+    currentAdmin:
+      AuthenticatedUser,
+
+    @Req()
+    request:
+      Request,
+
+    @Param(
+      'id',
+      new ParseUUIDPipe({
+        version:
+          '4',
+      }),
+    )
+    destinationId:
+      string,
+
+    @Param(
+      'foodId',
+      new ParseUUIDPipe({
+        version:
+          '4',
+      }),
+    )
+    foodId:
+      string,
+
+    @UploadedFile()
+    file:
+      Express.Multer.File |
+      undefined,
+  ) {
+    if (!file) {
+      throw new BadRequestException(
+        'Bạn chưa chọn file ảnh món ăn cần tải lên.',
+      );
+    }
+
+    return this
+      .adminDestinationsService
+      .uploadFoodImage(
+        currentAdmin.id,
+        destinationId,
+        foodId,
+        file,
+        this.getRequestInfo(
+          request,
+        ),
+      );
+  }
+
   @Patch(':id/foods/:foodId')
   @HttpCode(HttpStatus.OK)
   updateFood(

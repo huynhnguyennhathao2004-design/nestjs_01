@@ -25,15 +25,13 @@ imageEditor: {
     pendingIds: new Set()
   },
 
-  attractionEditor: {
-    editingAttractionId: null,
-    saving: false,
-    pendingIds: new Set()
-  },
-    foodEditor: {
+  foodEditor: {
     editingFoodId: null,
     saving: false,
-    pendingIds: new Set()
+    pendingIds: new Set(),
+
+    previewObjectUrl:
+      null
   },
     formState: {
     baseline: '',
@@ -324,115 +322,6 @@ const cancelEditDestinationFeatureBtn =
   document.getElementById(
     'cancelEditDestinationFeatureBtn'
   );
-  const destinationAttractionsSection =
-  document.getElementById(
-    'destinationAttractionsSection'
-  );
-
-const destinationAttractionList =
-  document.getElementById(
-    'destinationAttractionList'
-  );
-
-const destinationAttractionEmpty =
-  document.getElementById(
-    'destinationAttractionEmpty'
-  );
-
-const destinationAttractionResultLine =
-  document.getElementById(
-    'destinationAttractionResultLine'
-  );
-
-const destinationAttractionNameInput =
-  document.getElementById(
-    'destinationAttractionNameInput'
-  );
-
-const destinationAttractionDescriptionInput =
-  document.getElementById(
-    'destinationAttractionDescriptionInput'
-  );
-
-const destinationAttractionDescriptionCounter =
-  document.getElementById(
-    'destinationAttractionDescriptionCounter'
-  );
-
-const destinationAttractionAddressInput =
-  document.getElementById(
-    'destinationAttractionAddressInput'
-  );
-
-const destinationAttractionMapQueryInput =
-  document.getElementById(
-    'destinationAttractionMapQueryInput'
-  );
-
-const destinationAttractionLatitudeInput =
-  document.getElementById(
-    'destinationAttractionLatitudeInput'
-  );
-
-const destinationAttractionLongitudeInput =
-  document.getElementById(
-    'destinationAttractionLongitudeInput'
-  );
-
-const destinationAttractionImageUrlInput =
-  document.getElementById(
-    'destinationAttractionImageUrlInput'
-  );
-
-const destinationAttractionImageAltInput =
-  document.getElementById(
-    'destinationAttractionImageAltInput'
-  );
-
-const destinationAttractionSourceUrlInput =
-  document.getElementById(
-    'destinationAttractionSourceUrlInput'
-  );
-
-const destinationAttractionImageCreditInput =
-  document.getElementById(
-    'destinationAttractionImageCreditInput'
-  );
-
-const destinationAttractionSortOrderInput =
-  document.getElementById(
-    'destinationAttractionSortOrderInput'
-  );
-
-const destinationAttractionIsActiveInput =
-  document.getElementById(
-    'destinationAttractionIsActiveInput'
-  );
-
-const destinationAttractionFormTitle =
-  document.getElementById(
-    'destinationAttractionFormTitle'
-  );
-
-const destinationAttractionFormDescription =
-  document.getElementById(
-    'destinationAttractionFormDescription'
-  );
-
-const saveDestinationAttractionBtn =
-  document.getElementById(
-    'saveDestinationAttractionBtn'
-  );
-
-const resetDestinationAttractionBtn =
-  document.getElementById(
-    'resetDestinationAttractionBtn'
-  );
-
-const cancelEditDestinationAttractionBtn =
-  document.getElementById(
-    'cancelEditDestinationAttractionBtn'
-  );
 const destinationFoodsSection =
   document.getElementById(
     'destinationFoodsSection'
@@ -471,6 +360,41 @@ const destinationFoodDescriptionCounter =
 const destinationFoodImageUrlInput =
   document.getElementById(
     'destinationFoodImageUrlInput'
+  );
+
+const destinationFoodImageFileInput =
+  document.getElementById(
+    'destinationFoodImageFileInput'
+  );
+
+const destinationFoodImageUploadPreview =
+  document.getElementById(
+    'destinationFoodImageUploadPreview'
+  );
+
+const destinationFoodImageUploadPreviewImg =
+  document.getElementById(
+    'destinationFoodImageUploadPreviewImg'
+  );
+
+const destinationFoodImageUploadPlaceholder =
+  document.getElementById(
+    'destinationFoodImageUploadPlaceholder'
+  );
+
+const destinationFoodImageUploadFileName =
+  document.getElementById(
+    'destinationFoodImageUploadFileName'
+  );
+
+const destinationFoodImageUploadFileMeta =
+  document.getElementById(
+    'destinationFoodImageUploadFileMeta'
+  );
+
+const destinationFoodImageCurrentUrlField =
+  document.getElementById(
+    'destinationFoodImageCurrentUrlField'
   );
 
 const destinationFoodImageAltInput =
@@ -1054,10 +978,6 @@ if (destinationFeaturesSection) {
   destinationFeaturesSection.hidden =
     !hasDestination;
 }
-if (destinationAttractionsSection) {
-  destinationAttractionsSection.hidden =
-    !hasDestination;
-}
 if (destinationFoodsSection) {
   destinationFoodsSection.hidden =
     !hasDestination;
@@ -1078,8 +998,8 @@ if (destinationFoodsSection) {
 
     notice.textContent =
       hasDestination
-        ? 'Địa điểm đã được lưu. Các phần quản lý nội dung liên quan sẽ được hoàn thiện trong các bước tiếp theo.'
-        : 'Hãy lưu địa điểm trước khi thêm ảnh và các nội dung liên quan.';
+        ? 'Địa điểm đã được lưu. Bạn có thể quản lý ảnh, đặc điểm nổi bật và món ăn gợi ý.'
+        : 'Hãy lưu địa điểm trước khi thêm ảnh, đặc điểm nổi bật và món ăn gợi ý.';
   }
 
   document.getElementById(
@@ -1092,10 +1012,6 @@ if (destinationFoodsSection) {
   ).textContent =
     `${destination?.features?.length || 0} mục`;
 
-  document.getElementById(
-    'relatedAttractionCount'
-  ).textContent =
-    `${destination?.attractions?.length || 0} mục`;
 
   document.getElementById(
     'relatedFoodCount'
@@ -1103,7 +1019,6 @@ if (destinationFoodsSection) {
     `${destination?.foods?.length || 0} mục`;
     renderDestinationImages();
     renderDestinationFeatures();
-    renderDestinationAttractions();
     renderDestinationFoods();
 }
 
@@ -2049,12 +1964,6 @@ async function loadDestination(
         ? responseDestination.features
         : [],
 
-    attractions:
-      Array.isArray(
-        responseDestination.attractions
-      )
-        ? responseDestination.attractions
-        : [],
 
     foods:
       Array.isArray(
@@ -4494,1116 +4403,6 @@ async function handleDestinationFeatureListClick(
   }
 }
 /* =====================================
-   QUẢN LÝ ĐIỂM KHÁM PHÁ
-===================================== */
-
-function getDestinationAttractions() {
-  const attractions =
-    destinationEditorState
-      .destination
-      ?.attractions;
-
-  if (!Array.isArray(attractions)) {
-    return [];
-  }
-
-  return [...attractions].sort(
-    function (first, second) {
-      const sortDifference =
-        Number(
-          first.sortOrder || 0
-        ) -
-        Number(
-          second.sortOrder || 0
-        );
-
-      if (sortDifference !== 0) {
-        return sortDifference;
-      }
-
-      return String(first.id).localeCompare(
-        String(second.id)
-      );
-    }
-  );
-}
-
-function findDestinationAttraction(
-  attractionId
-) {
-  return (
-    getDestinationAttractions().find(
-      function (attraction) {
-        return attraction.id ===
-          attractionId;
-      }
-    ) ||
-    null
-  );
-}
-
-function buildAttractionMapUrl(
-  attraction
-) {
-  const latitude =
-    attraction.latitude;
-
-  const longitude =
-    attraction.longitude;
-
-  if (
-    latitude !== null &&
-    latitude !== undefined &&
-    longitude !== null &&
-    longitude !== undefined
-  ) {
-    return (
-      'https://www.google.com/maps/search/?api=1&query=' +
-      encodeURIComponent(
-        `${latitude},${longitude}`
-      )
-    );
-  }
-
-  const mapQuery =
-    attraction.mapQuery ||
-    attraction.address ||
-    attraction.name;
-
-  if (!mapQuery) {
-    return '';
-  }
-
-  return (
-    'https://www.google.com/maps/search/?api=1&query=' +
-    encodeURIComponent(mapQuery)
-  );
-}
-
-function renderDestinationAttractions() {
-  if (
-    !destinationAttractionList ||
-    !destinationAttractionEmpty
-  ) {
-    return;
-  }
-
-  const attractions =
-    getDestinationAttractions();
-
-  if (destinationAttractionResultLine) {
-    destinationAttractionResultLine.textContent =
-      attractions.length > 0
-        ? `Hiện có ${attractions.length} điểm khám phá.`
-        : 'Chưa có điểm khám phá.';
-  }
-
-  const relatedAttractionCount =
-    document.getElementById(
-      'relatedAttractionCount'
-    );
-
-  if (relatedAttractionCount) {
-    relatedAttractionCount.textContent =
-      `${attractions.length} mục`;
-  }
-
-  if (attractions.length === 0) {
-    destinationAttractionList.innerHTML =
-      '';
-
-    destinationAttractionEmpty.hidden =
-      false;
-
-    return;
-  }
-
-  destinationAttractionEmpty.hidden =
-    true;
-
-  destinationAttractionList.innerHTML =
-    attractions
-      .map(
-        function (attraction) {
-          const isPending =
-            destinationEditorState
-              .attractionEditor
-              .pendingIds
-              .has(attraction.id);
-
-          const isActive =
-            Boolean(
-              attraction.isActive
-            );
-
-          const mapUrl =
-            buildAttractionMapUrl(
-              attraction
-            );
-
-          const hasCoordinates =
-            attraction.latitude !==
-              null &&
-            attraction.latitude !==
-              undefined &&
-            attraction.longitude !==
-              null &&
-            attraction.longitude !==
-              undefined;
-
-          return `
-            <article
-              class="destination-attraction-item"
-              data-attraction-id="${escapeHtml(
-                attraction.id
-              )}"
-            >
-              <div class="destination-attraction-preview">
-                ${
-                  attraction.imageUrl
-                    ? `
-                      <img
-                        src="${escapeHtml(
-                          attraction.imageUrl
-                        )}"
-                        alt="${escapeHtml(
-                          attraction.imageAlt ||
-                          attraction.name
-                        )}"
-                        loading="lazy"
-                        data-fallback="/assets/images/bg-vietnam.jpg"
-                      />
-                    `
-                    : `
-                      <div
-                        class="destination-attraction-placeholder"
-                      >
-                        🏞️
-                      </div>
-                    `
-                }
-
-                <span
-                  class="
-                    destination-attraction-status
-                    ${isActive ? '' : 'inactive'}
-                  "
-                >
-                  ${
-                    isActive
-                      ? 'Đang hiển thị'
-                      : 'Đang tắt'
-                  }
-                </span>
-              </div>
-
-              <div class="destination-attraction-information">
-                <h4>
-                  ${escapeHtml(
-                    attraction.name
-                  )}
-                </h4>
-
-                ${
-                  attraction.description
-                    ? `
-                      <p
-                        class="destination-attraction-description"
-                      >
-                        ${escapeHtml(
-                          attraction.description
-                        )}
-                      </p>
-                    `
-                    : ''
-                }
-
-                ${
-                  attraction.address
-                    ? `
-                      <div
-                        class="destination-attraction-address"
-                      >
-                        <span>📍</span>
-
-                        <span>
-                          ${escapeHtml(
-                            attraction.address
-                          )}
-                        </span>
-                      </div>
-                    `
-                    : ''
-                }
-
-                <div class="destination-attraction-meta">
-                  <span>
-                    Thứ tự:
-                    ${escapeHtml(
-                      attraction.sortOrder ?? 0
-                    )}
-                  </span>
-
-                  ${
-                    hasCoordinates
-                      ? `
-                        <span>
-                          ${escapeHtml(
-                            attraction.latitude
-                          )},
-                          ${escapeHtml(
-                            attraction.longitude
-                          )}
-                        </span>
-                      `
-                      : ''
-                  }
-
-                  ${
-                    attraction.imageCredit
-                      ? `
-                        <span>
-                          ${escapeHtml(
-                            attraction.imageCredit
-                          )}
-                        </span>
-                      `
-                      : ''
-                  }
-                </div>
-
-                <div class="destination-attraction-actions">
-                  <button
-                    type="button"
-                    class="
-                      destination-attraction-action-btn
-                      destination-attraction-edit-btn
-                    "
-                    data-attraction-action="edit"
-                    data-attraction-id="${escapeHtml(
-                      attraction.id
-                    )}"
-                    ${isPending ? 'disabled' : ''}
-                  >
-                    Chỉnh sửa
-                  </button>
-
-                  <button
-                    type="button"
-                    class="
-                      destination-attraction-action-btn
-                      ${
-                        isActive
-                          ? 'destination-attraction-inactive-btn'
-                          : 'destination-attraction-active-btn'
-                      }
-                    "
-                    data-attraction-action="active"
-                    data-attraction-id="${escapeHtml(
-                      attraction.id
-                    )}"
-                    ${isPending ? 'disabled' : ''}
-                  >
-                    ${
-                      isActive
-                        ? 'Tắt hiển thị'
-                        : 'Bật hiển thị'
-                    }
-                  </button>
-
-                  ${
-                    mapUrl
-                      ? `
-                        <a
-                          class="destination-attraction-map-link"
-                          href="${escapeHtml(
-                            mapUrl
-                          )}"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Mở bản đồ
-                        </a>
-                      `
-                      : ''
-                  }
-
-                  <button
-                    type="button"
-                    class="
-                      destination-attraction-action-btn
-                      destination-attraction-delete-btn
-                    "
-                    data-attraction-action="delete"
-                    data-attraction-id="${escapeHtml(
-                      attraction.id
-                    )}"
-                    ${isPending ? 'disabled' : ''}
-                  >
-                    ${
-                      isPending
-                        ? 'Đang xử lý...'
-                        : 'Xóa'
-                    }
-                  </button>
-                </div>
-              </div>
-            </article>
-          `;
-        }
-      )
-      .join('');
-
-  window.ImageUtils?.scan(
-    destinationAttractionList
-  );
-}
-
-function updateDestinationAttractionCounter() {
-  if (
-    !destinationAttractionDescriptionInput ||
-    !destinationAttractionDescriptionCounter
-  ) {
-    return;
-  }
-
-  destinationAttractionDescriptionCounter.textContent =
-    String(
-      destinationAttractionDescriptionInput
-        .value
-        .length
-    );
-}
-
-function setDestinationAttractionSaving(
-  isSaving
-) {
-  destinationEditorState
-    .attractionEditor
-    .saving = isSaving;
-
-  [
-    saveDestinationAttractionBtn,
-    resetDestinationAttractionBtn,
-    cancelEditDestinationAttractionBtn
-  ].forEach(
-    function (button) {
-      if (button) {
-        button.disabled =
-          isSaving;
-      }
-    }
-  );
-
-  if (saveDestinationAttractionBtn) {
-    saveDestinationAttractionBtn.textContent =
-      isSaving
-        ? 'Đang lưu...'
-        : destinationEditorState
-            .attractionEditor
-            .editingAttractionId
-          ? 'Lưu thay đổi'
-          : 'Thêm điểm khám phá';
-  }
-}
-
-function resetDestinationAttractionForm() {
-  destinationEditorState
-    .attractionEditor
-    .editingAttractionId = null;
-
-  if (destinationAttractionNameInput) {
-    destinationAttractionNameInput.value =
-      '';
-  }
-
-  if (destinationAttractionDescriptionInput) {
-    destinationAttractionDescriptionInput.value =
-      '';
-  }
-
-  if (destinationAttractionAddressInput) {
-    destinationAttractionAddressInput.value =
-      '';
-  }
-
-  if (destinationAttractionMapQueryInput) {
-    destinationAttractionMapQueryInput.value =
-      '';
-  }
-
-  if (destinationAttractionLatitudeInput) {
-    destinationAttractionLatitudeInput.value =
-      '';
-  }
-
-  if (destinationAttractionLongitudeInput) {
-    destinationAttractionLongitudeInput.value =
-      '';
-  }
-
-  if (destinationAttractionImageUrlInput) {
-    destinationAttractionImageUrlInput.value =
-      '';
-  }
-
-  if (destinationAttractionImageAltInput) {
-    destinationAttractionImageAltInput.value =
-      '';
-  }
-
-  if (destinationAttractionSourceUrlInput) {
-    destinationAttractionSourceUrlInput.value =
-      '';
-  }
-
-  if (destinationAttractionImageCreditInput) {
-    destinationAttractionImageCreditInput.value =
-      '';
-  }
-
-  if (destinationAttractionSortOrderInput) {
-    destinationAttractionSortOrderInput.value =
-      '0';
-  }
-
-  if (destinationAttractionIsActiveInput) {
-    destinationAttractionIsActiveInput.checked =
-      true;
-  }
-
-  if (destinationAttractionFormTitle) {
-    destinationAttractionFormTitle.textContent =
-      'Thêm điểm khám phá';
-  }
-
-  if (destinationAttractionFormDescription) {
-    destinationAttractionFormDescription.textContent =
-      'Nhập thông tin địa điểm tham quan nổi bật.';
-  }
-
-  if (cancelEditDestinationAttractionBtn) {
-    cancelEditDestinationAttractionBtn.hidden =
-      true;
-  }
-
-  updateDestinationAttractionCounter();
-  setDestinationAttractionSaving(false);
-}
-
-function startEditingDestinationAttraction(
-  attractionId
-) {
-  const attraction =
-    findDestinationAttraction(
-      attractionId
-    );
-
-  if (!attraction) {
-    showToast(
-      'Không tìm thấy điểm khám phá.',
-      'error'
-    );
-
-    return;
-  }
-
-  destinationEditorState
-    .attractionEditor
-    .editingAttractionId =
-    attraction.id;
-
-  destinationAttractionNameInput.value =
-    attraction.name || '';
-
-  destinationAttractionDescriptionInput.value =
-    attraction.description || '';
-
-  destinationAttractionAddressInput.value =
-    attraction.address || '';
-
-  destinationAttractionMapQueryInput.value =
-    attraction.mapQuery || '';
-
-  destinationAttractionLatitudeInput.value =
-    attraction.latitude ?? '';
-
-  destinationAttractionLongitudeInput.value =
-    attraction.longitude ?? '';
-
-  destinationAttractionImageUrlInput.value =
-    attraction.imageUrl || '';
-
-  destinationAttractionImageAltInput.value =
-    attraction.imageAlt || '';
-
-  destinationAttractionSourceUrlInput.value =
-    attraction.sourceUrl || '';
-
-  destinationAttractionImageCreditInput.value =
-    attraction.imageCredit || '';
-
-  destinationAttractionSortOrderInput.value =
-    String(
-      attraction.sortOrder ?? 0
-    );
-
-  destinationAttractionIsActiveInput.checked =
-    Boolean(
-      attraction.isActive
-    );
-
-  destinationAttractionFormTitle.textContent =
-    'Chỉnh sửa điểm khám phá';
-
-  destinationAttractionFormDescription.textContent =
-    'Cập nhật thông tin, ảnh, vị trí và trạng thái hiển thị.';
-
-  cancelEditDestinationAttractionBtn.hidden =
-    false;
-
-  updateDestinationAttractionCounter();
-  setDestinationAttractionSaving(false);
-
-  destinationAttractionsSection
-    ?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
-
-  destinationAttractionNameInput
-    ?.focus();
-}
-
-function readNullableAttractionNumber(
-  input,
-  fieldName,
-  minimum,
-  maximum
-) {
-  const value =
-    input?.value?.trim() || '';
-
-  if (!value) {
-    return null;
-  }
-
-  const numberValue =
-    Number(value);
-
-  if (!Number.isFinite(numberValue)) {
-    throw new Error(
-      `${fieldName} phải là một số hợp lệ.`
-    );
-  }
-
-  if (
-    numberValue < minimum ||
-    numberValue > maximum
-  ) {
-    throw new Error(
-      `${fieldName} phải nằm trong khoảng ${minimum} đến ${maximum}.`
-    );
-  }
-
-  return numberValue;
-}
-
-function buildDestinationAttractionPayload() {
-  const name =
-    destinationAttractionNameInput
-      ?.value
-      .trim() || '';
-
-  if (name.length < 2) {
-    throw new Error(
-      'Tên điểm khám phá phải có ít nhất 2 ký tự.'
-    );
-  }
-
-  if (name.length > 180) {
-    throw new Error(
-      'Tên điểm khám phá không được vượt quá 180 ký tự.'
-    );
-  }
-
-  const description =
-    nullableString(
-      destinationAttractionDescriptionInput
-        ?.value
-    );
-
-  if (
-    description &&
-    description.length > 5000
-  ) {
-    throw new Error(
-      'Mô tả điểm khám phá không được vượt quá 5000 ký tự.'
-    );
-  }
-
-  const imageUrl =
-    nullableString(
-      destinationAttractionImageUrlInput
-        ?.value
-    );
-
-  if (
-    imageUrl &&
-    !/^(https?:\/\/|\/)/i.test(
-      imageUrl
-    )
-  ) {
-    throw new Error(
-      'Đường dẫn ảnh phải bắt đầu bằng /, http:// hoặc https://.'
-    );
-  }
-
-  const sourceUrl =
-    nullableString(
-      destinationAttractionSourceUrlInput
-        ?.value
-    );
-
-  if (
-    sourceUrl &&
-    !/^https?:\/\//i.test(
-      sourceUrl
-    )
-  ) {
-    throw new Error(
-      'URL nguồn ảnh phải bắt đầu bằng http:// hoặc https://.'
-    );
-  }
-
-  const sortOrder =
-    Number(
-      destinationAttractionSortOrderInput
-        ?.value || 0
-    );
-
-  if (
-    !Number.isInteger(sortOrder) ||
-    sortOrder < 0
-  ) {
-    throw new Error(
-      'Thứ tự điểm khám phá phải là số nguyên lớn hơn hoặc bằng 0.'
-    );
-  }
-
-  const latitude =
-    readNullableAttractionNumber(
-      destinationAttractionLatitudeInput,
-      'Vĩ độ',
-      -90,
-      90
-    );
-
-  const longitude =
-    readNullableAttractionNumber(
-      destinationAttractionLongitudeInput,
-      'Kinh độ',
-      -180,
-      180
-    );
-
-  return {
-    name,
-
-    description,
-
-    address:
-      nullableString(
-        destinationAttractionAddressInput
-          ?.value
-      ),
-
-    mapQuery:
-      nullableString(
-        destinationAttractionMapQueryInput
-          ?.value
-      ),
-
-    latitude,
-
-    longitude,
-
-    imageUrl,
-
-    imageAlt:
-      nullableString(
-        destinationAttractionImageAltInput
-          ?.value
-      ),
-
-    sourceUrl,
-
-    imageCredit:
-      nullableString(
-        destinationAttractionImageCreditInput
-          ?.value
-      ),
-
-    sortOrder,
-
-    isActive:
-      Boolean(
-        destinationAttractionIsActiveInput
-          ?.checked
-      )
-  };
-}
-
-async function saveDestinationAttraction() {
-  if (
-    destinationEditorState
-      .attractionEditor
-      .saving
-  ) {
-    return;
-  }
-
-  const destinationId =
-    destinationEditorState
-      .destinationId;
-
-  if (!destinationId) {
-    showToast(
-      'Hãy lưu địa điểm trước khi thêm điểm khám phá.',
-      'error'
-    );
-
-    return;
-  }
-
-  let payload;
-
-  try {
-    payload =
-      buildDestinationAttractionPayload();
-  } catch (error) {
-    showToast(
-      error instanceof Error
-        ? error.message
-        : 'Thông tin điểm khám phá chưa hợp lệ.',
-      'error'
-    );
-
-    return;
-  }
-
-  const editingAttractionId =
-    destinationEditorState
-      .attractionEditor
-      .editingAttractionId;
-
-  setDestinationAttractionSaving(
-    true
-  );
-
-  try {
-    const result =
-      await requestAdminJson(
-        editingAttractionId
-          ? `/api/admin/destinations/${encodeURIComponent(
-              destinationId
-            )}/attractions/${encodeURIComponent(
-              editingAttractionId
-            )}`
-          : `/api/admin/destinations/${encodeURIComponent(
-              destinationId
-            )}/attractions`,
-        {
-          method:
-            editingAttractionId
-              ? 'PATCH'
-              : 'POST',
-
-          headers: {
-            'Content-Type':
-              'application/json',
-
-            Accept:
-              'application/json'
-          },
-
-          body:
-            JSON.stringify(
-              payload
-            )
-        }
-      );
-
-    showToast(
-      result?.message ||
-      (
-        editingAttractionId
-          ? 'Cập nhật điểm khám phá thành công.'
-          : 'Thêm điểm khám phá thành công.'
-      ),
-      'success'
-    );
-
-    resetDestinationAttractionForm();
-    await loadDestination();
-  } catch (error) {
-    console.error(
-      'Lỗi lưu điểm khám phá:',
-      error
-    );
-
-    showToast(
-      error instanceof Error
-        ? error.message
-        : 'Không thể lưu điểm khám phá.',
-      'error'
-    );
-  } finally {
-    setDestinationAttractionSaving(
-      false
-    );
-  }
-}
-
-async function runDestinationAttractionAction(
-  attractionId,
-  callback
-) {
-  const pendingIds =
-    destinationEditorState
-      .attractionEditor
-      .pendingIds;
-
-  if (
-    pendingIds.has(
-      attractionId
-    )
-  ) {
-    return;
-  }
-
-  pendingIds.add(
-    attractionId
-  );
-
-  renderDestinationAttractions();
-
-  try {
-    await callback();
-  } finally {
-    pendingIds.delete(
-      attractionId
-    );
-
-    renderDestinationAttractions();
-  }
-}
-
-async function patchDestinationAttraction(
-  attraction,
-  payload,
-  successMessage
-) {
-  const destinationId =
-    destinationEditorState
-      .destinationId;
-
-  await runDestinationAttractionAction(
-    attraction.id,
-    async function () {
-      const result =
-        await requestAdminJson(
-          `/api/admin/destinations/${encodeURIComponent(
-            destinationId
-          )}/attractions/${encodeURIComponent(
-            attraction.id
-          )}`,
-          {
-            method: 'PATCH',
-
-            headers: {
-              'Content-Type':
-                'application/json',
-
-              Accept:
-                'application/json'
-            },
-
-            body:
-              JSON.stringify(
-                payload
-              )
-          }
-        );
-
-      showToast(
-        result?.message ||
-        successMessage,
-        'success'
-      );
-
-      await loadDestination();
-    }
-  );
-}
-
-async function toggleDestinationAttractionActive(
-  attraction
-) {
-  await patchDestinationAttraction(
-    attraction,
-    {
-      isActive:
-        !Boolean(
-          attraction.isActive
-        )
-    },
-    attraction.isActive
-      ? 'Đã tắt điểm khám phá.'
-      : 'Đã bật điểm khám phá.'
-  );
-}
-
-async function deleteDestinationAttraction(
-  attraction
-) {
-  const confirmed =
-    await confirmEditorAction({
-      type: 'danger',
-
-      title:
-        'Xóa điểm khám phá',
-
-      message:
-        `Điểm khám phá "${attraction.name}" sẽ bị xóa khỏi địa điểm.`,
-
-      confirmText:
-        'Xóa điểm khám phá',
-
-      cancelText:
-        'Hủy'
-    });
-
-  if (!confirmed) {
-    return;
-  }
-
-  const destinationId =
-    destinationEditorState
-      .destinationId;
-
-  await runDestinationAttractionAction(
-    attraction.id,
-    async function () {
-      const result =
-        await requestAdminJson(
-          `/api/admin/destinations/${encodeURIComponent(
-            destinationId
-          )}/attractions/${encodeURIComponent(
-            attraction.id
-          )}`,
-          {
-            method: 'DELETE',
-
-            headers: {
-              Accept:
-                'application/json'
-            }
-          }
-        );
-
-      showToast(
-        result?.message ||
-        'Xóa điểm khám phá thành công.',
-        'success'
-      );
-
-      if (
-        destinationEditorState
-          .attractionEditor
-          .editingAttractionId ===
-        attraction.id
-      ) {
-        resetDestinationAttractionForm();
-      }
-
-      await loadDestination();
-    }
-  );
-}
-
-async function handleDestinationAttractionListClick(
-  event
-) {
-  const button =
-    event.target.closest(
-      '[data-attraction-action]'
-    );
-
-  if (
-    !button ||
-    button.disabled
-  ) {
-    return;
-  }
-
-  const attractionId =
-    button.dataset.attractionId;
-
-  const action =
-    button.dataset.attractionAction;
-
-  const attraction =
-    findDestinationAttraction(
-      attractionId
-    );
-
-  if (!attraction) {
-    showToast(
-      'Không tìm thấy điểm khám phá.',
-      'error'
-    );
-
-    return;
-  }
-
-  try {
-    if (action === 'edit') {
-      startEditingDestinationAttraction(
-        attraction.id
-      );
-
-      return;
-    }
-
-    if (action === 'active') {
-      await toggleDestinationAttractionActive(
-        attraction
-      );
-
-      return;
-    }
-
-    if (action === 'delete') {
-      await deleteDestinationAttraction(
-        attraction
-      );
-    }
-  } catch (error) {
-    console.error(
-      'Lỗi thao tác điểm khám phá:',
-      error
-    );
-
-    showToast(
-      error instanceof Error
-        ? error.message
-        : 'Không thể thực hiện thao tác điểm khám phá.',
-      'error'
-    );
-  }
-}
-/* =====================================
    QUẢN LÝ MÓN ĂN GỢI Ý
 ===================================== */
 
@@ -5995,6 +4794,236 @@ function updateDestinationFoodCounter() {
     );
 }
 
+function revokeDestinationFoodImagePreviewUrl() {
+  const previewObjectUrl =
+    destinationEditorState
+      .foodEditor
+      .previewObjectUrl;
+
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(
+      previewObjectUrl
+    );
+  }
+
+  destinationEditorState
+    .foodEditor
+    .previewObjectUrl = null;
+}
+
+function showDestinationFoodImagePreview(
+  source,
+  fileName,
+  metaText
+) {
+  if (
+    destinationFoodImageUploadPreviewImg
+  ) {
+    destinationFoodImageUploadPreviewImg.src =
+      source;
+
+    destinationFoodImageUploadPreviewImg.hidden =
+      false;
+  }
+
+  if (
+    destinationFoodImageUploadPlaceholder
+  ) {
+    destinationFoodImageUploadPlaceholder.hidden =
+      true;
+  }
+
+  if (
+    destinationFoodImageUploadFileName
+  ) {
+    destinationFoodImageUploadFileName.textContent =
+      fileName ||
+      'Ảnh món ăn';
+  }
+
+  if (
+    destinationFoodImageUploadFileMeta
+  ) {
+    destinationFoodImageUploadFileMeta.textContent =
+      metaText ||
+      'Ảnh món ăn';
+  }
+
+  destinationFoodImageUploadPreview
+    ?.classList
+    .add(
+      'has-image'
+    );
+}
+
+function clearDestinationFoodImagePreview() {
+  revokeDestinationFoodImagePreviewUrl();
+
+  if (
+    destinationFoodImageUploadPreviewImg
+  ) {
+    destinationFoodImageUploadPreviewImg.hidden =
+      true;
+
+    destinationFoodImageUploadPreviewImg
+      .removeAttribute(
+        'src'
+      );
+  }
+
+  if (
+    destinationFoodImageUploadPlaceholder
+  ) {
+    destinationFoodImageUploadPlaceholder.hidden =
+      false;
+  }
+
+  if (
+    destinationFoodImageUploadFileName
+  ) {
+    destinationFoodImageUploadFileName.textContent =
+      'Chưa chọn file';
+  }
+
+  if (
+    destinationFoodImageUploadFileMeta
+  ) {
+    destinationFoodImageUploadFileMeta.textContent =
+      'JPG, PNG hoặc WebP';
+  }
+
+  destinationFoodImageUploadPreview
+    ?.classList
+    .remove(
+      'has-image'
+    );
+}
+
+function handleDestinationFoodImageFileChange() {
+  const file =
+    destinationFoodImageFileInput
+      ?.files
+      ?.[0];
+
+  clearDestinationFoodImagePreview();
+
+  if (!file) {
+    const currentImageUrl =
+      destinationFoodImageUrlInput
+        ?.value
+        .trim();
+
+    if (currentImageUrl) {
+      showDestinationFoodImagePreview(
+        currentImageUrl,
+        'Ảnh hiện tại',
+        'Đang lưu trên Cloudflare R2'
+      );
+    }
+
+    return;
+  }
+
+  const allowedMimeTypes =
+    new Set([
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp'
+    ]);
+
+  if (
+    !allowedMimeTypes.has(
+      String(
+        file.type || ''
+      )
+        .trim()
+        .toLowerCase()
+    )
+  ) {
+    destinationFoodImageFileInput.value =
+      '';
+
+    showToast(
+      'Chỉ hỗ trợ ảnh JPG, PNG hoặc WebP.',
+      'error'
+    );
+
+    return;
+  }
+
+  const maximumBytes =
+    10 * 1024 * 1024;
+
+  if (
+    file.size >
+    maximumBytes
+  ) {
+    destinationFoodImageFileInput.value =
+      '';
+
+    showToast(
+      'Dung lượng ảnh món ăn không được vượt quá 10 MB.',
+      'error'
+    );
+
+    return;
+  }
+
+  const previewObjectUrl =
+    URL.createObjectURL(
+      file
+    );
+
+  destinationEditorState
+    .foodEditor
+    .previewObjectUrl =
+    previewObjectUrl;
+
+  showDestinationFoodImagePreview(
+    previewObjectUrl,
+    file.name,
+    formatDestinationImageFileSize(
+      file.size
+    )
+  );
+}
+
+async function uploadDestinationFoodImage(
+  destinationId,
+  foodId,
+  file
+) {
+  const formData =
+    new FormData();
+
+  formData.append(
+    'file',
+    file,
+    file.name
+  );
+
+  return requestAdminJson(
+    `/api/admin/destinations/${encodeURIComponent(
+      destinationId
+    )}/foods/${encodeURIComponent(
+      foodId
+    )}/image/upload`,
+    {
+      method:
+        'POST',
+
+      headers: {
+        Accept:
+          'application/json'
+      },
+
+      body:
+        formData
+    }
+  );
+}
+
 function setDestinationFoodSaving(
   isSaving
 ) {
@@ -6025,6 +5054,14 @@ function setDestinationFoodSaving(
           ? 'Lưu thay đổi'
           : 'Thêm món ăn';
   }
+  if (
+    destinationFoodImageFileInput
+  ) {
+    destinationFoodImageFileInput.disabled =
+      isSaving;
+  }
+
+
 }
 
 function resetDestinationFoodForm() {
@@ -6046,6 +5083,18 @@ function resetDestinationFoodForm() {
     destinationFoodImageUrlInput.value =
       '';
   }
+
+  if (destinationFoodImageFileInput) {
+    destinationFoodImageFileInput.value =
+      '';
+  }
+
+  if (destinationFoodImageCurrentUrlField) {
+    destinationFoodImageCurrentUrlField.hidden =
+      true;
+  }
+
+  clearDestinationFoodImagePreview();
 
   if (destinationFoodImageAltInput) {
     destinationFoodImageAltInput.value =
@@ -6141,6 +5190,26 @@ function startEditingDestinationFood(
 
   destinationFoodImageUrlInput.value =
     food.imageUrl || '';
+
+  if (destinationFoodImageFileInput) {
+    destinationFoodImageFileInput.value =
+      '';
+  }
+
+  if (destinationFoodImageCurrentUrlField) {
+    destinationFoodImageCurrentUrlField.hidden =
+      !food.imageUrl;
+  }
+
+  clearDestinationFoodImagePreview();
+
+  if (food.imageUrl) {
+    showDestinationFoodImagePreview(
+      food.imageUrl,
+      'Ảnh hiện tại',
+      'Chọn file mới để thay ảnh'
+    );
+  }
 
   destinationFoodImageAltInput.value =
     food.imageAlt || '';
@@ -6422,9 +5491,18 @@ async function saveDestinationFood() {
       .foodEditor
       .editingFoodId;
 
+  const imageFile =
+    destinationFoodImageFileInput
+      ?.files
+      ?.[0] ??
+    null;
+
   setDestinationFoodSaving(
     true
   );
+
+  let informationSaved =
+    false;
 
   try {
     const result =
@@ -6459,16 +5537,41 @@ async function saveDestinationFood() {
         }
       );
 
+    informationSaved =
+      true;
+
+    const savedFoodId =
+      result?.data?.id ||
+      editingFoodId;
+
+    if (
+      imageFile &&
+      savedFoodId
+    ) {
+      await uploadDestinationFoodImage(
+        destinationId,
+        savedFoodId,
+        imageFile
+      );
+    }
+
     showToast(
-      result?.message ||
-      (
-        editingFoodId
-          ? 'Cập nhật món ăn thành công.'
-          : 'Thêm món ăn thành công.'
-      ),
+      imageFile
+        ? (
+            editingFoodId
+              ? 'Cập nhật món ăn và ảnh thành công.'
+              : 'Thêm món ăn và tải ảnh thành công.'
+          )
+        : (
+            result?.message ||
+            (
+              editingFoodId
+                ? 'Cập nhật món ăn thành công.'
+                : 'Thêm món ăn thành công.'
+            )
+          ),
       'success'
     );
-
     resetDestinationFoodForm();
 
     /*
@@ -6482,12 +5585,24 @@ async function saveDestinationFood() {
       error
     );
 
-    showToast(
+    const errorMessage =
       error instanceof Error
         ? error.message
-        : 'Không thể lưu món ăn.',
+        : 'Không thể lưu món ăn.';
+
+    showToast(
+      informationSaved
+        ? (
+            'Thông tin món ăn đã được lưu nhưng tải ảnh thất bại: ' +
+            errorMessage
+          )
+        : errorMessage,
       'error'
     );
+
+    if (informationSaved) {
+      await loadDestination();
+    }
   } finally {
     setDestinationFoodSaving(
       false
@@ -6865,21 +5980,6 @@ document.querySelectorAll(
 
             return;
           }
-          if (
-              section === 'attractions' &&
-              destinationAttractionsSection
-            ) {
-              destinationAttractionsSection
-                .scrollIntoView({
-                  behavior: 'smooth',
-                  block: 'start'
-                });
-
-              destinationAttractionNameInput
-                ?.focus();
-
-              return;
-            }
             if (
                 section === 'foods' &&
                 destinationFoodsSection
@@ -6963,6 +6063,12 @@ destinationImagesSection
     }
   );
 }
+destinationFoodImageFileInput
+  ?.addEventListener(
+    'change',
+    handleDestinationFoodImageFileChange
+  );
+
 saveDestinationFoodBtn
   ?.addEventListener(
     'click',
@@ -7014,60 +6120,6 @@ destinationFoodsSection
         event.preventDefault();
 
         saveDestinationFood();
-      }
-    }
-  );
-saveDestinationAttractionBtn
-  ?.addEventListener(
-    'click',
-    saveDestinationAttraction
-  );
-
-resetDestinationAttractionBtn
-  ?.addEventListener(
-    'click',
-    resetDestinationAttractionForm
-  );
-
-cancelEditDestinationAttractionBtn
-  ?.addEventListener(
-    'click',
-    resetDestinationAttractionForm
-  );
-
-destinationAttractionDescriptionInput
-  ?.addEventListener(
-    'input',
-    updateDestinationAttractionCounter
-  );
-
-destinationAttractionList
-  ?.addEventListener(
-    'click',
-    handleDestinationAttractionListClick
-  );
-
-destinationAttractionsSection
-  ?.addEventListener(
-    'keydown',
-    function (event) {
-      if (
-        event.key !== 'Enter' ||
-        event.shiftKey ||
-        event.target.tagName ===
-          'TEXTAREA'
-      ) {
-        return;
-      }
-
-      if (
-        event.target.matches(
-          'input, select'
-        )
-      ) {
-        event.preventDefault();
-
-        saveDestinationAttraction();
       }
     }
   );
@@ -7158,7 +6210,6 @@ async function initializeDestinationEditor() {
 
     resetDestinationImageForm();
     resetDestinationFeatureForm();
-    resetDestinationAttractionForm();
     resetDestinationFoodForm();
 
     await loadFormOptions();

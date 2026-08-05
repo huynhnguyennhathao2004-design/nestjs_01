@@ -1153,3 +1153,40 @@ a {
     height: 210px;
   }
 }
+
+/* =====================================
+   GỢI Ý ĐỊA ĐIỂM TỰ ĐỘNG
+===================================== */
+
+.destination-recommendation-card
+.detail-media-image {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.destination-recommendation-card
+.detail-media-label {
+  max-width: calc(100% - 28px);
+
+  padding: 8px 12px;
+  border-radius: 999px;
+
+  color: #ffffff;
+  background: rgba(30, 64, 175, 0.86);
+
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.35;
+
+  backdrop-filter: blur(10px);
+}
+
+.recommendation-location {
+  margin: -4px 0 16px;
+
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+

@@ -30,6 +30,23 @@ export class DestinationsController {
   }
 
   /**
+   * GET /api/destinations/da-lat/recommendations
+   *
+   * Route này phải nằm trước @Get(':slug')
+   * để NestJS không hiểu "recommendations"
+   * là một phần của slug thông thường.
+   */
+  @Get(':slug/recommendations')
+  findRecommendationsBySlug(
+    @Param('slug') slug: string,
+  ) {
+    return this.destinationsService
+      .findRecommendationsBySlug(
+        slug,
+      );
+  }
+
+  /**
    * GET /api/destinations/da-lat
    */
   @Get(':slug')

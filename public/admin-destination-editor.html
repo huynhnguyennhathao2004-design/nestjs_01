@@ -458,7 +458,7 @@
             </div>
 
             <p>
-              Ảnh, đặc điểm, điểm khám phá và món ăn.
+              Ảnh, đặc điểm nổi bật và món ăn.
             </p>
           </div>
 
@@ -497,21 +497,6 @@
               <strong>Đặc điểm nổi bật</strong>
 
               <small id="relatedFeatureCount">
-                0 mục
-              </small>
-            </button>
-
-            <button
-              type="button"
-              class="editor-related-item"
-              data-related-section="attractions"
-              disabled
-            >
-              <span>🏞️</span>
-
-              <strong>Điểm khám phá</strong>
-
-              <small id="relatedAttractionCount">
                 0 mục
               </small>
             </button>
@@ -1000,288 +985,6 @@
   </div>
 </section>
 <section
-  class="editor-form-card editor-attractions-card"
-  id="destinationAttractionsSection"
-  hidden
->
-  <div class="editor-card-heading">
-    <div>
-      <span class="editor-card-number">
-        08
-      </span>
-
-      <h2>Điểm nên khám phá</h2>
-    </div>
-
-    <p>
-      Quản lý các địa điểm tham quan và trải nghiệm
-      nổi bật nằm trong khu vực du lịch.
-    </p>
-  </div>
-
-  <div class="destination-attraction-management">
-    <div class="destination-attraction-form-panel">
-      <div class="destination-attraction-form-heading">
-        <div>
-          <h3 id="destinationAttractionFormTitle">
-            Thêm điểm khám phá
-          </h3>
-
-          <p id="destinationAttractionFormDescription">
-            Nhập thông tin địa điểm tham quan nổi bật.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          class="destination-attraction-cancel-btn"
-          id="cancelEditDestinationAttractionBtn"
-          hidden
-        >
-          Hủy chỉnh sửa
-        </button>
-      </div>
-
-      <div
-        class="editor-form-grid destination-attraction-form-grid"
-      >
-        <div class="editor-field editor-field-full">
-          <label for="destinationAttractionNameInput">
-            Tên điểm khám phá
-            <span>*</span>
-          </label>
-
-          <input
-            type="text"
-            id="destinationAttractionNameInput"
-            maxlength="180"
-            placeholder="Ví dụ: Hồ Xuân Hương"
-          />
-        </div>
-
-        <div class="editor-field editor-field-full">
-          <label for="destinationAttractionDescriptionInput">
-            Mô tả
-          </label>
-
-          <textarea
-            id="destinationAttractionDescriptionInput"
-            rows="6"
-            maxlength="5000"
-            placeholder="Giới thiệu điểm tham quan, hoạt động nổi bật..."
-          ></textarea>
-
-          <div class="editor-counter">
-            <span id="destinationAttractionDescriptionCounter">
-              0
-            </span>
-            / 5000
-          </div>
-        </div>
-
-        <div class="editor-field editor-field-full">
-          <label for="destinationAttractionAddressInput">
-            Địa chỉ
-          </label>
-
-          <input
-            type="text"
-            id="destinationAttractionAddressInput"
-            maxlength="500"
-            placeholder="Ví dụ: Phường 1, thành phố Đà Lạt"
-          />
-        </div>
-
-        <div class="editor-field editor-field-full">
-          <label for="destinationAttractionMapQueryInput">
-            Từ khóa tìm kiếm bản đồ
-          </label>
-
-          <input
-            type="text"
-            id="destinationAttractionMapQueryInput"
-            placeholder="Ví dụ: Hồ Xuân Hương, Đà Lạt"
-          />
-
-          <small>
-            Nội dung này được dùng để mở vị trí trên bản đồ.
-          </small>
-        </div>
-
-        <div class="editor-field editor-field-wide">
-          <label for="destinationAttractionLatitudeInput">
-            Vĩ độ
-          </label>
-
-          <input
-            type="number"
-            id="destinationAttractionLatitudeInput"
-            min="-90"
-            max="90"
-            step="0.000001"
-            placeholder="11.944419"
-          />
-        </div>
-
-        <div class="editor-field editor-field-wide">
-          <label for="destinationAttractionLongitudeInput">
-            Kinh độ
-          </label>
-
-          <input
-            type="number"
-            id="destinationAttractionLongitudeInput"
-            min="-180"
-            max="180"
-            step="0.000001"
-            placeholder="108.441933"
-          />
-        </div>
-
-        <div class="editor-field editor-field-full">
-          <label for="destinationAttractionImageUrlInput">
-            Đường dẫn ảnh
-          </label>
-
-          <input
-            type="text"
-            id="destinationAttractionImageUrlInput"
-            maxlength="2000"
-            placeholder="/assets/images/ho-xuan-huong.webp hoặc https://..."
-          />
-
-          <small>
-            Đường dẫn phải bắt đầu bằng
-            <strong>/</strong>,
-            <strong>http://</strong> hoặc
-            <strong>https://</strong>.
-          </small>
-        </div>
-
-        <div class="editor-field editor-field-full">
-          <label for="destinationAttractionImageAltInput">
-            Mô tả ảnh
-          </label>
-
-          <input
-            type="text"
-            id="destinationAttractionImageAltInput"
-            maxlength="500"
-            placeholder="Ví dụ: Hồ Xuân Hương nhìn từ trên cao"
-          />
-        </div>
-
-        <div class="editor-field editor-field-wide">
-          <label for="destinationAttractionSourceUrlInput">
-            URL nguồn ảnh
-          </label>
-
-          <input
-            type="text"
-            id="destinationAttractionSourceUrlInput"
-            maxlength="2000"
-            placeholder="https://website-nguon..."
-          />
-        </div>
-
-        <div class="editor-field editor-field-wide">
-          <label for="destinationAttractionImageCreditInput">
-            Nguồn hoặc bản quyền
-          </label>
-
-          <input
-            type="text"
-            id="destinationAttractionImageCreditInput"
-            maxlength="255"
-            placeholder="Ví dụ: Ảnh: Sở Du lịch Lâm Đồng"
-          />
-        </div>
-
-        <div class="editor-field editor-field-wide">
-          <label for="destinationAttractionSortOrderInput">
-            Thứ tự hiển thị
-          </label>
-
-          <input
-            type="number"
-            id="destinationAttractionSortOrderInput"
-            min="0"
-            step="1"
-            value="0"
-          />
-        </div>
-
-        <div class="editor-field editor-field-wide">
-          <label>
-            Trạng thái
-          </label>
-
-          <label class="destination-attraction-active-option">
-            <input
-              type="checkbox"
-              id="destinationAttractionIsActiveInput"
-              checked
-            />
-
-            <span>
-              Cho phép hiển thị điểm khám phá
-            </span>
-          </label>
-        </div>
-      </div>
-
-      <div class="destination-attraction-form-actions">
-        <button
-          type="button"
-          class="destination-attraction-reset-btn"
-          id="resetDestinationAttractionBtn"
-        >
-          Làm trống
-        </button>
-
-        <button
-          type="button"
-          class="destination-attraction-save-btn"
-          id="saveDestinationAttractionBtn"
-        >
-          Thêm điểm khám phá
-        </button>
-      </div>
-    </div>
-
-    <div class="destination-attraction-list-panel">
-      <div class="destination-attraction-list-heading">
-        <div>
-          <h3>Điểm khám phá hiện có</h3>
-
-          <p id="destinationAttractionResultLine">
-            Chưa có điểm khám phá.
-          </p>
-        </div>
-      </div>
-
-      <div
-        class="destination-attraction-empty"
-        id="destinationAttractionEmpty"
-      >
-        <span>🏞️</span>
-
-        <strong>Chưa có điểm khám phá</strong>
-
-        <p>
-          Sử dụng biểu mẫu bên cạnh để thêm địa điểm
-          tham quan đầu tiên.
-        </p>
-      </div>
-
-      <div
-        class="destination-attraction-list"
-        id="destinationAttractionList"
-      ></div>
-    </div>
-  </div>
-</section>
-<section
   class="editor-form-card editor-foods-card"
   id="destinationFoodsSection"
   hidden
@@ -1289,7 +992,7 @@
   <div class="editor-card-heading">
     <div>
       <span class="editor-card-number">
-        09
+        08
       </span>
 
       <h2>Món ăn gợi ý</h2>
@@ -1362,22 +1065,108 @@
         </div>
 
         <div class="editor-field editor-field-full">
+          <label for="destinationFoodImageFileInput">
+            File ảnh món ăn
+          </label>
+
+          <label
+            class="destination-image-upload-box"
+            for="destinationFoodImageFileInput"
+          >
+            <input
+              type="file"
+              id="destinationFoodImageFileInput"
+              accept="image/jpeg,image/png,image/webp"
+            />
+
+            <span
+              class="destination-image-upload-icon"
+              aria-hidden="true"
+            >
+              ↑
+            </span>
+
+            <span class="destination-image-upload-copy">
+              <strong>
+                Chọn ảnh món ăn từ máy tính
+              </strong>
+
+              <small>
+                JPG, PNG hoặc WebP, tối đa 10 MB
+              </small>
+            </span>
+
+            <span class="destination-image-upload-button">
+              Chọn file
+            </span>
+          </label>
+
+          <small>
+            Ảnh sẽ được tối ưu, chuyển sang WebP và
+            lưu trên Cloudflare R2 sau khi món ăn được lưu.
+          </small>
+        </div>
+
+        <div class="editor-field editor-field-full">
+          <div
+            class="destination-image-upload-preview"
+            id="destinationFoodImageUploadPreview"
+          >
+            <div
+              class="destination-image-upload-placeholder"
+              id="destinationFoodImageUploadPlaceholder"
+            >
+              <span aria-hidden="true">
+                🍜
+              </span>
+
+              <strong>
+                Chưa chọn ảnh món ăn
+              </strong>
+
+              <p>
+                Ảnh xem trước sẽ xuất hiện tại đây.
+              </p>
+            </div>
+
+            <img
+              id="destinationFoodImageUploadPreviewImg"
+              alt="Xem trước ảnh món ăn"
+              hidden
+            />
+
+            <div
+              class="destination-image-upload-file-information"
+            >
+              <strong id="destinationFoodImageUploadFileName">
+                Chưa chọn file
+              </strong>
+
+              <span id="destinationFoodImageUploadFileMeta">
+                JPG, PNG hoặc WebP
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="editor-field editor-field-full"
+          id="destinationFoodImageCurrentUrlField"
+          hidden
+        >
           <label for="destinationFoodImageUrlInput">
-            Đường dẫn ảnh
+            Đường dẫn ảnh hiện tại
           </label>
 
           <input
             type="text"
             id="destinationFoodImageUrlInput"
             maxlength="2000"
-            placeholder="/assets/images/banh-can.webp hoặc https://..."
+            readonly
           />
 
           <small>
-            Đường dẫn phải bắt đầu bằng
-            <strong>/</strong>,
-            <strong>http://</strong> hoặc
-            <strong>https://</strong>.
+            Chọn file mới ở phía trên để thay ảnh hiện tại.
           </small>
         </div>
 

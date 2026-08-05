@@ -365,6 +365,486 @@ const destinations =
     }));
   }
 
+
+  /**
+   * Tạo hai nhóm gợi ý cho trang chi tiết:
+   *
+   * - related:
+   *   ưu tiên cùng tỉnh, cùng khu vực và cùng danh mục.
+   *
+   * - featuredElsewhere:
+   *   ưu tiên địa điểm nổi bật ở tỉnh/thành khác,
+   *   sau đó xét lượt xem, ảnh đại diện và tên.
+   *
+   * Không cần thêm bảng hoặc cột mới trong database.
+   */
+  async findRecommendationsBySlug(
+    slug: string,
+  ) {
+    const normalizedSlug = slug
+      .trim()
+      .toLowerCase();
+
+    const currentDestination =
+      await this.prisma.destination.findFirst({
+        where: {
+          slug: normalizedSlug,
+          status: DestinationStatus.PUBLISHED,
+          deletedAt: null,
+        },
+
+        select: {
+          id: true,
+          provinceId: true,
+          primaryCategoryId: true,
+
+          province: {
+            select: {
+              name: true,
+              regionId: true,
+
+              region: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+
+          categories: {
+            select: {
+              categoryId: true,
+            },
+          },
+        },
+      });
+
+    if (!currentDestination) {
+      throw new NotFoundException(
+        `Không tìm thấy địa điểm có slug "${normalizedSlug}".`,
+      );
+    }
+
+    const candidates =
+      await this.prisma.destination.findMany({
+        where: {
+          id: {
+            not: currentDestination.id,
+          },
+
+          status: DestinationStatus.PUBLISHED,
+          deletedAt: null,
+        },
+
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          shortDescription: true,
+          bestTravelTime: true,
+          isFeatured: true,
+          provinceId: true,
+          primaryCategoryId: true,
+
+          province: {
+            select: {
+              name: true,
+              regionId: true,
+
+              region: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+
+          primaryCategory: {
+            select: {
+              name: true,
+            },
+          },
+
+          categories: {
+            select: {
+              categoryId: true,
+
+              category: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+
+          images: {
+            where: {
+              isActive: true,
+            },
+
+            orderBy: {
+              sortOrder: 'asc',
+            },
+
+            take: 1,
+
+            select: {
+              url: true,
+            },
+          },
+
+          _count: {
+            select: {
+              views: true,
+            },
+          },
+        },
+      });
+
+    const currentCategoryIds =
+      new Set<string>(
+        [
+          currentDestination.primaryCategoryId,
+          ...currentDestination.categories.map(
+            (item) => item.categoryId,
+          ),
+        ].filter(
+          (value): value is string =>
+            Boolean(value),
+        ),
+      );
+
+    const scoredCandidates =
+      candidates.map((candidate) => {
+        const candidateCategoryIds =
+          new Set<string>(
+            [
+              candidate.primaryCategoryId,
+              ...candidate.categories.map(
+                (item) => item.categoryId,
+              ),
+            ].filter(
+              (value): value is string =>
+                Boolean(value),
+            ),
+          );
+
+        let sharedCategoryCount = 0;
+
+        currentCategoryIds.forEach(
+          (categoryId) => {
+            if (
+              candidateCategoryIds.has(
+                categoryId,
+              )
+            ) {
+              sharedCategoryCount += 1;
+            }
+          },
+        );
+
+        const sameProvince =
+          candidate.provinceId ===
+          currentDestination.provinceId;
+
+        const sameRegion =
+          candidate.province.regionId ===
+          currentDestination.province.regionId;
+
+        /*
+         * Điểm liên quan:
+         * - cùng tỉnh/thành: ưu tiên cao nhất
+         * - cùng vùng miền
+         * - cùng danh mục
+         * - nổi bật, có ảnh, có lượt xem:
+         *   dùng làm tiêu chí phụ khi bằng điểm
+         */
+        const relationScore =
+          (sameProvince ? 100 : 0) +
+          (sameRegion ? 50 : 0) +
+          sharedCategoryCount * 25;
+
+        const rankingScore =
+          relationScore +
+          (candidate.isFeatured ? 12 : 0) +
+          (candidate.images.length > 0
+            ? 6
+            : 0) +
+          Math.min(
+            candidate._count.views,
+            20,
+          );
+
+        let relationshipLabel =
+          'Cùng danh mục';
+
+        if (sameProvince) {
+          relationshipLabel =
+            `Cùng tỉnh/thành ${candidate.province.name}`;
+        } else if (sameRegion) {
+          relationshipLabel =
+            `Cùng khu vực ${candidate.province.region.name}`;
+        } else if (
+          sharedCategoryCount > 0
+        ) {
+          relationshipLabel =
+            'Cùng loại hình du lịch';
+        }
+
+        return {
+          candidate,
+          sameProvince,
+          sameRegion,
+          sharedCategoryCount,
+          relationScore,
+          rankingScore,
+          relationshipLabel,
+        };
+      });
+
+    const relatedEntries =
+      scoredCandidates
+        .filter(
+          (entry) =>
+            entry.relationScore > 0,
+        )
+        .sort((first, second) => {
+          if (
+            second.rankingScore !==
+            first.rankingScore
+          ) {
+            return (
+              second.rankingScore -
+              first.rankingScore
+            );
+          }
+
+          if (
+            Number(
+              second.candidate.isFeatured,
+            ) !==
+            Number(
+              first.candidate.isFeatured,
+            )
+          ) {
+            return (
+              Number(
+                second.candidate.isFeatured,
+              ) -
+              Number(
+                first.candidate.isFeatured,
+              )
+            );
+          }
+
+          if (
+            second.candidate._count.views !==
+            first.candidate._count.views
+          ) {
+            return (
+              second.candidate._count.views -
+              first.candidate._count.views
+            );
+          }
+
+          return first.candidate.name.localeCompare(
+            second.candidate.name,
+            'vi',
+          );
+        })
+        .slice(0, 4);
+
+    const relatedIds =
+      new Set(
+        relatedEntries.map(
+          (entry) => entry.candidate.id,
+        ),
+      );
+
+    const featuredElsewhereEntries =
+      scoredCandidates
+        .filter(
+          (entry) =>
+            entry.candidate.provinceId !==
+              currentDestination.provinceId &&
+            !relatedIds.has(
+              entry.candidate.id,
+            ),
+        )
+        .sort((first, second) => {
+          if (
+            Number(
+              second.candidate.isFeatured,
+            ) !==
+            Number(
+              first.candidate.isFeatured,
+            )
+          ) {
+            return (
+              Number(
+                second.candidate.isFeatured,
+              ) -
+              Number(
+                first.candidate.isFeatured,
+              )
+            );
+          }
+
+          /*
+           * Khi mức nổi bật bằng nhau,
+           * ưu tiên điểm đến ở vùng miền khác
+           * để phần cuối trang đa dạng hơn.
+           */
+          const firstDifferentRegion =
+            first.candidate.province.regionId !==
+            currentDestination.province.regionId;
+
+          const secondDifferentRegion =
+            second.candidate.province.regionId !==
+            currentDestination.province.regionId;
+
+          if (
+            Number(secondDifferentRegion) !==
+            Number(firstDifferentRegion)
+          ) {
+            return (
+              Number(secondDifferentRegion) -
+              Number(firstDifferentRegion)
+            );
+          }
+
+          if (
+            second.candidate._count.views !==
+            first.candidate._count.views
+          ) {
+            return (
+              second.candidate._count.views -
+              first.candidate._count.views
+            );
+          }
+
+          if (
+            Number(
+              second.candidate.images.length >
+                0,
+            ) !==
+            Number(
+              first.candidate.images.length >
+                0,
+            )
+          ) {
+            return (
+              Number(
+                second.candidate.images.length >
+                  0,
+              ) -
+              Number(
+                first.candidate.images.length >
+                  0,
+              )
+            );
+          }
+
+          return first.candidate.name.localeCompare(
+            second.candidate.name,
+            'vi',
+          );
+        })
+        .slice(0, 6);
+
+    const mapRecommendation = (
+      entry:
+        (typeof scoredCandidates)[number],
+      recommendationType:
+        | 'related'
+        | 'featuredElsewhere',
+    ) => {
+      const candidate = entry.candidate;
+
+      return {
+        id: candidate.slug,
+        databaseId: candidate.id,
+        slug: candidate.slug,
+        name: candidate.name,
+        shortDescription:
+          candidate.shortDescription,
+
+        province: candidate.province.name,
+        region:
+          candidate.province.region.name,
+
+        type:
+          candidate.primaryCategory?.name ??
+          null,
+
+        categories: candidate.categories
+          .map(
+            (item) => item.category.name,
+          )
+          .sort(
+            (
+              firstName,
+              secondName,
+            ) =>
+              firstName.localeCompare(
+                secondName,
+                'vi',
+              ),
+          ),
+
+        time: candidate.bestTravelTime,
+
+        images: candidate.images.map(
+          (image) => image.url,
+        ),
+
+        isFeatured:
+          candidate.isFeatured,
+
+        viewCount:
+          candidate._count.views,
+
+        recommendationType,
+
+        relationshipLabel:
+          recommendationType ===
+          'related'
+            ? entry.relationshipLabel
+            : candidate.isFeatured
+              ? 'Điểm đến nổi bật'
+              : 'Gợi ý khám phá nơi khác',
+      };
+    };
+
+    return {
+      current: {
+        slug: normalizedSlug,
+        province:
+          currentDestination.province.name,
+        region:
+          currentDestination.province.region
+            .name,
+      },
+
+      related: relatedEntries.map(
+        (entry) =>
+          mapRecommendation(
+            entry,
+            'related',
+          ),
+      ),
+
+      featuredElsewhere:
+        featuredElsewhereEntries.map(
+          (entry) =>
+            mapRecommendation(
+              entry,
+              'featuredElsewhere',
+            ),
+        ),
+    };
+  }
+
   /**
    * Lấy toàn bộ nội dung chi tiết theo slug.
    */

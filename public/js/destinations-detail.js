@@ -300,7 +300,9 @@
       .join('');
   }
 
-  function renderHighlights(items) {
+  function renderExploreRecommendations(
+    items
+  ) {
     const container =
       document.getElementById(
         'highlightGrid'
@@ -316,7 +318,7 @@
     ) {
       container.innerHTML = `
         <p class="detail-empty">
-          Chưa có dữ liệu điểm khám phá.
+          Chưa có địa điểm liên quan phù hợp.
         </p>
       `;
 
@@ -325,34 +327,45 @@
 
     container.innerHTML = items
       .map((item) => {
+        const itemSlug =
+          String(
+            item.slug ||
+            item.id ||
+            ''
+          ).trim();
+
         const image =
-          safeImageUrl(item.image);
+          getImages(item)[0];
 
-        const mapQuery =
-          item.mapQuery ||
-          item.address ||
-          item.name ||
-          '';
-
-        const mapUrl =
-          'https://www.google.com/maps/search/' +
-          '?api=1&query=' +
-          encodeURIComponent(mapQuery);
+        const detailUrl =
+          '/destinations-detail.html?id=' +
+          encodeURIComponent(
+            itemSlug
+          );
 
         return `
-          <article class="detail-media-card">
-            <div
+          <article
+            class="
+              detail-media-card
+              destination-recommendation-card
+            "
+          >
+            <a
               class="
                 detail-media-image
                 media-frame
               "
+              href="${escapeHtml(detailUrl)}"
+              aria-label="Xem ${escapeHtml(
+                item.name ||
+                'địa điểm liên quan'
+              )}"
             >
               <img
                 src="${escapeHtml(image)}"
                 alt="${escapeHtml(
-                  item.imageAlt ||
                   item.name ||
-                  'Điểm khám phá'
+                  'Địa điểm liên quan'
                 )}"
                 width="800"
                 height="500"
@@ -364,9 +377,12 @@
               <span
                 class="detail-media-label"
               >
-                Điểm khám phá
+                ${escapeHtml(
+                  item.relationshipLabel ||
+                  'Địa điểm liên quan'
+                )}
               </span>
-            </div>
+            </a>
 
             <div
               class="detail-media-content"
@@ -374,44 +390,52 @@
               <h3>
                 ${escapeHtml(
                   item.name ||
-                  'Điểm khám phá'
+                  'Địa điểm'
                 )}
               </h3>
 
               <p>
                 ${escapeHtml(
-                  item.description ||
+                  item.shortDescription ||
                   'Thông tin đang được cập nhật.'
                 )}
               </p>
 
-              ${
-                item.address
-                  ? `
-                    <div
-                      class="detail-media-meta"
-                    >
-                      <strong>
-                        Địa chỉ:
-                      </strong>
+              <div
+                class="detail-media-meta"
+              >
+                <strong>
+                  Tỉnh/thành:
+                </strong>
 
-                      <span>
-                        ${escapeHtml(
-                          item.address
-                        )}
-                      </span>
-                    </div>
-                  `
-                  : ''
-              }
+                <span>
+                  ${escapeHtml(
+                    item.province ||
+                    'Đang cập nhật'
+                  )}
+                </span>
+              </div>
+
+              <div
+                class="detail-media-meta"
+              >
+                <strong>
+                  Khu vực:
+                </strong>
+
+                <span>
+                  ${escapeHtml(
+                    item.region ||
+                    'Đang cập nhật'
+                  )}
+                </span>
+              </div>
 
               <a
-                href="${escapeHtml(mapUrl)}"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="${escapeHtml(detailUrl)}"
                 class="detail-media-link"
               >
-                Xem trên bản đồ
+                Xem địa điểm
               </a>
             </div>
           </article>
@@ -627,40 +651,8 @@
       '&output=embed';
   }
 
-  function calculateRelatedScore(
-    currentPlace,
-    otherPlace
-  ) {
-    let score = 0;
-
-    if (
-      currentPlace.region ===
-      otherPlace.region
-    ) {
-      score += 3;
-    }
-
-    const currentCategories =
-      new Set(
-        getCategories(currentPlace)
-      );
-
-    getCategories(otherPlace).forEach(
-      (category) => {
-        if (
-          currentCategories.has(category)
-        ) {
-          score += 1;
-        }
-      }
-    );
-
-    return score;
-  }
-
-  function renderRelatedPlaces(
-    currentPlace,
-    destinations
+  function renderFeaturedElsewhere(
+    items
   ) {
     const container =
       document.getElementById(
@@ -671,134 +663,107 @@
       return;
     }
 
-    const relatedPlaces =
-      destinations
-        .filter(
-          (item) =>
-            (item.id || item.slug) !==
-            currentPlace.slug
-        )
-        .map((item) => ({
-          item,
-
-          score:
-            calculateRelatedScore(
-              currentPlace,
-              item
-            )
-        }))
-        .filter(
-          (entry) =>
-            entry.score > 0
-        )
-        .sort(
-          (first, second) =>
-            second.score - first.score
-        )
-        .slice(0, 3)
-        .map(
-          (entry) => entry.item
-        );
-
     if (
-      relatedPlaces.length === 0
+      !Array.isArray(items) ||
+      items.length === 0
     ) {
       container.innerHTML = `
         <p class="related-empty">
-          Chưa có địa điểm liên quan.
+          Chưa có địa điểm nổi bật ở nơi khác.
         </p>
       `;
 
       return;
     }
 
-    container.innerHTML =
-      relatedPlaces
-        .map((item) => {
-            const itemSlug =
-              String(
-                item.slug ||
-                item.id ||
-                ''
-              ).trim();
+    container.innerHTML = items
+      .map((item) => {
+        const itemSlug =
+          String(
+            item.slug ||
+            item.id ||
+            ''
+          ).trim();
 
-            const image =
-              getImages(item)[0];
+        const image =
+          getImages(item)[0];
 
-            /*
-            * Tạo URL hoàn chỉnh ở JavaScript,
-            * không ngắt dòng giữa tên file và ?id.
-            */
-            const detailUrl =
-              '/destinations-detail.html?id=' +
-              encodeURIComponent(
-                itemSlug
-              );
+        const detailUrl =
+          '/destinations-detail.html?id=' +
+          encodeURIComponent(
+            itemSlug
+          );
 
-            return `
-            <article class="related-card">
-              <a
-                class="
-                  related-image
-                  media-frame
-                "
-                href="
-                  /destinations-detail.html
-                  ?id=${encodeURIComponent(
-                    itemSlug
-                  )}
-                "
-                aria-label="
-                  Xem ${escapeHtml(
-                    item.name
-                  )}
-                "
+        return `
+          <article class="related-card">
+            <a
+              class="
+                related-image
+                media-frame
+              "
+              href="${escapeHtml(detailUrl)}"
+              aria-label="Xem ${escapeHtml(
+                item.name ||
+                'địa điểm nổi bật'
+              )}"
+            >
+              <img
+                src="${escapeHtml(image)}"
+                alt="${escapeHtml(
+                  item.name ||
+                  'Địa điểm du lịch'
+                )}"
+                width="800"
+                height="500"
+                loading="lazy"
+                decoding="async"
+                data-fallback="${fallbackImage}"
+              />
+            </a>
+
+            <div class="related-content">
+              <span>
+                ${escapeHtml(
+                  item.relationshipLabel ||
+                  'Gợi ý khám phá nơi khác'
+                )}
+              </span>
+
+              <h3>
+                ${escapeHtml(
+                  item.name ||
+                  'Địa điểm'
+                )}
+              </h3>
+
+              <p>
+                ${escapeHtml(
+                  item.shortDescription ||
+                  'Thông tin đang được cập nhật.'
+                )}
+              </p>
+
+              <div
+                class="recommendation-location"
               >
-                <img
-                  src="${escapeHtml(image)}"
-                  alt="${escapeHtml(
-                    item.name ||
-                    'Địa điểm du lịch'
-                  )}"
-                  width="800"
-                  height="500"
-                  loading="lazy"
-                  decoding="async"
-                  data-fallback="${fallbackImage}"
-                />
-              </a>
-
-              <div class="related-content">
-                <span>
-                  ${escapeHtml(
-                    item.province ||
-                    item.region ||
-                    ''
-                  )}
-                </span>
-
-                <h3>
-                  ${escapeHtml(
-                    item.name ||
-                    'Địa điểm'
-                  )}
-                </h3>
-
-                <p>
-                  ${escapeHtml(
-                    item.shortDescription ||
-                    'Thông tin đang được cập nhật.'
-                  )}
-                </p>
-
-                <a href="${escapeHtml(detailUrl)}">
-                  Xem chi tiết
-                </a>
+                ${escapeHtml(
+                  [
+                    item.province,
+                    item.region
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+                )}
               </div>
-            </article>
-          `;
-        })
-        .join('');
+
+              <a href="${escapeHtml(detailUrl)}">
+                Xem chi tiết
+              </a>
+            </div>
+          </article>
+        `;
+      })
+      .join('');
 
     window.ImageUtils?.scan(
       container
@@ -875,7 +840,7 @@
 
   function renderPlace(
     place,
-    destinations
+    recommendations
   ) {
     const images =
       getImages(place);
@@ -948,13 +913,17 @@
     renderBadges(place);
     renderGallery(place);
     renderFeatures(place.features);
-    renderHighlights(place.highlights);
+
+    renderExploreRecommendations(
+      recommendations?.related
+    );
+
     renderFoods(place.foods);
     renderMap(place);
 
-    renderRelatedPlaces(
-      place,
-      destinations
+    renderFeaturedElsewhere(
+      recommendations
+        ?.featuredElsewhere
     );
 
     setupActions(place);
@@ -974,7 +943,7 @@
     try {
       const [
         place,
-        destinations
+        recommendations
       ] = await Promise.all([
         fetchJson(
           '/api/destinations/' +
@@ -982,8 +951,20 @@
         ),
 
         fetchJson(
-          '/api/destinations'
-        )
+          '/api/destinations/' +
+          encodeURIComponent(slug) +
+          '/recommendations'
+        ).catch((error) => {
+          console.warn(
+            '[DESTINATION RECOMMENDATIONS]',
+            error
+          );
+
+          return {
+            related: [],
+            featuredElsewhere: []
+          };
+        })
       ]);
 
       if (
@@ -995,16 +976,19 @@
         );
       }
 
-      const list =
-        Array.isArray(destinations)
-          ? destinations
-          : [];
-
-
+      const recommendationData =
+        recommendations &&
+        typeof recommendations ===
+          'object'
+          ? recommendations
+          : {
+              related: [],
+              featuredElsewhere: []
+            };
 
       renderPlace(
         place,
-        list
+        recommendationData
       );
     } catch (error) {
       console.error(

@@ -767,6 +767,16 @@ async hardDelete(
                 true,
             },
           },
+
+          foods: {
+            select: {
+              id:
+                true,
+
+              imageUrl:
+                true,
+            },
+          },
         },
       });
 
@@ -811,6 +821,33 @@ const destinationImageStorageKeys =
     ),
   );
 
+const destinationFoodStorageKeys =
+  existingDestination.foods
+    .filter(
+      (food) =>
+        food.imageUrl
+          ?.startsWith(
+            `/api/destination-images/foods/${food.id}/content`,
+          ),
+    )
+    .map(
+      (food) =>
+        [
+          'destinations',
+          existingDestination.id,
+          'foods',
+          `${food.id}.webp`,
+        ].join('/'),
+    );
+
+const allDestinationStorageKeys =
+  Array.from(
+    new Set([
+      ...destinationImageStorageKeys,
+      ...destinationFoodStorageKeys,
+    ]),
+  );
+
 /*
  * Xóa file R2 trước khi xóa cứng database.
  *
@@ -820,7 +857,7 @@ const destinationImageStorageKeys =
  */
 for (
   const storageKey of
-  destinationImageStorageKeys
+  allDestinationStorageKeys
 ) {
   await this
     .destinationImageStorageService
@@ -905,6 +942,12 @@ for (
 
       deletedImageObjectCount:
         destinationImageStorageKeys.length,
+
+      deletedFoodImageObjectCount:
+        destinationFoodStorageKeys.length,
+
+      deletedStorageObjectCount:
+        allDestinationStorageKeys.length,
     },
   };
 }
@@ -5129,6 +5172,226 @@ async createFood(
       createdFood,
   };
 }
+async uploadFoodImage(
+  currentAdminId: string,
+  destinationId: string,
+  foodId: string,
+  file: Express.Multer.File,
+  requestInfo:
+    AdminDestinationAuditRequestInfo,
+) {
+  const destination =
+    await this.prisma.destination.findFirst({
+      where: {
+        id:
+          destinationId,
+
+        deletedAt:
+          null,
+      },
+
+      select: {
+        id:
+          true,
+
+        name:
+          true,
+      },
+    });
+
+  if (!destination) {
+    throw new NotFoundException(
+      'Không tìm thấy địa điểm.',
+    );
+  }
+
+  const existingFood =
+    await this.prisma
+      .destinationFood
+      .findFirst({
+        where: {
+          id:
+            foodId,
+
+          destinationId:
+            destination.id,
+        },
+      });
+
+  if (!existingFood) {
+    throw new NotFoundException(
+      'Không tìm thấy món ăn của địa điểm.',
+    );
+  }
+
+  if (
+    !file ||
+    !Buffer.isBuffer(
+      file.buffer,
+    ) ||
+    file.buffer.length === 0
+  ) {
+    throw new BadRequestException(
+      'Bạn chưa chọn file ảnh món ăn cần tải lên.',
+    );
+  }
+
+  /*
+   * Ảnh món ăn dùng object key cố định.
+   * Upload lần sau sẽ thay đúng file cũ,
+   * không sinh file rác trên R2.
+   */
+  const objectKey =
+    [
+      'destinations',
+      destination.id,
+      'foods',
+      `${existingFood.id}.webp`,
+    ].join('/');
+
+  const uploadedImage =
+    await this
+      .destinationImageStorageService
+      .processAndUpload({
+        destinationId:
+          destination.id,
+
+        buffer:
+          file.buffer,
+
+        mimeType:
+          file.mimetype,
+
+        originalName:
+          file.originalname,
+
+        objectKey,
+      });
+
+  /*
+   * Thêm version vào URL để trình duyệt không
+   * giữ ảnh cũ sau khi Admin thay file.
+   */
+  const imageUrl =
+    (
+      `/api/destination-images/foods/` +
+      `${existingFood.id}/content` +
+      `?v=${Date.now()}`
+    );
+
+  const auditIpAddress =
+    requestInfo.ipAddress
+      ?.trim()
+      .slice(0, 64) ||
+    null;
+
+  const auditUserAgent =
+    requestInfo.userAgent
+      ?.trim()
+      .slice(0, 2000) ||
+    null;
+
+  const updatedFood =
+    await this.prisma.$transaction(
+      async (transaction) => {
+        const food =
+          await transaction
+            .destinationFood
+            .update({
+              where: {
+                id:
+                  existingFood.id,
+              },
+
+              data: {
+                imageUrl,
+
+                imageAlt:
+                  existingFood.imageAlt ??
+                  `${existingFood.name} tại ${destination.name}`,
+              },
+            });
+
+        await transaction.destination.update({
+          where: {
+            id:
+              destination.id,
+          },
+
+          data: {
+            updatedById:
+              currentAdminId,
+          },
+        });
+
+        await transaction.auditLog.create({
+          data: {
+            actorUserId:
+              currentAdminId,
+
+            action:
+              'UPLOAD_DESTINATION_FOOD_IMAGE',
+
+            entityType:
+              'DESTINATION_FOOD',
+
+            entityId:
+              food.id,
+
+            oldData:
+              this.toFoodAuditSnapshot(
+                existingFood,
+              ),
+
+            newData:
+              this.toFoodAuditSnapshot(
+                food,
+              ),
+
+            ipAddress:
+              auditIpAddress,
+
+            userAgent:
+              auditUserAgent,
+          },
+        });
+
+        return food;
+      },
+    );
+
+  return {
+    success: true,
+
+    message:
+      'Tải ảnh món ăn lên thành công.',
+
+    data: {
+      ...updatedFood,
+
+      upload: {
+        objectKey:
+          uploadedImage.objectKey,
+
+        mimeType:
+          uploadedImage.mimeType,
+
+        fileExtension:
+          uploadedImage.fileExtension,
+
+        sizeBytes:
+          uploadedImage.sizeBytes,
+
+        width:
+          uploadedImage.width,
+
+        height:
+          uploadedImage.height,
+      },
+    },
+  };
+}
+
 async updateFood(
   currentAdminId: string,
   destinationId: string,
@@ -5403,6 +5666,34 @@ async deleteFood(
     throw new NotFoundException(
       'Không tìm thấy món ăn của địa điểm.',
     );
+  }
+
+  const internalImagePrefix =
+    `/api/destination-images/foods/${existingFood.id}/content`;
+
+  if (
+    existingFood.imageUrl
+      ?.startsWith(
+        internalImagePrefix,
+      )
+  ) {
+    const objectKey =
+      [
+        'destinations',
+        destinationId,
+        'foods',
+        `${existingFood.id}.webp`,
+      ].join('/');
+
+    /*
+     * Xóa object trước khi xóa database.
+     * Hàm deleteImageObject là idempotent.
+     */
+    await this
+      .destinationImageStorageService
+      .deleteImageObject(
+        objectKey,
+      );
   }
 
   const auditIpAddress =

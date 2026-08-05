@@ -32,6 +32,161 @@ export class DestinationImagesController {
   ) {}
 
   /**
+   * Đọc ảnh món ăn từ Cloudflare R2.
+   *
+   * GET /api/destination-images/foods/:foodId/content
+   *
+   * Object key của ảnh món ăn được xác định ổn định
+   * theo destinationId và foodId, nên không cần thêm
+   * cột storageKey vào bảng destination_foods.
+   */
+  @Get('foods/:foodId/content')
+  async getFoodImageContent(
+    @Param(
+      'foodId',
+      new ParseUUIDPipe({
+        version:
+          '4',
+      }),
+    )
+    foodId:
+      string,
+
+    @Req()
+    request:
+      Request,
+
+    @Res()
+    response:
+      Response,
+  ) {
+    const food =
+      await this.prisma
+        .destinationFood
+        .findFirst({
+          where: {
+            id:
+              foodId,
+
+            destination: {
+              is: {
+                deletedAt:
+                  null,
+              },
+            },
+          },
+
+          select: {
+            id:
+              true,
+
+            destinationId:
+              true,
+
+            imageUrl:
+              true,
+          },
+        });
+
+    const expectedImagePath =
+      `/api/destination-images/foods/${foodId}/content`;
+
+    if (
+      !food ||
+      !food.imageUrl ||
+      !food.imageUrl.startsWith(
+        expectedImagePath,
+      )
+    ) {
+      throw new NotFoundException(
+        'Không tìm thấy ảnh món ăn.',
+      );
+    }
+
+    const objectKey =
+      [
+        'destinations',
+        food.destinationId,
+        'foods',
+        `${food.id}.webp`,
+      ].join('/');
+
+    const downloadedImage =
+      await this
+        .destinationImageStorageService
+        .downloadImage(
+          objectKey,
+        );
+
+    const requestEtag =
+      request.get(
+        'if-none-match',
+      );
+
+    if (
+      downloadedImage.etag &&
+      requestEtag ===
+        downloadedImage.etag
+    ) {
+      return response
+        .status(304)
+        .end();
+    }
+
+    response.setHeader(
+      'Content-Type',
+      downloadedImage.mimeType,
+    );
+
+    response.setHeader(
+      'Content-Length',
+      downloadedImage
+        .buffer
+        .length
+        .toString(),
+    );
+
+    response.setHeader(
+      'Content-Disposition',
+      `inline; filename="destination-food-${food.id}.webp"`,
+    );
+
+    response.setHeader(
+      'Cache-Control',
+      `public, max-age=${this.destinationImageStorageService.getCacheSeconds()}`,
+    );
+
+    response.setHeader(
+      'X-Content-Type-Options',
+      'nosniff',
+    );
+
+    if (
+      downloadedImage.etag
+    ) {
+      response.setHeader(
+        'ETag',
+        downloadedImage.etag,
+      );
+    }
+
+    if (
+      downloadedImage.lastModified
+    ) {
+      response.setHeader(
+        'Last-Modified',
+        downloadedImage
+          .lastModified
+          .toUTCString(),
+      );
+    }
+
+    return response.send(
+      downloadedImage.buffer,
+    );
+  }
+
+  /**
    * Đọc ảnh địa điểm từ Cloudflare R2.
    *
    * GET /api/destination-images/:imageId/content
