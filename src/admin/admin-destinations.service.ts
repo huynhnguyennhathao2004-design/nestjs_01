@@ -6,6 +6,18 @@ import {
 } from '@nestjs/common';
 
 import {
+  randomUUID,
+} from 'node:crypto';
+
+import {
+  DestinationImageStorageService,
+} from '../storage/destination-image-storage.service';
+
+import {
+  UploadDestinationImageDto,
+} from './dto/upload-destination-image.dto';
+
+import {
   Prisma,
 } from '../generated/prisma/client';
 
@@ -140,10 +152,13 @@ function normalizeSearchSlug(
 }
 @Injectable()
 export class AdminDestinationsService {
-  constructor(
-    private readonly prisma:
-      PrismaService,
-  ) {}
+constructor(
+  private readonly prisma:
+    PrismaService,
+
+  private readonly destinationImageStorageService:
+    DestinationImageStorageService,
+) {}
 
   private toSlug(
     value: string,
@@ -573,7 +588,131 @@ private toAuditSnapshot(
         .sort(),
   };
 }
+async hardDeleteAll(
+  currentAdminId: string,
 
+  requestInfo:
+    AdminDestinationAuditRequestInfo,
+) {
+  /*
+   * Chỉ lấy các địa điểm đã được
+   * chuyển vào thùng rác.
+   */
+  const destinations =
+    await this.prisma.destination.findMany({
+      where: {
+        deletedAt: {
+          not: null,
+        },
+      },
+
+      orderBy: [
+        {
+          deletedAt: 'asc',
+        },
+
+        {
+          id: 'asc',
+        },
+      ],
+
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+  if (destinations.length === 0) {
+    return {
+      success: true,
+
+      message:
+        'Thùng rác địa điểm đang trống.',
+
+      data: {
+        total: 0,
+        deletedCount: 0,
+        failedCount: 0,
+        failedIds: [],
+      },
+    };
+  }
+
+  let deletedCount = 0;
+
+  const failedIds:
+    string[] = [];
+
+  /*
+   * Gọi lại hardDelete của từng địa điểm.
+   *
+   * Nhờ vậy toàn bộ xử lý hiện có như:
+   * - xóa ảnh trên R2;
+   * - xóa dữ liệu liên quan;
+   * - ghi audit log;
+   * vẫn được giữ nguyên.
+   */
+  for (
+    const destination of destinations
+  ) {
+    try {
+      await this.hardDelete(
+        currentAdminId,
+        destination.id,
+        requestInfo,
+      );
+
+      deletedCount += 1;
+    } catch (error: unknown) {
+      failedIds.push(
+        destination.id,
+      );
+
+      console.error(
+        '[AdminDestinationsService] Không thể xóa địa điểm trong thao tác xóa tất cả:',
+        {
+          destinationId:
+            destination.id,
+
+          destinationName:
+            destination.name,
+
+          error:
+            error instanceof Error
+              ? error.message
+              : 'UnknownError',
+        },
+      );
+    }
+  }
+
+  const failedCount =
+    failedIds.length;
+
+  return {
+    success:
+      failedCount === 0,
+
+    message:
+      failedCount === 0
+        ? `Đã xóa vĩnh viễn ${deletedCount} địa điểm.`
+        : (
+            `Đã xóa ${deletedCount}/${destinations.length} địa điểm. ` +
+            `${failedCount} địa điểm chưa xóa được.`
+          ),
+
+    data: {
+      total:
+        destinations.length,
+
+      deletedCount,
+
+      failedCount,
+
+      failedIds,
+    },
+  };
+}
 async hardDelete(
   currentAdminId: string,
   destinationId: string,
@@ -612,6 +751,22 @@ async hardDelete(
               categoryId: true,
             },
           },
+          images: {
+            where: {
+              storageKey: {
+                not:
+                  null,
+              },
+            },
+
+            select: {
+              id:
+                true,
+
+              storageKey:
+                true,
+            },
+          },
         },
       });
 
@@ -632,6 +787,47 @@ async hardDelete(
       'Bạn phải chuyển địa điểm vào thùng rác trước khi xóa vĩnh viễn.',
     );
   }
+  /*
+ * Thu thập các object thuộc hệ thống R2 mới.
+ * Ảnh local cũ hoặc URL ngoài không có
+ * storageKey sẽ được database cascade xóa.
+ */
+const destinationImageStorageKeys =
+  Array.from(
+    new Set(
+      existingDestination.images
+        .map(
+          (image) =>
+            image.storageKey
+              ?.trim() ||
+            '',
+        )
+        .filter(
+          (storageKey) =>
+            storageKey.startsWith(
+              'destinations/',
+            ),
+        ),
+    ),
+  );
+
+/*
+ * Xóa file R2 trước khi xóa cứng database.
+ *
+ * deleteImageObject là idempotent:
+ * object đã mất vẫn được xem là xóa thành công.
+ * Vì vậy có thể thử lại nếu thao tác bị gián đoạn.
+ */
+for (
+  const storageKey of
+  destinationImageStorageKeys
+) {
+  await this
+    .destinationImageStorageService
+    .deleteImageObject(
+      storageKey,
+    );
+}
 
   const auditIpAddress =
     requestInfo.ipAddress
@@ -706,6 +902,9 @@ async hardDelete(
 
       slug:
         existingDestination.slug,
+
+      deletedImageObjectCount:
+        destinationImageStorageKeys.length,
     },
   };
 }
@@ -2820,7 +3019,315 @@ async restore(
       restoredDetail.data,
   };
 }
+async uploadImage(
+  currentAdminId: string,
+  destinationId: string,
+  file: Express.Multer.File,
+  dto: UploadDestinationImageDto,
+  requestInfo:
+    AdminDestinationAuditRequestInfo,
+) {
+  const destination =
+    await this.prisma
+      .destination
+      .findFirst({
+        where: {
+          id:
+            destinationId,
 
+          deletedAt:
+            null,
+        },
+
+        select: {
+          id:
+            true,
+
+          name:
+            true,
+        },
+      });
+
+  if (!destination) {
+    throw new NotFoundException(
+      'Không tìm thấy địa điểm.',
+    );
+  }
+
+  if (
+    !file ||
+    !Buffer.isBuffer(
+      file.buffer,
+    ) ||
+    file.buffer.length === 0
+  ) {
+    throw new BadRequestException(
+      'Bạn chưa chọn file ảnh cần tải lên.',
+    );
+  }
+
+  const imageType =
+    dto.imageType ??
+    DestinationImageType.GALLERY;
+
+  const isActive =
+    dto.isActive ??
+    true;
+
+  if (
+    imageType ===
+      DestinationImageType.COVER &&
+    !isActive
+  ) {
+    throw new BadRequestException(
+      'Ảnh bìa phải ở trạng thái hoạt động.',
+    );
+  }
+
+  /*
+   * Sinh trước UUID của DestinationImage để
+   * URL có thể được lưu ngay trong lần INSERT.
+   */
+  const imageId =
+    randomUUID();
+
+  const imageUrl =
+    `/api/destination-images/${imageId}/content`;
+
+  /*
+   * Upload R2 trước.
+   *
+   * Nếu upload thất bại, database chưa thay đổi.
+   */
+  const uploadedImage =
+    await this
+      .destinationImageStorageService
+      .processAndUpload({
+        destinationId:
+          destination.id,
+
+        buffer:
+          file.buffer,
+
+        mimeType:
+          file.mimetype,
+
+        originalName:
+          file.originalname,
+      });
+
+  const auditIpAddress =
+    requestInfo.ipAddress
+      ?.trim()
+      .slice(
+        0,
+        64,
+      ) ||
+    null;
+
+  const auditUserAgent =
+    requestInfo.userAgent
+      ?.trim()
+      .slice(
+        0,
+        2000,
+      ) ||
+    null;
+
+  try {
+    const createdImage =
+      await this.prisma
+        .$transaction(
+          async (
+            transaction,
+          ) => {
+            /*
+             * Mỗi địa điểm chỉ có một COVER.
+             * Ảnh COVER cũ được chuyển thành GALLERY.
+             */
+            if (
+              imageType ===
+              DestinationImageType.COVER
+            ) {
+              await transaction
+                .destinationImage
+                .updateMany({
+                  where: {
+                    destinationId:
+                      destination.id,
+
+                    imageType:
+                      DestinationImageType.COVER,
+                  },
+
+                  data: {
+                    imageType:
+                      DestinationImageType.GALLERY,
+                  },
+                });
+            }
+
+            const image =
+              await transaction
+                .destinationImage
+                .create({
+                  data: {
+                    id:
+                      imageId,
+
+                    destinationId:
+                      destination.id,
+
+                    url:
+                      imageUrl,
+
+                    storageKey:
+                      uploadedImage
+                        .objectKey,
+
+                    altText:
+                      dto.altText ??
+                      `${destination.name} - hình ảnh`,
+
+                    imageType,
+
+                    sourceUrl:
+                      dto.sourceUrl ??
+                      null,
+
+                    imageCredit:
+                      dto.imageCredit ??
+                      null,
+
+                    sortOrder:
+                      dto.sortOrder ??
+                      0,
+
+                    isActive,
+                  },
+                });
+
+            /*
+             * Cập nhật thời gian chỉnh sửa địa điểm
+             * và ghi nhận Admin thực hiện thao tác.
+             */
+            await transaction
+              .destination
+              .update({
+                where: {
+                  id:
+                    destination.id,
+                },
+
+                data: {
+                  updatedById:
+                    currentAdminId,
+                },
+              });
+
+            await transaction
+              .auditLog
+              .create({
+                data: {
+                  actorUserId:
+                    currentAdminId,
+
+                  action:
+                    'UPLOAD_DESTINATION_IMAGE',
+
+                  entityType:
+                    'DESTINATION_IMAGE',
+
+                  entityId:
+                    image.id,
+
+                  oldData:
+                    Prisma.DbNull,
+
+                  newData:
+                    this
+                      .toImageAuditSnapshot(
+                        image,
+                      ),
+
+                  ipAddress:
+                    auditIpAddress,
+
+                  userAgent:
+                    auditUserAgent,
+                },
+              });
+
+            return image;
+          },
+        );
+
+    return {
+      success:
+        true,
+
+      message:
+        'Tải ảnh địa điểm lên thành công.',
+
+      data: {
+        ...createdImage,
+
+        upload: {
+          mimeType:
+            uploadedImage
+              .mimeType,
+
+          fileExtension:
+            uploadedImage
+              .fileExtension,
+
+          sizeBytes:
+            uploadedImage
+              .sizeBytes,
+
+          width:
+            uploadedImage
+              .width,
+
+          height:
+            uploadedImage
+              .height,
+        },
+      },
+    };
+  } catch (error: unknown) {
+    /*
+     * Database thất bại sau khi R2 đã upload:
+     * dọn object để không tạo file rác.
+     */
+    try {
+      await this
+        .destinationImageStorageService
+        .deleteImageObject(
+          uploadedImage.objectKey,
+        );
+    } catch (
+      cleanupError:
+        unknown
+    ) {
+      console.error(
+        '[AdminDestinationsService] Không thể dọn ảnh R2 sau lỗi database:',
+        {
+          objectKey:
+            uploadedImage.objectKey,
+
+          error:
+            cleanupError instanceof
+              Error
+              ? cleanupError.message
+              : 'UnknownError',
+        },
+      );
+    }
+
+    throw error;
+  }
+}
 async createImage(
   currentAdminId: string,
   destinationId: string,
@@ -3293,16 +3800,22 @@ async deleteImage(
     AdminDestinationAuditRequestInfo,
 ) {
   const destination =
-    await this.prisma.destination.findFirst({
-      where: {
-        id: destinationId,
-        deletedAt: null,
-      },
+    await this.prisma
+      .destination
+      .findFirst({
+        where: {
+          id:
+            destinationId,
 
-      select: {
-        id: true,
-      },
-    });
+          deletedAt:
+            null,
+        },
+
+        select: {
+          id:
+            true,
+        },
+      });
 
   if (!destination) {
     throw new NotFoundException(
@@ -3315,7 +3828,9 @@ async deleteImage(
       .destinationImage
       .findFirst({
         where: {
-          id: imageId,
+          id:
+            imageId,
+
           destinationId,
         },
       });
@@ -3329,119 +3844,218 @@ async deleteImage(
   const auditIpAddress =
     requestInfo.ipAddress
       ?.trim()
-      .slice(0, 64) ||
+      .slice(
+        0,
+        64,
+      ) ||
     null;
 
   const auditUserAgent =
     requestInfo.userAgent
       ?.trim()
-      .slice(0, 2000) ||
+      .slice(
+        0,
+        2000,
+      ) ||
     null;
 
-  await this.prisma.$transaction(
-    async (transaction) => {
-      await transaction
-        .destinationImage
-        .delete({
-          where: {
-            id:
-              existingImage.id,
-          },
-        });
+  const submittedStorageKey =
+    existingImage.storageKey
+      ?.trim() ||
+    '';
 
-      /*
-       * Nếu xóa ảnh bìa, chọn ảnh hoạt động
-       * đầu tiên còn lại làm ảnh bìa.
-       */
-      if (
-        existingImage.imageType ===
-        DestinationImageType.COVER
-      ) {
-        const replacementImage =
-          await transaction
-            .destinationImage
-            .findFirst({
-              where: {
-                destinationId,
-                isActive: true,
-              },
+  const managedStorageKey =
+    submittedStorageKey
+      .startsWith(
+        'destinations/',
+      )
+      ? submittedStorageKey
+      : null;
 
-              orderBy: [
-                {
-                  sortOrder:
-                    'asc',
+  /*
+   * Xóa object thật khỏi R2 trước.
+   *
+   * Nếu R2 gặp lỗi, database chưa bị thay đổi
+   * và Admin có thể thử lại.
+   *
+   * Với ảnh local hoặc URL cũ không có
+   * storageKey, chỉ xóa metadata trong Neon.
+   */
+  if (managedStorageKey) {
+    await this
+      .destinationImageStorageService
+      .deleteImageObject(
+        managedStorageKey,
+      );
+  } else if (submittedStorageKey) {
+    console.warn(
+      '[AdminDestinationsService] Bỏ qua xóa R2 vì storageKey không thuộc destinations/:',
+      {
+        imageId:
+          existingImage.id,
+
+        storageKey:
+          submittedStorageKey,
+      },
+    );
+  }
+
+  try {
+    await this.prisma.$transaction(
+      async (transaction) => {
+        await transaction
+          .destinationImage
+          .delete({
+            where: {
+              id:
+                existingImage.id,
+            },
+          });
+
+        /*
+         * Nếu xóa ảnh bìa, chọn ảnh hoạt động
+         * đầu tiên còn lại làm ảnh bìa.
+         */
+        if (
+          existingImage.imageType ===
+          DestinationImageType.COVER
+        ) {
+          const replacementImage =
+            await transaction
+              .destinationImage
+              .findFirst({
+                where: {
+                  destinationId,
+
+                  isActive:
+                    true,
                 },
-                {
+
+                orderBy: [
+                  {
+                    sortOrder:
+                      'asc',
+                  },
+                  {
+                    id:
+                      'asc',
+                  },
+                ],
+
+                select: {
                   id:
-                    'asc',
+                    true,
                 },
-              ],
+              });
 
-              select: {
-                id: true,
-              },
-            });
+          if (replacementImage) {
+            await transaction
+              .destinationImage
+              .update({
+                where: {
+                  id:
+                    replacementImage.id,
+                },
 
-        if (replacementImage) {
-          await transaction
-            .destinationImage
-            .update({
-              where: {
-                id:
-                  replacementImage.id,
-              },
-
-              data: {
-                imageType:
-                  DestinationImageType.COVER,
-              },
-            });
+                data: {
+                  imageType:
+                    DestinationImageType.COVER,
+                },
+              });
+          }
         }
-      }
 
-      await transaction.auditLog.create({
-        data: {
-          actorUserId:
-            currentAdminId,
+        await transaction
+          .destination
+          .update({
+            where: {
+              id:
+                destination.id,
+            },
 
-          action:
-            'DELETE_DESTINATION_IMAGE',
+            data: {
+              updatedById:
+                currentAdminId,
+            },
+          });
 
-          entityType:
-            'DESTINATION_IMAGE',
+        await transaction
+          .auditLog
+          .create({
+            data: {
+              actorUserId:
+                currentAdminId,
 
-          entityId:
-            existingImage.id,
+              action:
+                'DELETE_DESTINATION_IMAGE',
 
-          oldData:
-            this.toImageAuditSnapshot(
-              existingImage,
-            ),
+              entityType:
+                'DESTINATION_IMAGE',
 
-          newData:
-            Prisma.DbNull,
+              entityId:
+                existingImage.id,
 
-          ipAddress:
-            auditIpAddress,
+              oldData:
+                this.toImageAuditSnapshot(
+                  existingImage,
+                ),
 
-          userAgent:
-            auditUserAgent,
-        },
-      });
-    },
-  );
+              newData:
+                Prisma.DbNull,
+
+              ipAddress:
+                auditIpAddress,
+
+              userAgent:
+                auditUserAgent,
+            },
+          });
+      },
+    );
+  } catch (error: unknown) {
+    /*
+     * R2 có thể đã xóa thành công nhưng
+     * transaction database gặp lỗi.
+     * Ghi log rõ để có thể kiểm tra thủ công.
+     */
+    console.error(
+      '[AdminDestinationsService] Không thể xóa metadata ảnh sau khi đã xử lý R2:',
+      {
+        imageId:
+          existingImage.id,
+
+        storageKey:
+          managedStorageKey,
+
+        error:
+          error instanceof Error
+            ? error.message
+            : 'UnknownError',
+      },
+    );
+
+    throw error;
+  }
 
   return {
-    success: true,
+    success:
+      true,
 
     message:
-      'Xóa ảnh địa điểm thành công.',
+      managedStorageKey
+        ? 'Đã xóa hình ảnh khỏi Cloudflare R2 và database.'
+        : 'Đã xóa hình ảnh khỏi database.',
 
     data: {
       id:
         existingImage.id,
 
       destinationId,
+
+      deletedFromStorage:
+        Boolean(
+          managedStorageKey,
+        ),
     },
   };
 }

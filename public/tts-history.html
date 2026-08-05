@@ -49,7 +49,10 @@
   />
 </head>
 
-<body data-auth="required">
+<body
+  class="tts-history-body"
+  data-auth="required"
+>
   <div id="siteNavbar"></div>
 
   <main class="history-page">
@@ -188,20 +191,32 @@
             </p>
           </div>
 
-          <button
-            type="button"
-            class="history-refresh-btn"
-            id="historyRefreshBtn"
-          >
-            ↻ Làm mới
-          </button>
-          <a
-              id="historyModeLink"
-              class="history-mode-link"
-              href="/tts-history.html?view=trash"
-            >
-              Thùng rác
-            </a>
+<div class="history-toolbar-actions">
+  <button
+    type="button"
+    class="history-delete-all-btn"
+    id="historyDeleteAllBtn"
+    hidden
+  >
+    Xóa tất cả
+  </button>
+
+  <button
+    type="button"
+    class="history-refresh-btn"
+    id="historyRefreshBtn"
+  >
+    ↻ Làm mới
+  </button>
+
+  <a
+    id="historyModeLink"
+    class="history-mode-link"
+    href="/tts-history.html?view=trash"
+  >
+    Thùng rác
+  </a>
+</div>
         </div>
 
         <div
@@ -297,31 +312,138 @@
     </section>
   </main>
 
-  <footer class="footer">
-    <div class="footer-content">
-      <h2>
-        Vietnam Travel TTS
-      </h2>
+  <footer
+  class="history-site-footer"
+  aria-label="Chân trang"
+>
+  <div class="history-footer-inner">
+    <div class="history-footer-main">
+      <div class="history-footer-brand">
+        <a
+          class="history-footer-logo"
+          href="/index.html"
+          aria-label="Về trang chủ Vietnam Travel TTS"
+        >
+          <span>Vietnam</span>
+          Travel TTS
+        </a>
 
+        <p>
+          Khám phá vẻ đẹp Việt Nam và chuyển nội dung
+          giới thiệu địa điểm thành giọng đọc AI tự nhiên.
+        </p>
+      </div>
+
+      <nav
+        class="history-footer-navigation"
+        aria-label="Liên kết chân trang"
+      >
+        <h2>Khám phá</h2>
+
+        <div class="history-footer-links">
+          <a href="/index.html">
+            Trang chủ
+          </a>
+
+          <a href="/index.html#destinations">
+            Địa điểm
+          </a>
+
+          <a href="/tts.html">
+            Tạo giọng đọc
+          </a>
+
+          <a href="/tts-history.html">
+            Lịch sử
+          </a>
+        </div>
+      </nav>
+
+      <div class="history-footer-action">
+        <span class="history-footer-action-label">
+          Bạn đã xem hết nội dung
+        </span>
+
+        <a
+          class="history-footer-top-button"
+          href="#siteNavbar"
+        >
+          <span aria-hidden="true">↑</span>
+          Trở lại đầu trang
+        </a>
+      </div>
+    </div>
+
+    <div class="history-footer-divider"></div>
+
+    <div class="history-footer-bottom">
       <p>
-        Website giới thiệu địa điểm du lịch Việt Nam
-        tích hợp AI Text-to-Speech.
-      </p>
-
-      <span>
         © 2026 Vietnam Travel TTS.
         All rights reserved.
-      </span>
+      </p>
 
-      <a
-        href="#"
-        class="back-to-top"
-      >
-        ↑ Trở lại đầu trang
-      </a>
+      <p>
+        Ứng dụng AI Text-to-Speech cho du lịch Việt Nam.
+      </p>
     </div>
-  </footer>
+  </div>
+</footer>
 
+
+  <div
+  id="historyConfirmModal"
+  class="history-confirm-modal"
+  aria-hidden="true"
+  hidden
+>
+  <div
+    class="history-confirm-backdrop"
+    data-confirm-action="cancel"
+  ></div>
+
+  <section
+    class="history-confirm-dialog"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="historyConfirmTitle"
+    aria-describedby="historyConfirmMessage"
+  >
+    <div
+      class="history-confirm-icon"
+      aria-hidden="true"
+    >
+      !
+    </div>
+
+    <div class="history-confirm-content">
+      <h2 id="historyConfirmTitle">
+        Xác nhận thao tác
+      </h2>
+
+      <p id="historyConfirmMessage">
+        Bạn có chắc muốn thực hiện thao tác này?
+      </p>
+    </div>
+
+    <div class="history-confirm-actions">
+      <button
+        id="historyConfirmCancelBtn"
+        type="button"
+        class="history-confirm-cancel-button"
+      >
+        Hủy
+      </button>
+
+      <button
+        id="historyConfirmAcceptBtn"
+        type="button"
+        class="history-confirm-accept-button"
+      >
+        Xác nhận
+      </button>
+    </div>
+  </section>
+</div>
   <script src="/js/auth-store.js"></script>
   <script src="/js/auth-api.js"></script>
   <script src="/js/auth-guard.js"></script>

@@ -36,6 +36,10 @@
       document.getElementById(
         'historyRefreshBtn'
       ),
+      deleteAllButton:
+      document.getElementById(
+        'historyDeleteAllBtn'
+      ),
 
     retryButton:
       document.getElementById(
@@ -91,6 +95,30 @@
       document.getElementById(
         'historyPageInfo'
       ),
+      confirmModal:
+  document.getElementById(
+    'historyConfirmModal'
+  ),
+
+confirmTitle:
+  document.getElementById(
+    'historyConfirmTitle'
+  ),
+
+confirmMessage:
+  document.getElementById(
+    'historyConfirmMessage'
+  ),
+
+confirmCancelButton:
+  document.getElementById(
+    'historyConfirmCancelBtn'
+  ),
+
+confirmAcceptButton:
+  document.getElementById(
+    'historyConfirmAcceptBtn'
+  ),
   };
 const initialParameters =
   new URLSearchParams(
@@ -103,14 +131,66 @@ const initialView =
   ) === 'trash'
     ? 'trash'
     : 'active';
-  const state = {
-    view:
-    initialView,
-    page: 1,
-    limit: 10,
-    items: [],
-    pagination: null,
-  };
+    const state = {
+      view:
+        initialView,
+
+      page:
+        1,
+
+      limit:
+        10,
+
+      items: [],
+
+      pagination:
+        null,
+
+      loading:
+        false,
+
+      bulkDeleting:
+        false,
+    };
+    function updateDeleteAllHistoryButton() {
+  if (
+    !elements.deleteAllButton
+  ) {
+    return;
+  }
+
+  const isTrashView =
+    state.view ===
+    'trash';
+
+  const total =
+    Number(
+      state.pagination
+        ?.total
+    ) || 0;
+
+  elements.deleteAllButton.hidden =
+    !isTrashView;
+
+  elements.deleteAllButton.disabled =
+    state.loading ||
+    state.bulkDeleting ||
+    total <= 0;
+
+  if (
+    state.bulkDeleting
+  ) {
+    elements.deleteAllButton.textContent =
+      'Đang xóa...';
+
+    return;
+  }
+
+  elements.deleteAllButton.textContent =
+    total > 0
+      ? `Xóa tất cả (${total})`
+      : 'Xóa tất cả';
+}
   function initializeHistoryMode() {
   const isTrash =
     state.view ===
@@ -132,6 +212,7 @@ const initialView =
     document.title =
       'Thùng rác giọng đọc - Vietnam Travel TTS';
   }
+    updateDeleteAllHistoryButton();
 }
 
   const audioObjectUrls =
@@ -146,6 +227,144 @@ const initialView =
       .replace(/'/g, '&#039;');
   }
 
+  let confirmResolver =
+  null;
+
+let confirmLastFocusedElement =
+  null;
+
+function closeHistoryConfirmModal(
+  confirmed
+) {
+  if (
+    !elements.confirmModal ||
+    elements.confirmModal.hidden
+  ) {
+    return;
+  }
+
+  elements.confirmModal.hidden =
+    true;
+
+  elements.confirmModal.setAttribute(
+    'aria-hidden',
+    'true'
+  );
+
+  document.body.classList.remove(
+    'history-modal-open'
+  );
+
+  const resolver =
+    confirmResolver;
+
+  confirmResolver =
+    null;
+
+  if (
+    confirmLastFocusedElement &&
+    typeof confirmLastFocusedElement
+      .focus === 'function'
+  ) {
+    confirmLastFocusedElement
+      .focus();
+  }
+
+  confirmLastFocusedElement =
+    null;
+
+  if (resolver) {
+    resolver(
+      confirmed
+    );
+  }
+}
+
+function showHistoryConfirmModal(
+  options = {}
+) {
+  return new Promise(
+    function (resolve) {
+      if (
+        !elements.confirmModal ||
+        !elements.confirmTitle ||
+        !elements.confirmMessage ||
+        !elements.confirmCancelButton ||
+        !elements.confirmAcceptButton
+      ) {
+        console.error(
+          '[TTS HISTORY] Thiếu phần tử modal xác nhận.'
+        );
+
+        resolve(
+          false
+        );
+
+        return;
+      }
+
+      /*
+       * Không cho hai modal xác nhận
+       * tồn tại cùng lúc.
+       */
+      if (confirmResolver) {
+        closeHistoryConfirmModal(
+          false
+        );
+      }
+
+      confirmResolver =
+        resolve;
+
+      confirmLastFocusedElement =
+        document.activeElement;
+
+      elements.confirmTitle.textContent =
+        options.title ||
+        'Xác nhận thao tác';
+
+      elements.confirmMessage.textContent =
+        options.message ||
+        'Bạn có chắc muốn thực hiện thao tác này?';
+
+      elements.confirmAcceptButton
+        .textContent =
+          options.confirmText ||
+          'Xác nhận';
+
+      elements.confirmCancelButton
+        .textContent =
+          options.cancelText ||
+          'Hủy';
+
+      elements.confirmAcceptButton
+        .classList.toggle(
+          'is-permanent',
+          options.variant ===
+            'permanent'
+        );
+
+      elements.confirmModal.hidden =
+        false;
+
+      elements.confirmModal.setAttribute(
+        'aria-hidden',
+        'false'
+      );
+
+      document.body.classList.add(
+        'history-modal-open'
+      );
+
+      window.requestAnimationFrame(
+        function () {
+          elements.confirmCancelButton
+            .focus();
+        }
+      );
+    }
+  );
+}
   function showToast(
     type,
     message
@@ -575,7 +794,15 @@ const url =
 
     const destination =
       item.destination;
-
+    const detailUrl =
+      destination?.slug
+        ? (
+            '/destinations-detail.html?id=' +
+            encodeURIComponent(
+              destination.slug
+            )
+          )
+        : '';
     const sourceText =
       String(
         item.sourceText || ''
@@ -621,12 +848,12 @@ const canRequestAudio =
   );
 
     const destinationButton =
-      destination?.slug
+      detailUrl
         ? `
           <a
             class="history-neutral-action"
-            href="/destinations-detail.html?id=${encodeURIComponent(
-              destination.slug
+            href="${escapeHtml(
+              detailUrl
             )}"
           >
             Xem địa điểm
@@ -937,6 +1164,11 @@ const historyActions =
   }
 
   function showLoadingState() {
+      state.loading =
+        true;
+
+      updateDeleteAllHistoryButton();
+
     elements.loading.hidden =
       false;
 
@@ -959,6 +1191,10 @@ const historyActions =
   function showErrorState(
     message
   ) {
+    state.loading =
+      false;
+
+    updateDeleteAllHistoryButton();
     elements.loading.hidden =
       true;
 
@@ -983,6 +1219,10 @@ const historyActions =
   }
 
   function showEmptyState() {
+    state.loading =
+      false;
+
+    updateDeleteAllHistoryButton();
     elements.loading.hidden =
       true;
 
@@ -1007,6 +1247,11 @@ const historyActions =
   function showContentState(
     payload
   ) {
+
+    state.loading =
+      false;
+
+    updateDeleteAllHistoryButton();
     elements.loading.hidden =
       true;
 
@@ -1450,11 +1695,24 @@ async function handleDelete(
     return;
   }
 
-  const confirmed =
-    window.confirm(
-      'Bạn có chắc muốn xóa lịch sử này không?\n\n' +
-      'Mục này sẽ không còn xuất hiện trong lịch sử.'
-    );
+const confirmed =
+  await showHistoryConfirmModal({
+    title:
+      'Xóa lịch sử giọng đọc?',
+
+    message:
+      'Mục này sẽ được chuyển vào Thùng rác.\n' +
+      'Bạn vẫn có thể khôi phục lại sau.',
+
+    confirmText:
+      'Chuyển vào Thùng rác',
+
+    cancelText:
+      'Giữ lại',
+
+    variant:
+      'soft-delete',
+  });
 
   if (!confirmed) {
     return;
@@ -1547,7 +1805,43 @@ async function requestRestoreHistory(
 
   return payload;
 }
+async function requestPermanentDeleteAllHistory() {
+  const response =
+    await AuthStore.authFetch(
+      '/api/tts/history/trash/permanent',
+      {
+        method:
+          'DELETE',
 
+        headers: {
+          Accept:
+            'application/json'
+        }
+      }
+    );
+
+  let payload =
+    null;
+
+  try {
+    payload =
+      await response.json();
+  } catch {
+    payload =
+      null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      extractErrorMessage(
+        payload,
+        'Không thể xóa toàn bộ thùng rác giọng đọc.'
+      )
+    );
+  }
+
+  return payload;
+}
 async function requestPermanentDeleteHistory(
   ttsJobId
 ) {
@@ -1637,7 +1931,107 @@ async function handleRestore(
       originalText;
   }
 }
+async function handlePermanentDeleteAll() {
+  if (
+    state.view !==
+    'trash'
+  ) {
+    return;
+  }
 
+  const total =
+    Number(
+      state.pagination
+        ?.total
+    ) || 0;
+
+  if (total <= 0) {
+    showToast(
+      'info',
+      'Thùng rác giọng đọc đang trống.'
+    );
+
+    updateDeleteAllHistoryButton();
+
+    return;
+  }
+
+  const confirmed =
+    await showHistoryConfirmModal({
+      title:
+        'Xóa toàn bộ thùng rác?',
+
+      message:
+        `Toàn bộ ${total} lịch sử giọng đọc và các file WAV ` +
+        'tương ứng trên Cloudflare R2 sẽ bị xóa vĩnh viễn.\n' +
+        'Thao tác này không thể khôi phục.',
+
+      confirmText:
+        'Xóa tất cả',
+
+      cancelText:
+        'Hủy',
+
+      variant:
+        'permanent',
+    });
+
+  if (!confirmed) {
+    return;
+  }
+
+  state.bulkDeleting =
+    true;
+
+  updateDeleteAllHistoryButton();
+
+  try {
+    const result =
+      await requestPermanentDeleteAllHistory();
+
+    revokeAllAudioUrls();
+
+    state.page =
+      1;
+
+    const success =
+      result?.success !==
+      false;
+
+    showToast(
+      success
+        ? 'success'
+        : 'error',
+
+      result?.message ||
+        (
+          success
+            ? 'Đã xóa toàn bộ thùng rác giọng đọc.'
+            : 'Một số lịch sử chưa thể xóa.'
+        )
+    );
+
+    await loadHistory();
+  } catch (error) {
+    console.error(
+      '[TTS HISTORY] Lỗi xóa toàn bộ thùng rác:',
+      error
+    );
+
+    showToast(
+      'error',
+
+      error instanceof Error
+        ? error.message
+        : 'Không thể xóa toàn bộ thùng rác giọng đọc.'
+    );
+  } finally {
+    state.bulkDeleting =
+      false;
+
+    updateDeleteAllHistoryButton();
+  }
+}
 async function handlePermanentDelete(
   button
 ) {
@@ -1648,12 +2042,25 @@ async function handlePermanentDelete(
     return;
   }
 
-  const confirmed =
-    window.confirm(
-      'Xóa vĩnh viễn lịch sử này?\n\n' +
-      'File WAV trên Cloudflare R2 và dữ liệu liên quan ' +
-      'sẽ bị xóa hoàn toàn. Thao tác này không thể khôi phục.'
-    );
+const confirmed =
+  await showHistoryConfirmModal({
+    title:
+      'Xóa vĩnh viễn lịch sử?',
+
+    message:
+      'File WAV trên Cloudflare R2 và toàn bộ dữ liệu liên quan ' +
+      'sẽ bị xóa hoàn toàn.\n' +
+      'Thao tác này không thể khôi phục.',
+
+    confirmText:
+      'Xóa vĩnh viễn',
+
+    cancelText:
+      'Hủy',
+
+    variant:
+      'permanent',
+  });
 
   if (!confirmed) {
     return;
@@ -1778,6 +2185,11 @@ async function handlePermanentDelete(
       loadHistory
     );
 
+    elements.deleteAllButton
+    ?.addEventListener(
+      'click',
+      handlePermanentDeleteAll
+    );
   elements.retryButton
     ?.addEventListener(
       'click',
@@ -1901,6 +2313,63 @@ async function handlePermanentDelete(
         }
       }
     );
+    elements.confirmCancelButton
+  ?.addEventListener(
+    'click',
+    function () {
+      closeHistoryConfirmModal(
+        false
+      );
+    }
+  );
+
+elements.confirmAcceptButton
+  ?.addEventListener(
+    'click',
+    function () {
+      closeHistoryConfirmModal(
+        true
+      );
+    }
+  );
+
+elements.confirmModal
+  ?.addEventListener(
+    'click',
+    function (event) {
+      const target =
+        event.target;
+
+      if (
+        target instanceof
+          HTMLElement &&
+        target.dataset
+          .confirmAction ===
+          'cancel'
+      ) {
+        closeHistoryConfirmModal(
+          false
+        );
+      }
+    }
+  );
+
+document.addEventListener(
+  'keydown',
+  function (event) {
+    if (
+      event.key === 'Escape' &&
+      elements.confirmModal &&
+      !elements.confirmModal.hidden
+    ) {
+      event.preventDefault();
+
+      closeHistoryConfirmModal(
+        false
+      );
+    }
+  }
+);
 
   window.addEventListener(
     'beforeunload',

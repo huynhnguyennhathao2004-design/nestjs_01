@@ -715,13 +715,27 @@
     container.innerHTML =
       relatedPlaces
         .map((item) => {
-          const itemSlug =
-            item.id || item.slug;
+            const itemSlug =
+              String(
+                item.slug ||
+                item.id ||
+                ''
+              ).trim();
 
-          const image =
-            getImages(item)[0];
+            const image =
+              getImages(item)[0];
 
-          return `
+            /*
+            * Tạo URL hoàn chỉnh ở JavaScript,
+            * không ngắt dòng giữa tên file và ?id.
+            */
+            const detailUrl =
+              '/destinations-detail.html?id=' +
+              encodeURIComponent(
+                itemSlug
+              );
+
+            return `
             <article class="related-card">
               <a
                 class="
@@ -777,14 +791,7 @@
                   )}
                 </p>
 
-                <a
-                  href="
-                    /destinations-detail.html
-                    ?id=${encodeURIComponent(
-                      itemSlug
-                    )}
-                  "
-                >
+                <a href="${escapeHtml(detailUrl)}">
                   Xem chi tiết
                 </a>
               </div>

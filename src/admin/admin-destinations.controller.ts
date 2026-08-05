@@ -1,4 +1,7 @@
 import {
+  BadRequestException,
+  UploadedFile,
+  UseInterceptors,
   Body,
   Controller,
   Delete,
@@ -40,6 +43,16 @@ import { UpdateDestinationImageDto } from './dto/update-destination-image.dto';
 import { UpdateDestinationStatusDto } from './dto/update-destination-status.dto';
 
 import { AdminGuard } from './guards/admin.guard';
+
+import {
+  FileInterceptor,
+} from '@nestjs/platform-express';
+
+import {
+  UploadDestinationImageDto,
+} from './dto/upload-destination-image.dto';
+
+
 
 @Controller('admin/destinations')
 @UseGuards(
@@ -210,6 +223,123 @@ export class AdminDestinationsController {
       this.getRequestInfo(request),
     );
   }
+
+/**
+ * Upload file ảnh địa điểm lên Cloudflare R2.
+ *
+ * POST /api/admin/destinations/:id/images/upload
+ */
+@Post(':id/images/upload')
+@HttpCode(HttpStatus.CREATED)
+@UseInterceptors(
+  FileInterceptor(
+    'file',
+    {
+      limits: {
+        files:
+          1,
+
+        fileSize:
+          10_485_760,
+      },
+
+      fileFilter: (
+        _request:
+          Request,
+
+        file:
+          Express.Multer.File,
+
+        callback: (
+          error:
+            Error | null,
+
+          acceptFile:
+            boolean,
+        ) => void,
+      ) => {
+        const allowedMimeTypes =
+          new Set([
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/webp',
+          ]);
+
+        if (
+          !allowedMimeTypes.has(
+            String(
+              file.mimetype ??
+              '',
+            )
+              .trim()
+              .toLowerCase(),
+          )
+        ) {
+          callback(
+            new BadRequestException(
+              'Chỉ hỗ trợ ảnh JPG, PNG hoặc WebP.',
+            ),
+            false,
+          );
+
+          return;
+        }
+
+        callback(
+          null,
+          true,
+        );
+      },
+    },
+  ),
+)
+uploadImage(
+  @CurrentUser()
+  currentAdmin:
+    AuthenticatedUser,
+
+  @Req()
+  request:
+    Request,
+
+  @Param(
+    'id',
+    new ParseUUIDPipe({
+      version:
+        '4',
+    }),
+  )
+  destinationId:
+    string,
+
+  @UploadedFile()
+  file:
+    Express.Multer.File |
+    undefined,
+
+  @Body()
+  dto:
+    UploadDestinationImageDto,
+) {
+  if (!file) {
+    throw new BadRequestException(
+      'Bạn chưa chọn file ảnh cần tải lên.',
+    );
+  }
+
+  return this
+    .adminDestinationsService
+    .uploadImage(
+      currentAdmin.id,
+      destinationId,
+      file,
+      dto,
+      this.getRequestInfo(
+        request,
+      ),
+    );
+}
 
   @Patch(':id/images/:imageId')
   @HttpCode(HttpStatus.OK)
@@ -574,6 +704,33 @@ export class AdminDestinationsController {
       this.getRequestInfo(request),
     );
   }
+
+  /**
+ * DELETE /api/admin/destinations/trash/permanent
+ *
+ * Xóa vĩnh viễn toàn bộ địa điểm
+ * hiện có trong thùng rác.
+ */
+@Delete('trash/permanent')
+@HttpCode(HttpStatus.OK)
+hardDeleteAll(
+  @CurrentUser()
+  currentAdmin:
+    AuthenticatedUser,
+
+  @Req()
+  request: Request,
+) {
+  return this
+    .adminDestinationsService
+    .hardDeleteAll(
+      currentAdmin.id,
+
+      this.getRequestInfo(
+        request,
+      ),
+    );
+}
   /**
    * DELETE /api/admin/destinations/:id/permanent
    */

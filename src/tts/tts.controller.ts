@@ -262,6 +262,31 @@ restoreHistory(
     );
 }
 /**
+ * Xóa vĩnh viễn toàn bộ lịch sử
+ * trong thùng rác của tài khoản hiện tại.
+ *
+ * DELETE /api/tts/history/trash/permanent
+ */
+@Delete('history/trash/permanent')
+@UseGuards(JwtAuthGuard)
+@HttpCode(HttpStatus.OK)
+permanentlyDeleteAllHistory(
+  @CurrentUser()
+  currentUser:
+    AuthenticatedUser | undefined,
+) {
+  if (!currentUser) {
+    throw new UnauthorizedException(
+      'Không xác định được tài khoản đăng nhập.',
+    );
+  }
+
+  return this.runpodTtsService
+    .permanentlyDeleteAllHistory(
+      currentUser.id,
+    );
+}
+/**
  * Xóa vĩnh viễn lịch sử trong thùng rác.
  *
  * DELETE /api/tts/history/:ttsJobId/permanent

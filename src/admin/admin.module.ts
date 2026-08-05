@@ -26,10 +26,15 @@ import {
   AdminDestinationsService,
 } from './admin-destinations.service';
 
+import {
+  StorageModule,
+} from '../storage/storage.module';
+
 @Module({
-  imports: [
-    AuthModule,
-  ],
+imports: [
+  AuthModule,
+  StorageModule,
+],
 
   controllers: [
     AdminUsersController,

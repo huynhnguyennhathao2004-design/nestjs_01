@@ -10,11 +10,14 @@ const destinationEditorState = {
   loading: false,
   slugEdited: false,
 
-  imageEditor: {
-    editingImageId: null,
-    saving: false,
-    pendingIds: new Set()
-  },
+imageEditor: {
+  editingImageId: null,
+  saving: false,
+  pendingIds: new Set(),
+
+  previewObjectUrl:
+    null
+},
 
   featureEditor: {
     editingFeatureId: null,
@@ -141,6 +144,51 @@ const destinationImageEmpty =
 const destinationImageResultLine =
   document.getElementById(
     'destinationImageResultLine'
+  );
+
+const destinationImageFileInput =
+  document.getElementById(
+    'destinationImageFileInput'
+  );
+
+const destinationImageUploadPreview =
+  document.getElementById(
+    'destinationImageUploadPreview'
+  );
+
+const destinationImageUploadPreviewImg =
+  document.getElementById(
+    'destinationImageUploadPreviewImg'
+  );
+
+const destinationImageUploadPlaceholder =
+  document.getElementById(
+    'destinationImageUploadPlaceholder'
+  );
+
+const destinationImageUploadFileName =
+  document.getElementById(
+    'destinationImageUploadFileName'
+  );
+
+const destinationImageUploadFileMeta =
+  document.getElementById(
+    'destinationImageUploadFileMeta'
+  );
+
+const destinationImageCurrentUrlField =
+  document.getElementById(
+    'destinationImageCurrentUrlField'
+  );
+
+const destinationImageFileHelp =
+  document.getElementById(
+    'destinationImageFileHelp'
+  );
+
+const destinationImageFileRequiredMark =
+  document.getElementById(
+    'destinationImageFileRequiredMark'
   );
 
 const destinationImageUrlInput =
@@ -2351,6 +2399,230 @@ if (
 /* =====================================
    QUẢN LÝ HÌNH ẢNH
 ===================================== */
+function revokeDestinationImagePreviewUrl() {
+  const previewObjectUrl =
+    destinationEditorState
+      .imageEditor
+      .previewObjectUrl;
+
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(
+      previewObjectUrl
+    );
+  }
+
+  destinationEditorState
+    .imageEditor
+    .previewObjectUrl = null;
+}
+
+function formatDestinationImageFileSize(
+  sizeBytes
+) {
+  const normalizedSize =
+    Number(
+      sizeBytes
+    );
+
+  if (
+    !Number.isFinite(
+      normalizedSize
+    ) ||
+    normalizedSize <= 0
+  ) {
+    return 'Không xác định dung lượng';
+  }
+
+  if (
+    normalizedSize >=
+    1024 * 1024
+  ) {
+    return (
+      (
+        normalizedSize /
+        (
+          1024 *
+          1024
+        )
+      ).toFixed(2) +
+      ' MB'
+    );
+  }
+
+  return (
+    (
+      normalizedSize /
+      1024
+    ).toFixed(1) +
+    ' KB'
+  );
+}
+
+function showDestinationImagePreview(
+  source,
+  fileName,
+  metaText
+) {
+  if (
+    destinationImageUploadPreviewImg
+  ) {
+    destinationImageUploadPreviewImg.src =
+      source;
+
+    destinationImageUploadPreviewImg.hidden =
+      false;
+  }
+
+  if (
+    destinationImageUploadPlaceholder
+  ) {
+    destinationImageUploadPlaceholder.hidden =
+      true;
+  }
+
+  if (
+    destinationImageUploadFileName
+  ) {
+    destinationImageUploadFileName.textContent =
+      fileName ||
+      'Ảnh đã chọn';
+  }
+
+  if (
+    destinationImageUploadFileMeta
+  ) {
+    destinationImageUploadFileMeta.textContent =
+      metaText ||
+      'Ảnh địa điểm';
+  }
+
+  destinationImageUploadPreview
+    ?.classList
+    .add(
+      'has-image'
+    );
+}
+
+function clearDestinationImagePreview() {
+  revokeDestinationImagePreviewUrl();
+
+  if (
+    destinationImageUploadPreviewImg
+  ) {
+    destinationImageUploadPreviewImg.hidden =
+      true;
+
+    destinationImageUploadPreviewImg
+      .removeAttribute(
+        'src'
+      );
+  }
+
+  if (
+    destinationImageUploadPlaceholder
+  ) {
+    destinationImageUploadPlaceholder.hidden =
+      false;
+  }
+
+  if (
+    destinationImageUploadFileName
+  ) {
+    destinationImageUploadFileName.textContent =
+      'Chưa chọn file';
+  }
+
+  if (
+    destinationImageUploadFileMeta
+  ) {
+    destinationImageUploadFileMeta.textContent =
+      'JPG, PNG hoặc WebP';
+  }
+
+  destinationImageUploadPreview
+    ?.classList
+    .remove(
+      'has-image'
+    );
+}
+
+function handleDestinationImageFileChange() {
+  const file =
+    destinationImageFileInput
+      ?.files
+      ?.[0];
+
+  clearDestinationImagePreview();
+
+  if (!file) {
+    return;
+  }
+
+  const allowedMimeTypes =
+    new Set([
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp'
+    ]);
+
+  if (
+    !allowedMimeTypes.has(
+      String(
+        file.type || ''
+      )
+        .trim()
+        .toLowerCase()
+    )
+  ) {
+    destinationImageFileInput.value =
+      '';
+
+    showToast(
+      'Chỉ hỗ trợ ảnh JPG, PNG hoặc WebP.',
+      'error'
+    );
+
+    return;
+  }
+
+  const maximumBytes =
+    10 * 1024 * 1024;
+
+  if (
+    file.size >
+    maximumBytes
+  ) {
+    destinationImageFileInput.value =
+      '';
+
+    showToast(
+      'Dung lượng ảnh không được vượt quá 10 MB.',
+      'error'
+    );
+
+    return;
+  }
+
+  const previewObjectUrl =
+    URL.createObjectURL(
+      file
+    );
+
+  destinationEditorState
+    .imageEditor
+    .previewObjectUrl =
+    previewObjectUrl;
+
+  showDestinationImagePreview(
+    previewObjectUrl,
+    file.name,
+    `${formatDestinationImageFileSize(
+      file.size
+    )} · ${file.type ||
+      'image'}`
+  );
+}
 
 function getDestinationImages() {
   const images =
@@ -2711,6 +2983,18 @@ function setDestinationImageSaving(
   destinationEditorState
     .imageEditor
     .saving = isSaving;
+    const isEditing =
+      Boolean(
+        destinationEditorState
+          .imageEditor
+          .editingImageId
+      );
+
+    if (destinationImageFileInput) {
+      destinationImageFileInput.disabled =
+        isSaving ||
+        isEditing;
+    }
 
   [
     saveDestinationImageBtn,
@@ -2726,21 +3010,47 @@ function setDestinationImageSaving(
   );
 
   if (saveDestinationImageBtn) {
-    saveDestinationImageBtn.textContent =
-      isSaving
-        ? 'Đang lưu...'
-        : destinationEditorState
-            .imageEditor
-            .editingImageId
-          ? 'Lưu thay đổi ảnh'
-          : 'Thêm hình ảnh';
-  }
-}
+      saveDestinationImageBtn.textContent =
+        isSaving
+          ? 'Đang xử lý...'
+          : destinationEditorState
+              .imageEditor
+              .editingImageId
+            ? 'Lưu thay đổi ảnh'
+            : 'Tải ảnh lên';
+        }
+      }
 
 function resetDestinationImageForm() {
   destinationEditorState
     .imageEditor
     .editingImageId = null;
+    revokeDestinationImagePreviewUrl();
+
+if (destinationImageFileInput) {
+  destinationImageFileInput.value =
+    '';
+
+  destinationImageFileInput.disabled =
+    false;
+}
+
+clearDestinationImagePreview();
+
+if (destinationImageCurrentUrlField) {
+  destinationImageCurrentUrlField.hidden =
+    true;
+}
+
+if (destinationImageFileRequiredMark) {
+  destinationImageFileRequiredMark.hidden =
+    false;
+}
+
+if (destinationImageFileHelp) {
+  destinationImageFileHelp.textContent =
+    'Ảnh sẽ được tối ưu và chuyển sang WebP trước khi lưu trên Cloudflare R2.';
+}
 
   if (destinationImageUrlInput) {
     destinationImageUrlInput.value =
@@ -2787,7 +3097,7 @@ function resetDestinationImageForm() {
 
   if (destinationImageFormDescription) {
     destinationImageFormDescription.textContent =
-      'Nhập đường dẫn ảnh nội bộ hoặc URL ảnh.';
+    'Chọn file JPG, PNG hoặc WebP từ máy tính.';
   }
 
   if (cancelEditDestinationImageBtn) {
@@ -2820,6 +3130,37 @@ function startEditingDestinationImage(
     .imageEditor
     .editingImageId =
     image.id;
+    revokeDestinationImagePreviewUrl();
+
+    if (destinationImageFileInput) {
+      destinationImageFileInput.value =
+        '';
+
+      destinationImageFileInput.disabled =
+        true;
+    }
+
+    if (destinationImageCurrentUrlField) {
+      destinationImageCurrentUrlField.hidden =
+        false;
+    }
+
+    if (destinationImageFileRequiredMark) {
+      destinationImageFileRequiredMark.hidden =
+        true;
+    }
+
+    if (destinationImageFileHelp) {
+      destinationImageFileHelp.textContent =
+        'Chế độ chỉnh sửa chỉ cập nhật thông tin. File ảnh trên R2 được giữ nguyên.';
+    }
+
+    showDestinationImagePreview(
+      image.url,
+      image.altText ||
+        'Ảnh hiện tại',
+      'Ảnh đang được lưu trên hệ thống'
+    );
 
   destinationImageUrlInput.value =
     image.url || '';
@@ -2849,8 +3190,7 @@ function startEditingDestinationImage(
     'Chỉnh sửa hình ảnh';
 
   destinationImageFormDescription.textContent =
-    'Cập nhật đường dẫn, loại ảnh và trạng thái hiển thị.';
-
+  'Cập nhật mô tả, loại ảnh, thứ tự và trạng thái hiển thị.';
   cancelEditDestinationImageBtn.hidden =
     false;
 
@@ -2862,7 +3202,7 @@ function startEditingDestinationImage(
     block: 'start'
   });
 
-  destinationImageUrlInput?.focus();
+  destinationImageAltInput?.focus();
 }
 
 function buildDestinationImagePayload() {
@@ -2953,6 +3293,125 @@ function buildDestinationImagePayload() {
   };
 }
 
+function buildDestinationImageUploadFormData() {
+  const file =
+    destinationImageFileInput
+      ?.files
+      ?.[0];
+
+  if (!file) {
+    throw new Error(
+      'Bạn chưa chọn file ảnh cần tải lên.'
+    );
+  }
+
+  const sortOrder =
+    Number(
+      destinationImageSortOrderInput
+        ?.value || 0
+    );
+
+  if (
+    !Number.isInteger(
+      sortOrder
+    ) ||
+    sortOrder < 0
+  ) {
+    throw new Error(
+      'Thứ tự ảnh phải là số nguyên lớn hơn hoặc bằng 0.'
+    );
+  }
+
+  const sourceUrl =
+    nullableString(
+      destinationImageSourceUrlInput
+        ?.value
+    );
+
+  if (
+    sourceUrl &&
+    !/^https?:\/\//i.test(
+      sourceUrl
+    )
+  ) {
+    throw new Error(
+      'URL nguồn ảnh phải bắt đầu bằng http:// hoặc https://.'
+    );
+  }
+
+  const imageType =
+    destinationImageTypeSelect
+      ?.value ||
+    'GALLERY';
+
+  const formData =
+    new FormData();
+
+  formData.append(
+    'file',
+    file
+  );
+
+  formData.append(
+    'imageType',
+    imageType
+  );
+
+  formData.append(
+    'sortOrder',
+    String(
+      sortOrder
+    )
+  );
+
+  formData.append(
+    'isActive',
+    imageType === 'COVER'
+      ? 'true'
+      : String(
+          Boolean(
+            destinationImageIsActiveInput
+              ?.checked
+          )
+        )
+  );
+
+  const altText =
+    nullableString(
+      destinationImageAltInput
+        ?.value
+    );
+
+  const imageCredit =
+    nullableString(
+      destinationImageCreditInput
+        ?.value
+    );
+
+  if (altText) {
+    formData.append(
+      'altText',
+      altText
+    );
+  }
+
+  if (sourceUrl) {
+    formData.append(
+      'sourceUrl',
+      sourceUrl
+    );
+  }
+
+  if (imageCredit) {
+    formData.append(
+      'imageCredit',
+      imageCredit
+    );
+  }
+
+  return formData;
+}
+
 async function saveDestinationImage() {
   if (
     destinationEditorState
@@ -2975,68 +3434,86 @@ async function saveDestinationImage() {
     return;
   }
 
-  let payload;
+const editingImageId =
+  destinationEditorState
+    .imageEditor
+    .editingImageId;
+
+let payload;
+
+try {
+  payload =
+    editingImageId
+      ? buildDestinationImagePayload()
+      : buildDestinationImageUploadFormData();
+} catch (error) {
+  showToast(
+    error instanceof Error
+      ? error.message
+      : 'Thông tin ảnh chưa hợp lệ.',
+    'error'
+  );
+
+  return;
+}
+
+setDestinationImageSaving(true);
 
   try {
-    payload =
-      buildDestinationImagePayload();
-  } catch (error) {
-    showToast(
-      error instanceof Error
-        ? error.message
-        : 'Thông tin ảnh chưa hợp lệ.',
-      'error'
-    );
-
-    return;
-  }
-
-  const editingImageId =
-    destinationEditorState
-      .imageEditor
-      .editingImageId;
-
-  setDestinationImageSaving(true);
-
-  try {
-    const result =
-      await requestAdminJson(
+    const requestUrl =
+  editingImageId
+    ? `/api/admin/destinations/${encodeURIComponent(
+        destinationId
+      )}/images/${encodeURIComponent(
         editingImageId
-          ? `/api/admin/destinations/${encodeURIComponent(
-              destinationId
-            )}/images/${encodeURIComponent(
-              editingImageId
-            )}`
-          : `/api/admin/destinations/${encodeURIComponent(
-              destinationId
-            )}/images`,
-        {
-          method:
-            editingImageId
-              ? 'PATCH'
-              : 'POST',
+      )}`
+    : `/api/admin/destinations/${encodeURIComponent(
+        destinationId
+      )}/images/upload`;
 
-          headers: {
-            'Content-Type':
-              'application/json',
+const requestOptions =
+  editingImageId
+    ? {
+        method:
+          'PATCH',
 
-            Accept:
-              'application/json'
-          },
+        headers: {
+          'Content-Type':
+            'application/json',
 
-          body:
-            JSON.stringify(
-              payload
-            )
-        }
-      );
+          Accept:
+            'application/json'
+        },
+
+        body:
+          JSON.stringify(
+            payload
+          )
+      }
+    : {
+        method:
+          'POST',
+
+        /*
+         * Không tự đặt Content-Type.
+         * Trình duyệt sẽ tự thêm multipart boundary.
+         */
+        body:
+          payload
+      };
+
+const result =
+  await requestAdminJson(
+    requestUrl,
+    requestOptions
+  );
 
     showToast(
       result?.message ||
       (
         editingImageId
           ? 'Cập nhật hình ảnh thành công.'
-          : 'Thêm hình ảnh thành công.'
+          : 'Tải ảnh lên thành công.'
       ),
       'success'
     );
@@ -3199,9 +3676,16 @@ async function deleteDestinationImage(
 
       title:
         'Xóa hình ảnh',
-
       message:
-        `Hình ảnh "${image.altText || image.url}" sẽ bị xóa khỏi địa điểm.`,
+        image.storageKey
+          ? (
+              `Hình ảnh "${image.altText || image.url}" ` +
+              'và file WebP trên Cloudflare R2 sẽ bị xóa vĩnh viễn.'
+            )
+          : (
+              `Hình ảnh "${image.altText || image.url}" ` +
+              'sẽ bị xóa khỏi dữ liệu địa điểm.'
+            ),
 
       confirmText:
         'Xóa hình ảnh',
@@ -6361,7 +6845,7 @@ document.querySelectorAll(
               block: 'start'
             });
 
-          destinationImageUrlInput
+          destinationImageFileInput
             ?.focus();
 
           return;
@@ -6420,6 +6904,11 @@ document.querySelectorAll(
     );
   }
 );
+destinationImageFileInput
+  ?.addEventListener(
+    'change',
+    handleDestinationImageFileChange
+  );
 saveDestinationImageBtn
   ?.addEventListener(
     'click',
@@ -6722,5 +7211,10 @@ async function initializeDestinationEditor() {
       );
   }
 }
-
+window.addEventListener(
+  'beforeunload',
+  function () {
+    revokeDestinationImagePreviewUrl();
+  }
+);
 initializeDestinationEditor();

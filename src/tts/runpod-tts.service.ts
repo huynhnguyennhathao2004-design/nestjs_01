@@ -1046,6 +1046,151 @@ async restoreHistory(
       result.id,
   };
 }
+async permanentlyDeleteAllHistory(
+  userId: string,
+) {
+  /*
+   * Chỉ lấy những lịch sử:
+   * - thuộc tài khoản hiện tại;
+   * - đã nằm trong thùng rác.
+   */
+  const trashedJobs =
+    await this.prisma.ttsJob
+      .findMany({
+        where: {
+          userId,
+
+          deletedAt: {
+            not:
+              null,
+          },
+        },
+
+        orderBy: [
+          {
+            deletedAt:
+              'asc',
+          },
+          {
+            id:
+              'asc',
+          },
+        ],
+
+        select: {
+          id:
+            true,
+        },
+      });
+
+  const total =
+    trashedJobs.length;
+
+  if (total === 0) {
+    return {
+      success:
+        true,
+
+      message:
+        'Thùng rác giọng đọc đang trống.',
+
+      data: {
+        total:
+          0,
+
+        deletedCount:
+          0,
+
+        failedCount:
+          0,
+
+        failedIds: [],
+      },
+    };
+  }
+
+  let deletedCount =
+    0;
+
+  const failedIds:
+    string[] = [];
+
+  /*
+   * Xóa tuần tự để tránh gửi quá nhiều
+   * request đồng thời đến R2 và Neon.
+   *
+   * Tái sử dụng permanentlyDeleteHistory()
+   * để giữ nguyên toàn bộ kiểm tra quyền,
+   * xóa WAV R2 và cascade database.
+   */
+  for (
+    const trashedJob of
+    trashedJobs
+  ) {
+    try {
+      await this
+        .permanentlyDeleteHistory(
+          userId,
+          trashedJob.id,
+        );
+
+      deletedCount +=
+        1;
+    } catch (
+      error:
+        unknown
+    ) {
+      failedIds.push(
+        trashedJob.id,
+      );
+
+      console.error(
+        '[RunpodTtsService] Không thể xóa một mục trong thao tác xóa toàn bộ thùng rác:',
+        {
+          userId,
+
+          ttsJobId:
+            trashedJob.id,
+
+          error:
+            error instanceof Error
+              ? error.message
+              : 'UnknownError',
+        },
+      );
+    }
+  }
+
+  const failedCount =
+    failedIds.length;
+
+  return {
+    success:
+      failedCount === 0,
+
+    message:
+      failedCount === 0
+        ? (
+            `Đã xóa vĩnh viễn ${deletedCount} ` +
+            'lịch sử giọng đọc và các file WAV tương ứng.'
+          )
+        : (
+            `Đã xóa ${deletedCount}/${total} lịch sử. ` +
+            `${failedCount} mục chưa xóa được.`
+          ),
+
+    data: {
+      total,
+
+      deletedCount,
+
+      failedCount,
+
+      failedIds,
+    },
+  };
+}
+
 async permanentlyDeleteHistory(
   userId: string,
   ttsJobId: string,

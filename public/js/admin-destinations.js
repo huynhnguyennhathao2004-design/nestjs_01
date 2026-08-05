@@ -49,6 +49,10 @@ const refreshDestinationBtn =
   document.getElementById(
     'refreshDestinationBtn'
   );
+const deleteAllTrashedDestinationsBtn =
+  document.getElementById(
+    'deleteAllTrashedDestinationsBtn'
+  );
 
 const previousDestinationPageBtn =
   document.getElementById(
@@ -77,9 +81,11 @@ const destinationState = {
     hasNextPage: false
   },
 
-  loading: false,
+    loading: false,
 
-  pendingIds: new Set()
+    bulkDeleting: false,
+
+    pendingIds: new Set()
 };
 
 let destinationSearchTimer = null;
@@ -202,7 +208,9 @@ function showMessage(
   console.log(message);
 }
 
-async function confirmAction(options) {
+async function confirmAction(
+  options
+) {
   if (
     window.AppModal &&
     typeof window.AppModal.confirm ===
@@ -213,10 +221,16 @@ async function confirmAction(options) {
     );
   }
 
-  return window.confirm(
-    options.message ||
-    'Bạn có chắc muốn tiếp tục?'
+  console.error(
+    '[ADMIN DESTINATIONS] AppModal chưa được tải.'
   );
+
+  showMessage(
+    'Không thể mở cửa sổ xác nhận. Hãy tải lại trang.',
+    'error'
+  );
+
+  return false;
 }
 
 function normalizeDestination(source) {
@@ -780,7 +794,26 @@ function renderDestinationActions(
     destinationState.pendingIds
       .has(destination.id);
 
-if (destination.deletedAt) {
+  const destinationSlug =
+    String(
+      destination.slug || ''
+    ).trim();
+
+  /*
+   * Tạo URL xem địa điểm từ slug.
+   * Không dùng UUID database cho trang public.
+   */
+  const detailUrl =
+    destinationSlug
+      ? (
+          '/destinations-detail.html?id=' +
+          encodeURIComponent(
+            destinationSlug
+          )
+        )
+      : '';
+
+  if (destination.deletedAt) {
   return `
     <button
       type="button"
@@ -838,21 +871,22 @@ if (destination.deletedAt) {
   Chỉnh sửa
 </a>
     ${
-      isPublished
-        ? `
-          <a
-            class="destination-action-link"
-            href="/destinations-detail.html?id=${encodeURIComponent(
-              destination.slug
-            )}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Xem
-          </a>
-        `
-        : ''
-    }
+  isPublished &&
+  detailUrl
+    ? `
+      <a
+        class="destination-action-link"
+        href="${escapeHtml(
+          detailUrl
+        )}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Xem
+      </a>
+    `
+    : ''
+}
 
     <button
       type="button"
@@ -1196,6 +1230,38 @@ function setDestinationLoading(
   renderPagination();
 }
 
+function updateDeleteAllDestinationsButton() {
+  if (
+    !deleteAllTrashedDestinationsBtn
+  ) {
+    return;
+  }
+
+  const isTrashView =
+    destinationDeletedFilter
+      ?.value === 'DELETED';
+
+  const total =
+    Number(
+      destinationState
+        .pagination
+        .total
+    ) || 0;
+
+  deleteAllTrashedDestinationsBtn.hidden =
+    !isTrashView;
+
+  deleteAllTrashedDestinationsBtn.disabled =
+    destinationState.loading ||
+    destinationState.bulkDeleting ||
+    total === 0;
+
+  deleteAllTrashedDestinationsBtn.textContent =
+    destinationState.bulkDeleting
+      ? 'Đang xóa...'
+      : 'Xóa tất cả';
+}
+
 async function loadDestinations() {
   setDestinationLoading(true);
 
@@ -1282,6 +1348,7 @@ async function loadDestinations() {
     );
   } finally {
     setDestinationLoading(false);
+    updateDeleteAllDestinationsButton();
     renderDestinations();
   }
 }
@@ -1617,14 +1684,7 @@ async function hardDeleteDestination(
     return;
   }
 
-  const secondConfirmed =
-    window.confirm(
-      `Xác nhận lần cuối: xóa vĩnh viễn "${destination.name}"?`
-    );
 
-  if (!secondConfirmed) {
-    return;
-  }
 
   await runPendingAction(
     destination.id,
@@ -1747,6 +1807,112 @@ function setupDestinationTableEvents() {
     );
 }
 
+async function deleteAllTrashedDestinations() {
+  const isTrashView =
+    destinationDeletedFilter
+      ?.value === 'DELETED';
+
+  if (!isTrashView) {
+    return;
+  }
+
+  const total =
+    Number(
+      destinationState
+        .pagination
+        .total
+    ) || 0;
+
+  if (total <= 0) {
+    showMessage(
+      'Thùng rác địa điểm đang trống.',
+      'info'
+    );
+
+    updateDeleteAllDestinationsButton();
+
+    return;
+  }
+
+  const confirmed =
+    await confirmAction({
+      type:
+        'danger',
+
+      title:
+        'Xóa toàn bộ thùng rác',
+
+      message:
+        `Toàn bộ ${total} địa điểm trong thùng rác cùng hình ảnh và dữ liệu liên quan sẽ bị xóa vĩnh viễn. Thao tác này không thể hoàn tác.`,
+
+      confirmText:
+        'Xóa tất cả',
+
+      cancelText:
+        'Hủy'
+    });
+
+  if (!confirmed) {
+    return;
+  }
+
+  destinationState.bulkDeleting =
+    true;
+
+  updateDeleteAllDestinationsButton();
+
+  try {
+    const result =
+      await requestAdminJson(
+        '/api/admin/destinations/trash/permanent',
+        {
+          method:
+            'DELETE',
+
+          headers: {
+            Accept:
+              'application/json'
+          }
+        }
+      );
+
+    showMessage(
+      result?.message ||
+        'Đã xóa toàn bộ địa điểm trong thùng rác.',
+
+      result?.success === false
+        ? 'error'
+        : 'success'
+    );
+
+    destinationState
+      .pagination
+      .page = 1;
+
+    await Promise.all([
+      loadDestinations(),
+      loadDestinationSummary()
+    ]);
+  } catch (error) {
+    console.error(
+      'Lỗi xóa toàn bộ thùng rác địa điểm:',
+      error
+    );
+
+    showMessage(
+      error instanceof Error
+        ? error.message
+        : 'Không thể xóa toàn bộ thùng rác địa điểm.',
+      'error'
+    );
+  } finally {
+    destinationState.bulkDeleting =
+      false;
+
+    updateDeleteAllDestinationsButton();
+  }
+}
+
 function setupDestinationFilters() {
   destinationSearchInput
     ?.addEventListener(
@@ -1837,6 +2003,11 @@ function setupDestinationFilters() {
         ]);
       }
     );
+    deleteAllTrashedDestinationsBtn
+      ?.addEventListener(
+        'click',
+        deleteAllTrashedDestinations
+      );
 }
 
 function setupDestinationPagination() {

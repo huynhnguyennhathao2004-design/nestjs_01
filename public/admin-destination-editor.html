@@ -554,159 +554,256 @@
 
   <div class="destination-image-management">
     <div class="destination-image-form-panel">
-      <div class="destination-image-form-heading">
-        <div>
-          <h3 id="destinationImageFormTitle">
-            Thêm hình ảnh
-          </h3>
+  <div class="destination-image-form-heading">
+    <div>
+      <h3 id="destinationImageFormTitle">
+        Tải ảnh địa điểm
+      </h3>
 
-          <p id="destinationImageFormDescription">
-            Nhập đường dẫn ảnh nội bộ hoặc URL ảnh.
+      <p id="destinationImageFormDescription">
+        Chọn file JPG, PNG hoặc WebP từ máy tính.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="destination-image-cancel-btn"
+      id="cancelEditDestinationImageBtn"
+      hidden
+    >
+      Hủy chỉnh sửa
+    </button>
+  </div>
+
+  <div
+    class="editor-form-grid destination-image-form-grid"
+  >
+    <div class="editor-field editor-field-full">
+      <label for="destinationImageFileInput">
+        File ảnh
+
+        <span id="destinationImageFileRequiredMark">
+          *
+        </span>
+      </label>
+
+      <label
+        class="destination-image-upload-box"
+        for="destinationImageFileInput"
+      >
+        <input
+          type="file"
+          id="destinationImageFileInput"
+          accept="image/jpeg,image/png,image/webp"
+        />
+
+        <span
+          class="destination-image-upload-icon"
+          aria-hidden="true"
+        >
+          ↑
+        </span>
+
+        <span class="destination-image-upload-copy">
+          <strong>
+            Chọn ảnh từ máy tính
+          </strong>
+
+          <small>
+            JPG, PNG hoặc WebP, tối đa 10 MB
+          </small>
+        </span>
+
+        <span class="destination-image-upload-button">
+          Chọn file
+        </span>
+      </label>
+
+      <small id="destinationImageFileHelp">
+        Ảnh sẽ được tối ưu và chuyển sang WebP trước
+        khi lưu trên Cloudflare R2.
+      </small>
+    </div>
+
+    <div class="editor-field editor-field-full">
+      <div
+        class="destination-image-upload-preview"
+        id="destinationImageUploadPreview"
+      >
+        <div
+          class="destination-image-upload-placeholder"
+          id="destinationImageUploadPlaceholder"
+        >
+          <span aria-hidden="true">
+            🖼️
+          </span>
+
+          <strong>
+            Chưa chọn ảnh
+          </strong>
+
+          <p>
+            Ảnh xem trước sẽ xuất hiện tại đây.
           </p>
         </div>
 
-        <button
-          type="button"
-          class="destination-image-cancel-btn"
-          id="cancelEditDestinationImageBtn"
+        <img
+          id="destinationImageUploadPreviewImg"
+          alt="Xem trước ảnh địa điểm"
           hidden
+        />
+
+        <div
+          class="destination-image-upload-file-information"
         >
-          Hủy chỉnh sửa
-        </button>
-      </div>
+          <strong id="destinationImageUploadFileName">
+            Chưa chọn file
+          </strong>
 
-      <div class="editor-form-grid destination-image-form-grid">
-        <div class="editor-field editor-field-full">
-          <label for="destinationImageUrlInput">
-            Đường dẫn ảnh
-            <span>*</span>
-          </label>
-
-          <input
-            type="text"
-            id="destinationImageUrlInput"
-            maxlength="2000"
-            placeholder="/assets/images/da-lat.webp hoặc https://..."
-          />
-
-          <small>
-            Đường dẫn phải bắt đầu bằng dấu
-            <strong>/</strong>,
-            <strong>http://</strong> hoặc
-            <strong>https://</strong>.
-          </small>
+          <span id="destinationImageUploadFileMeta">
+            JPG, PNG hoặc WebP
+          </span>
         </div>
-
-        <div class="editor-field editor-field-wide">
-          <label for="destinationImageAltInput">
-            Mô tả ảnh
-          </label>
-
-          <input
-            type="text"
-            id="destinationImageAltInput"
-            maxlength="500"
-            placeholder="Ví dụ: Hồ Xuân Hương vào buổi sáng"
-          />
-        </div>
-
-        <div class="editor-field editor-field-wide">
-          <label for="destinationImageTypeSelect">
-            Loại ảnh
-          </label>
-
-          <select id="destinationImageTypeSelect">
-            <option value="GALLERY">
-              Ảnh thư viện
-            </option>
-
-            <option value="COVER">
-              Ảnh bìa
-            </option>
-          </select>
-        </div>
-
-        <div class="editor-field editor-field-wide">
-          <label for="destinationImageSortOrderInput">
-            Thứ tự hiển thị
-          </label>
-
-          <input
-            type="number"
-            id="destinationImageSortOrderInput"
-            min="0"
-            step="1"
-            value="0"
-          />
-        </div>
-
-        <div class="editor-field editor-field-wide">
-          <label>
-            Trạng thái
-          </label>
-
-          <label class="destination-image-active-option">
-            <input
-              type="checkbox"
-              id="destinationImageIsActiveInput"
-              checked
-            />
-
-            <span>
-              Cho phép hiển thị ảnh
-            </span>
-          </label>
-
-          <small id="destinationImageActiveHelp">
-            Ảnh đang hoạt động sẽ được hiển thị trên website.
-          </small>
-        </div>
-
-        <div class="editor-field editor-field-wide">
-          <label for="destinationImageSourceUrlInput">
-            URL nguồn ảnh
-          </label>
-
-          <input
-            type="text"
-            id="destinationImageSourceUrlInput"
-            maxlength="2000"
-            placeholder="https://website-nguon..."
-          />
-        </div>
-
-        <div class="editor-field editor-field-wide">
-          <label for="destinationImageCreditInput">
-            Nguồn hoặc bản quyền
-          </label>
-
-          <input
-            type="text"
-            id="destinationImageCreditInput"
-            maxlength="500"
-            placeholder="Ví dụ: Ảnh: Sở Du lịch Lâm Đồng"
-          />
-        </div>
-      </div>
-
-      <div class="destination-image-form-actions">
-        <button
-          type="button"
-          class="destination-image-reset-btn"
-          id="resetDestinationImageBtn"
-        >
-          Làm trống
-        </button>
-
-        <button
-          type="button"
-          class="destination-image-save-btn"
-          id="saveDestinationImageBtn"
-        >
-          Thêm hình ảnh
-        </button>
       </div>
     </div>
+
+    <div
+      class="editor-field editor-field-full"
+      id="destinationImageCurrentUrlField"
+      hidden
+    >
+      <label for="destinationImageUrlInput">
+        Đường dẫn ảnh hiện tại
+      </label>
+
+      <input
+        type="text"
+        id="destinationImageUrlInput"
+        maxlength="2000"
+        readonly
+      />
+
+      <small>
+        Khi chỉnh sửa, hệ thống giữ nguyên file trên R2
+        và chỉ cập nhật thông tin của ảnh.
+      </small>
+    </div>
+
+    <div class="editor-field editor-field-wide">
+      <label for="destinationImageAltInput">
+        Mô tả ảnh
+      </label>
+
+      <input
+        type="text"
+        id="destinationImageAltInput"
+        maxlength="255"
+        placeholder="Ví dụ: Hồ Xuân Hương vào buổi sáng"
+      />
+    </div>
+
+    <div class="editor-field editor-field-wide">
+      <label for="destinationImageTypeSelect">
+        Loại ảnh
+      </label>
+
+      <select id="destinationImageTypeSelect">
+        <option value="GALLERY">
+          Ảnh thư viện
+        </option>
+
+        <option value="COVER">
+          Ảnh bìa
+        </option>
+
+        <option value="THUMBNAIL">
+          Ảnh thu nhỏ
+        </option>
+      </select>
+    </div>
+
+    <div class="editor-field editor-field-wide">
+      <label for="destinationImageSortOrderInput">
+        Thứ tự hiển thị
+      </label>
+
+      <input
+        type="number"
+        id="destinationImageSortOrderInput"
+        min="0"
+        max="10000"
+        step="1"
+        value="0"
+      />
+    </div>
+
+    <div class="editor-field editor-field-wide">
+      <label>
+        Trạng thái
+      </label>
+
+      <label class="destination-image-active-option">
+        <input
+          type="checkbox"
+          id="destinationImageIsActiveInput"
+          checked
+        />
+
+        <span>
+          Cho phép hiển thị ảnh
+        </span>
+      </label>
+
+      <small id="destinationImageActiveHelp">
+        Ảnh đang hoạt động sẽ được hiển thị trên website.
+      </small>
+    </div>
+
+    <div class="editor-field editor-field-wide">
+      <label for="destinationImageSourceUrlInput">
+        URL nguồn ảnh
+      </label>
+
+      <input
+        type="text"
+        id="destinationImageSourceUrlInput"
+        maxlength="2000"
+        placeholder="https://website-nguon..."
+      />
+    </div>
+
+    <div class="editor-field editor-field-wide">
+      <label for="destinationImageCreditInput">
+        Nguồn hoặc bản quyền
+      </label>
+
+      <input
+        type="text"
+        id="destinationImageCreditInput"
+        maxlength="255"
+        placeholder="Ví dụ: Ảnh: Sở Du lịch Lâm Đồng"
+      />
+    </div>
+  </div>
+
+  <div class="destination-image-form-actions">
+    <button
+      type="button"
+      class="destination-image-reset-btn"
+      id="resetDestinationImageBtn"
+    >
+      Làm trống
+    </button>
+
+    <button
+      type="button"
+      class="destination-image-save-btn"
+      id="saveDestinationImageBtn"
+    >
+      Tải ảnh lên
+    </button>
+  </div>
+</div>
 
     <div class="destination-image-list-panel">
       <div class="destination-image-list-heading">
@@ -1095,7 +1192,7 @@
           <input
             type="text"
             id="destinationAttractionImageCreditInput"
-            maxlength="500"
+            maxlength="255"
             placeholder="Ví dụ: Ảnh: Sở Du lịch Lâm Đồng"
           />
         </div>
