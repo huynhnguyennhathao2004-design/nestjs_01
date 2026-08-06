@@ -301,6 +301,24 @@ async createJob(
   };
 
   /*
+ * Kiểm tra chính xác nội dung JSON
+ * chuẩn bị gửi đến RunPod.
+ */
+console.log(
+  '[DEBUG RUNPOD TEXT]',
+  JSON.stringify(
+    requestBody.input.text,
+  ),
+);
+
+console.log(
+  '[DEBUG RUNPOD LINE COUNT]',
+  requestBody.input.text
+    .split('\n')
+    .length,
+);
+
+  /*
    * Chuyển JSON thành UTF-8 bytes để giữ đúng
    * nội dung tiếng Việt khi gửi sang RunPod.
    */
@@ -2674,12 +2692,39 @@ async getAudio(
     )
     .digest('hex');
 }
-  private normalizeWhitespace(text: string): string {
-    return text
-      .normalize('NFC')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
+private normalizeWhitespace(
+  text: string,
+): string {
+  return String(text ?? '')
+    .normalize('NFC')
+
+    /*
+     * Chuẩn hóa CRLF của Windows
+     * thành ký tự xuống dòng \n.
+     */
+    .replace(/\r\n?/g, '\n')
+
+    /*
+     * Chỉ gộp dấu cách và tab
+     * trong từng dòng.
+     *
+     * Không xóa dấu xuống dòng.
+     */
+    .split('\n')
+    .map((line) =>
+      line
+        .replace(/[ \t]+/g, ' ')
+        .trim(),
+    )
+    .join('\n')
+
+    /*
+     * Không để quá hai lần xuống dòng
+     * liên tiếp.
+     */
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
 private getSafeWorkerError(
   result: RunpodStatusResponse,

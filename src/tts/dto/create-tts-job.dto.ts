@@ -23,10 +23,18 @@ export class CreateTtsJobDto {
       return value;
     }
 
-    return value
-      .normalize('NFC')
-      .replace(/\s+/g, ' ')
-      .trim();
+return value
+  .normalize('NFC')
+  .replace(/\r\n?/g, '\n')
+  .split('\n')
+  .map((line) =>
+    line
+      .replace(/[ \t]+/g, ' ')
+      .trim(),
+  )
+  .join('\n')
+  .replace(/\n{3,}/g, '\n\n')
+  .trim();
   })
   @IsString({ message: 'Nội dung phải là chuỗi văn bản.' })
   @MinLength(1, { message: 'Nội dung không được để trống.' })

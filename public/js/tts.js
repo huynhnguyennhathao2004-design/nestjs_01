@@ -92,9 +92,23 @@ async function authenticatedFetch(
  * Chuẩn hóa văn bản trước khi gửi tới backend.
  */
 function normalizeText(value) {
-  return value
+  return String(value ?? '')
     .normalize('NFC')
-    .replace(/\s+/g, ' ')
+
+    // Chuẩn hóa xuống dòng Windows.
+    .replace(/\r\n?/g, '\n')
+
+    // Chỉ gộp khoảng trắng trong cùng một dòng.
+    .split('\n')
+    .map(function (line) {
+      return line
+        .replace(/[ \t]+/g, ' ')
+        .trim();
+    })
+    .join('\n')
+
+    // Chỉ giữ tối đa một dòng trống.
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
@@ -1099,7 +1113,7 @@ function createReviewContent(place) {
       : place.type ||
         'Chưa phân loại';
 
-  return `
+return `
 ${place.name || 'Địa điểm du lịch'}
 
 ${place.description || 'Thông tin đang được cập nhật.'}
