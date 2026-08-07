@@ -311,9 +311,14 @@ const destinations =
               isActive: true,
             },
 
-            orderBy: {
-              sortOrder: 'asc',
-            },
+            orderBy: [
+              {
+                imageType: 'asc',
+              },
+              {
+                sortOrder: 'asc',
+              },
+            ],
 
             select: {
               url: true,
@@ -904,9 +909,14 @@ const destinations =
               isActive: true,
             },
 
-            orderBy: {
+          orderBy: [
+            {
+              imageType: 'asc',
+            },
+            {
               sortOrder: 'asc',
             },
+          ],
 
             select: {
               url: true,

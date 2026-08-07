@@ -1293,9 +1293,14 @@ for (
                   isActive: true,
                 },
 
-                orderBy: {
+              orderBy: [
+                {
+                  imageType: 'asc',
+                },
+                {
                   sortOrder: 'asc',
                 },
+              ],
 
                 take: 1,
 
@@ -5913,9 +5918,14 @@ async getFormOptions() {
             },
 
             images: {
-              orderBy: {
+            orderBy: [
+              {
+                imageType: 'asc',
+              },
+              {
                 sortOrder: 'asc',
               },
+            ],
 
               select: {
                 id: true,
