@@ -7,7 +7,11 @@ import {
 
 export class LoginDto {
   @IsEmail(
-    {},
+    {
+      // Cho phép email dev/local, ví dụ admin@localhost
+      require_tld: false,
+      allow_ip_domain: true,
+    },
     {
       message: 'Email không hợp lệ',
     },

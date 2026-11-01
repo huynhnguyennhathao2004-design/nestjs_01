@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Script } from 'node:vm';
 
@@ -155,12 +155,39 @@ function normalizePrimaryCategory(categoryName: string): string {
 }
 
 export function loadDestinationSources(): DestinationImportSource[] {
+  const jsonPath = resolve(
+    process.cwd(),
+    'prisma',
+    'data',
+    'destinations-import.json',
+  );
+
   const sourcePath = resolve(
     process.cwd(),
     'public',
     'js',
     'destinations-data.js',
   );
+
+  if (!existsSync(sourcePath) && existsSync(jsonPath)) {
+    const parsed: unknown = JSON.parse(
+      readFileSync(jsonPath, 'utf8'),
+    );
+
+    if (!Array.isArray(parsed)) {
+      throw new Error(
+        'destinations-import.json phải là một mảng.',
+      );
+    }
+
+    return parsed as DestinationImportSource[];
+  }
+
+  if (!existsSync(sourcePath)) {
+    throw new Error(
+      'Không tìm thấy public/js/destinations-data.js hoặc prisma/data/destinations-import.json.',
+    );
+  }
 
   const sourceCode = readFileSync(sourcePath, 'utf8');
 

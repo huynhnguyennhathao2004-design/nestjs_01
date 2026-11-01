@@ -1,4 +1,7 @@
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
+
+loadEnv({ path: '.env.local' });
+loadEnv({ path: '.env' });
 import * as argon2 from 'argon2';
 import { PrismaPg } from '@prisma/adapter-pg';
 

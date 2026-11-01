@@ -22,7 +22,10 @@ export class RegisterDto {
   fullName!: string;
 
   @IsEmail(
-    {},
+    {
+      require_tld: false,
+      allow_ip_domain: true,
+    },
     {
       message: 'Email không hợp lệ',
     },
